@@ -208,10 +208,26 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         </TouchableOpacity>
 
                         {/* Privacy policy */}
-                        <TouchableOpacity style={[styles.section, styles.lastSection]}>
+                        <TouchableOpacity style={styles.section}>
                             <Image source={require('../assets/images/privacy.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
                                 <Text style={styles.sectionTitle}>Privacy policy</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Help */}
+                        <TouchableOpacity style={styles.section}>
+                            <Image source={require('../assets/images/help.png')} style={styles.icon} />
+                            <View style={styles.sectionContent}>
+                                <Text style={styles.sectionTitle}>Help</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* About Us */}
+                        <TouchableOpacity style={[styles.section, styles.lastSection]}>
+                            <Image source={require('../assets/images/info.png')} style={styles.icon} />
+                            <View style={styles.sectionContent}>
+                                <Text style={styles.sectionTitle}>About Us</Text>
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -226,8 +242,14 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                             </View>
                         </TouchableOpacity>
                     </View>
+
+                    {/* Version Information */}
+                    <View style={styles.versionContainer}>
+                        <Text style={styles.versionText}>Version 1.0.0</Text>
+                    </View>
                 </View>
             </ScrollView>
+
 
             {/* Step Goal Picker Modal */}
             <StepGoalModal />
@@ -242,7 +264,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                     onChange={handleTimeChange}
                 />
             )}
-
         </SafeAreaView>
     );
 };
@@ -257,7 +278,7 @@ const styles = StyleSheet.create({
     },
     content: {
         paddingHorizontal: 20,
-        paddingBottom: 30,
+        paddingBottom: 25,
     },
     headerText: {
         fontSize: 24,
@@ -399,6 +420,16 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: '#007BFF',
         fontWeight: 'bold',
+    },
+    // Version styles
+    versionContainer: {
+        paddingBottom: 10,
+        alignItems: 'center',
+    },
+    versionText: {
+        fontSize: 14,
+        color: '#666',
+        fontWeight: '400',
     },
 });
 
