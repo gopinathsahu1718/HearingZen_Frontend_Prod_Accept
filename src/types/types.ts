@@ -1,13 +1,11 @@
-import { RouteProp } from '@react-navigation/native';
-
 export type RootStackParamList = {
     Splash: undefined;
-    Welcome: undefined;
-    SignUp: undefined;
+    HomeTabs: undefined;
     Login: undefined;
+    SignUp: undefined;
     Home: undefined;
+    Dummy1: undefined;
+    Dummy2: undefined;
+    Dummy3: undefined;
     Profile: undefined;
-    HomeTabs: undefined
 };
-
-export type ScreenRouteProp<T extends keyof RootStackParamList> = RouteProp<RootStackParamList, T>;

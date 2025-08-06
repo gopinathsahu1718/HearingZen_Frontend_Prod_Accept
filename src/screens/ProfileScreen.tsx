@@ -3,17 +3,176 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, Switch, 
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types/types';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../hooks/useThemedStyles';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
 const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp }) => {
-    const [isDarkMode, setIsDarkMode] = React.useState(false);
+    const { theme, isDarkMode, setDarkMode } = useTheme();
     const [selectedStepGoal, setSelectedStepGoal] = React.useState(6000);
     const [reminderTime, setReminderTime] = React.useState(new Date());
     const [showStepGoalPicker, setShowStepGoalPicker] = React.useState(false);
     const [showTimePicker, setShowTimePicker] = React.useState(false);
 
     const stepGoalOptions = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000];
+
+    const styles = useThemedStyles((theme) => StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: theme.background,
+        },
+        scrollView: {
+            flex: 1,
+        },
+        content: {
+            paddingHorizontal: 20,
+            paddingBottom: 25,
+        },
+        headerText: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: theme.text,
+            textAlign: 'left',
+            marginBottom: 20,
+            marginTop: 10,
+            marginHorizontal: 20,
+            letterSpacing: 1,
+        },
+        sectionGroup: {
+            backgroundColor: theme.cardBackground,
+            borderRadius: 12,
+            marginBottom: 20,
+            overflow: 'hidden',
+            shadowColor: theme.shadowColor,
+            shadowOffset: {
+                width: 0,
+                height: 1,
+            },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 2,
+        },
+        section: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: 16,
+            paddingHorizontal: 16,
+            minHeight: 60,
+            borderBottomWidth: 0.5,
+            borderBottomColor: theme.border,
+        },
+        firstSection: {
+            borderTopLeftRadius: 12,
+            borderTopRightRadius: 12,
+        },
+        lastSection: {
+            borderBottomWidth: 0,
+            borderBottomLeftRadius: 12,
+            borderBottomRightRadius: 12,
+        },
+        icon: {
+            width: 24,
+            height: 24,
+            marginRight: 16,
+            tintColor: theme.iconTint,
+        },
+        refreshIcon: {
+            width: 20,
+            height: 20,
+            tintColor: theme.refreshIconTint,
+        },
+        sectionContent: {
+            flex: 1,
+        },
+        sectionTitle: {
+            fontSize: 16,
+            color: theme.text,
+            fontWeight: '500',
+            marginBottom: 2,
+        },
+        sectionSubtext: {
+            fontSize: 14,
+            color: theme.textSecondary,
+            marginTop: 2,
+        },
+        valueText: {
+            fontSize: 16,
+            color: theme.primary,
+            fontWeight: '500',
+        },
+        achievementBadge: {
+            backgroundColor: theme.achievementBackground,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 12,
+            minWidth: 30,
+            alignItems: 'center',
+        },
+        achievementText: {
+            color: theme.achievementText,
+            fontSize: 12,
+            fontWeight: 'bold',
+        },
+        deleteText: {
+            color: theme.deleteText,
+        },
+        modalOverlay: {
+            flex: 1,
+            backgroundColor: theme.modalOverlay,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        modalContent: {
+            backgroundColor: theme.cardBackground,
+            borderRadius: 12,
+            padding: 20,
+            margin: 40,
+            maxHeight: '70%',
+            width: '80%',
+        },
+        modalTitle: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            textAlign: 'center',
+            marginBottom: 20,
+            color: theme.text,
+        },
+        optionItem: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingVertical: 15,
+            paddingHorizontal: 16,
+            borderBottomWidth: 0.5,
+            borderBottomColor: theme.border,
+        },
+        selectedOption: {
+            backgroundColor: theme.primary + '20',
+        },
+        optionText: {
+            fontSize: 16,
+            color: theme.text,
+        },
+        selectedOptionText: {
+            color: theme.primary,
+            fontWeight: '500',
+        },
+        checkmark: {
+            fontSize: 18,
+            color: theme.primary,
+            fontWeight: 'bold',
+        },
+        versionContainer: {
+            paddingBottom: 10,
+            alignItems: 'center',
+        },
+        versionText: {
+            fontSize: 14,
+            color: theme.textSecondary,
+            fontWeight: '400',
+        },
+    }));
 
     const formatTime = (date: Date) => {
         return date.toLocaleTimeString('en-US', {
@@ -82,10 +241,8 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
             <Text style={styles.headerText}>PROFILE</Text>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <View style={styles.content}>
-
                     {/* Account Section */}
                     <View style={styles.sectionGroup}>
-                        {/* Achievements */}
                         <View style={[styles.section, styles.firstSection]}>
                             <Image source={require('../assets/images/trophy.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -96,7 +253,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                             </View>
                         </View>
 
-                        {/* Login */}
                         <TouchableOpacity style={styles.section} onPress={() => navigation.navigate('Login')}>
                             <Image source={require('../assets/images/user.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -104,7 +260,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                             </View>
                         </TouchableOpacity>
 
-                        {/* Signup */}
                         <TouchableOpacity style={[styles.section, styles.lastSection]} onPress={() => navigation.navigate('SignUp')}>
                             <Image source={require('../assets/images/user.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -115,7 +270,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
 
                     {/* Personal Settings Section */}
                     <View style={styles.sectionGroup}>
-                        {/* Personal information */}
                         <TouchableOpacity style={[styles.section, styles.firstSection]}>
                             <Image source={require('../assets/images/user.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -124,14 +278,11 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                             </View>
                         </TouchableOpacity>
 
-                        {/* Step Goal */}
                         <View style={[styles.section, styles.lastSection]}>
                             <Image source={require('../assets/images/goal.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
                                 <Text style={styles.sectionTitle}>Step Goal</Text>
-                                <Text style={styles.sectionSubtext}>
-                                    Daily step target
-                                </Text>
+                                <Text style={styles.sectionSubtext}>Daily step target</Text>
                             </View>
                             <TouchableOpacity onPress={() => setShowStepGoalPicker(true)}>
                                 <Text style={styles.valueText}>{selectedStepGoal.toLocaleString()} ▼</Text>
@@ -141,7 +292,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
 
                     {/* Data & Backup Section */}
                     <View style={styles.sectionGroup}>
-                        {/* Backup & Restore */}
                         <TouchableOpacity style={[styles.section, styles.firstSection]}>
                             <Image source={require('../assets/images/backup.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -150,7 +300,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                             <Image source={require('../assets/images/refresh.png')} style={styles.refreshIcon} />
                         </TouchableOpacity>
 
-                        {/* Reminder */}
                         <View style={[styles.section, styles.lastSection]}>
                             <Image source={require('../assets/images/reminder.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -165,7 +314,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
 
                     {/* App Settings Section */}
                     <View style={styles.sectionGroup}>
-                        {/* Dark Mode */}
                         <View style={[styles.section, styles.firstSection]}>
                             <Image source={require('../assets/images/darkmode.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -173,13 +321,12 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                             </View>
                             <Switch
                                 value={isDarkMode}
-                                onValueChange={setIsDarkMode}
-                                trackColor={{ false: '#d3d3d3', true: '#007BFF' }}
-                                thumbColor={isDarkMode ? '#fff' : '#f4f3f4'}
+                                onValueChange={setDarkMode}
+                                trackColor={{ false: theme.switchTrackFalse, true: theme.switchTrackTrue }}
+                                thumbColor={theme.switchThumb}
                             />
                         </View>
 
-                        {/* Language options */}
                         <TouchableOpacity style={[styles.section, styles.lastSection]}>
                             <Image source={require('../assets/images/language.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -191,7 +338,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
 
                     {/* Support Section */}
                     <View style={styles.sectionGroup}>
-                        {/* Instructions */}
                         <TouchableOpacity style={[styles.section, styles.firstSection]}>
                             <Image source={require('../assets/images/help.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -199,7 +345,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                             </View>
                         </TouchableOpacity>
 
-                        {/* Feedback */}
                         <TouchableOpacity style={styles.section}>
                             <Image source={require('../assets/images/feedback.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -207,7 +352,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                             </View>
                         </TouchableOpacity>
 
-                        {/* Privacy policy */}
                         <TouchableOpacity style={styles.section}>
                             <Image source={require('../assets/images/privacy.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -215,7 +359,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                             </View>
                         </TouchableOpacity>
 
-                        {/* Help */}
                         <TouchableOpacity style={styles.section}>
                             <Image source={require('../assets/images/help.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -223,7 +366,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                             </View>
                         </TouchableOpacity>
 
-                        {/* About Us */}
                         <TouchableOpacity style={[styles.section, styles.lastSection]}>
                             <Image source={require('../assets/images/info.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -234,7 +376,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
 
                     {/* Danger Zone */}
                     <View style={styles.sectionGroup}>
-                        {/* Delete all data */}
                         <TouchableOpacity style={[styles.section, styles.firstSection, styles.lastSection]}>
                             <Image source={require('../assets/images/delete.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -250,11 +391,8 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                 </View>
             </ScrollView>
 
-
-            {/* Step Goal Picker Modal */}
             <StepGoalModal />
 
-            {/* Time Picker */}
             {showTimePicker && (
                 <DateTimePicker
                     value={reminderTime}
@@ -267,170 +405,5 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
         </SafeAreaView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f8f8f8',
-    },
-    scrollView: {
-        flex: 1,
-    },
-    content: {
-        paddingHorizontal: 20,
-        paddingBottom: 25,
-    },
-    headerText: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#000',
-        textAlign: 'left',
-        marginBottom: 20,
-        marginTop: 10,
-        marginHorizontal: 20,
-        letterSpacing: 1,
-    },
-    sectionGroup: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        marginBottom: 20,
-        overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    section: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        minHeight: 60,
-        borderBottomWidth: 0.5,
-        borderBottomColor: '#f0f0f0',
-    },
-    firstSection: {
-        borderTopLeftRadius: 12,
-        borderTopRightRadius: 12,
-    },
-    lastSection: {
-        borderBottomWidth: 0,
-        borderBottomLeftRadius: 12,
-        borderBottomRightRadius: 12,
-    },
-    icon: {
-        width: 24,
-        height: 24,
-        marginRight: 16,
-        tintColor: '#666',
-    },
-    refreshIcon: {
-        width: 20,
-        height: 20,
-        tintColor: '#007BFF',
-    },
-    sectionContent: {
-        flex: 1,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        color: '#000',
-        fontWeight: '500',
-        marginBottom: 2,
-    },
-    sectionSubtext: {
-        fontSize: 14,
-        color: '#999',
-        marginTop: 2,
-    },
-    sectionDescription: {
-        fontSize: 13,
-        color: '#999',
-        marginTop: 2,
-        lineHeight: 18,
-    },
-    valueText: {
-        fontSize: 16,
-        color: '#007BFF',
-        fontWeight: '500',
-    },
-    achievementBadge: {
-        backgroundColor: '#333',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-        minWidth: 30,
-        alignItems: 'center',
-    },
-    achievementText: {
-        color: '#FFD700',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    deleteText: {
-        color: '#FF4444',
-    },
-    // Modal styles
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContent: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 20,
-        margin: 40,
-        maxHeight: '70%',
-        width: '80%',
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 20,
-        color: '#000',
-    },
-    optionItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 15,
-        paddingHorizontal: 16,
-        borderBottomWidth: 0.5,
-        borderBottomColor: '#f0f0f0',
-    },
-    selectedOption: {
-        backgroundColor: '#f0f8ff',
-    },
-    optionText: {
-        fontSize: 16,
-        color: '#000',
-    },
-    selectedOptionText: {
-        color: '#007BFF',
-        fontWeight: '500',
-    },
-    checkmark: {
-        fontSize: 18,
-        color: '#007BFF',
-        fontWeight: 'bold',
-    },
-    // Version styles
-    versionContainer: {
-        paddingBottom: 10,
-        alignItems: 'center',
-    },
-    versionText: {
-        fontSize: 14,
-        color: '#666',
-        fontWeight: '400',
-    },
-});
 
 export default ProfileScreen;

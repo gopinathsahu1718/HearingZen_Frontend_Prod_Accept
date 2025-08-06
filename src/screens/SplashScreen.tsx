@@ -1,13 +1,43 @@
+// screens/SplashScreen.tsx (Updated with Theme Support)
 import React, { useEffect, useRef } from 'react';
 import { View, Image, StyleSheet, Animated, Easing, SafeAreaView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types/types';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../hooks/useThemedStyles';
 
 type SplashScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Splash'>;
 
 const SplashScreen = ({ navigation }: { navigation: SplashScreenNavigationProp }) => {
+    const { theme } = useTheme();
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const opacityAnim = useRef(new Animated.Value(0.5)).current;
+
+    const styles = useThemedStyles((theme) => StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: theme.background,
+        },
+        content: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        logo: {
+            width: 100,
+            height: 100,
+            borderRadius: 50,
+            zIndex: 2,
+        },
+        pulse: {
+            position: 'absolute',
+            width: 80,
+            height: 80,
+            borderRadius: 60,
+            backgroundColor: theme.primary,
+            zIndex: 1,
+        },
+    }));
 
     useEffect(() => {
         const pulseAnimation = () => {
@@ -54,31 +84,5 @@ const SplashScreen = ({ navigation }: { navigation: SplashScreenNavigationProp }
         </SafeAreaView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    content: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    logo: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        zIndex: 2,
-    },
-    pulse: {
-        position: 'absolute',
-        width: 80,
-        height: 80,
-        borderRadius: 60,
-        backgroundColor: '#007BFF',
-        zIndex: 1,
-    },
-});
 
 export default SplashScreen;
