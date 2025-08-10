@@ -7,12 +7,15 @@ import { useTheme } from '../contexts/ThemeContext';
 
 import SplashScreen from '../screens/SplashScreen';
 import HomeScreen from '../screens/HomeScreen';
+import ScanningScreen from '../screens/ScanningScreen';
 import DummyScreen1 from '../screens/DummyScreen1';
 import DummyScreen2 from '../screens/DummyScreen2';
 import DummyScreen3 from '../screens/DummyScreen3';
 import ProfileScreen from '../screens/ProfileScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
+import PairedDevicesScreen from '../screens/PairedDevicesScreen';
+import QuickScanDevicesScreen from '../screens/QuickScanDevicesScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -31,8 +34,8 @@ const HomeTabs = () => {
                         case 'Home':
                             iconSource = require('../assets/icons/home.png');
                             break;
-                        case 'Dummy1':
-                            iconSource = require('../assets/icons/home1.png');
+                        case 'Steps':
+                            iconSource = require('../assets/icons/steps.png');
                             break;
                         case 'Dummy2':
                             iconSource = require('../assets/icons/user.png');
@@ -80,7 +83,7 @@ const HomeTabs = () => {
             })}
         >
             <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="Dummy1" component={DummyScreen1} />
+            <Tab.Screen name="Steps" component={DummyScreen1} />
             <Tab.Screen name="Dummy2" component={DummyScreen2} />
             <Tab.Screen name="Dummy3" component={DummyScreen3} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
@@ -104,6 +107,28 @@ const AppNavigator = () => {
                 <Stack.Screen name="HomeTabs" component={HomeTabs} />
                 <Stack.Screen name="Login" component={LoginScreen} />
                 <Stack.Screen name="SignUp" component={SignUpScreen} />
+                <Stack.Screen
+                    name="ScanningScreen"
+                    component={ScanningScreen}
+                    options={{
+                        cardStyleInterpolator: ({ current, layouts }) => {
+                            return {
+                                cardStyle: {
+                                    transform: [
+                                        {
+                                            translateX: current.progress.interpolate({
+                                                inputRange: [0, 1],
+                                                outputRange: [layouts.screen.width, 0],
+                                            }),
+                                        },
+                                    ],
+                                },
+                            };
+                        },
+                    }}
+                />
+                <Stack.Screen name="QuickScanDevices" component={QuickScanDevicesScreen} />
+                <Stack.Screen name="PairedDevices" component={PairedDevicesScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

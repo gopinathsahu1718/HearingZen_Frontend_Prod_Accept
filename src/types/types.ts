@@ -3,8 +3,11 @@ export type RootStackParamList = {
     HomeTabs: undefined;
     Login: undefined;
     SignUp: undefined;
+    ScanningScreen: undefined;
+    QuickScanDevices: undefined;
+    PairedDevices: undefined;
     Home: undefined;
-    Dummy1: undefined;
+    Steps: undefined;
     Dummy2: undefined;
     Dummy3: undefined;
     Profile: undefined;
