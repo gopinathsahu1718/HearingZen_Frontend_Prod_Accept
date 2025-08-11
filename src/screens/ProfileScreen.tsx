@@ -4,18 +4,27 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types/types';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
+import { useTranslation } from 'react-i18next';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
 const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp }) => {
     const { theme, isDarkMode, setDarkMode } = useTheme();
+    const { language, setLanguage } = useLanguage();
+    const { t } = useTranslation();
     const [selectedStepGoal, setSelectedStepGoal] = React.useState(6000);
     const [reminderTime, setReminderTime] = React.useState(new Date());
     const [showStepGoalPicker, setShowStepGoalPicker] = React.useState(false);
+    const [showLanguagePicker, setShowLanguagePicker] = React.useState(false);
     const [showTimePicker, setShowTimePicker] = React.useState(false);
 
     const stepGoalOptions = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000];
+    const languageOptions = [
+        { code: 'en', label: 'language.en' },
+        { code: 'es', label: 'language.es' },
+    ];
 
     const styles = useThemedStyles((theme) => StyleSheet.create({
         container: {
@@ -45,10 +54,7 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
             marginBottom: 20,
             overflow: 'hidden',
             shadowColor: theme.shadowColor,
-            shadowOffset: {
-                width: 0,
-                height: 1,
-            },
+            shadowOffset: { width: 0, height: 1 },
             shadowOpacity: 0.05,
             shadowRadius: 2,
             elevation: 2,
@@ -175,16 +181,21 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
     }));
 
     const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('en-US', {
+        return date.toLocaleTimeString(language, {
             hour: '2-digit',
             minute: '2-digit',
-            hour12: true
+            hour12: true,
         });
     };
 
     const handleStepGoalSelect = (goal: number) => {
         setSelectedStepGoal(goal);
         setShowStepGoalPicker(false);
+    };
+
+    const handleLanguageSelect = async (code: string) => {
+        await setLanguage(code);
+        setShowLanguagePicker(false);
     };
 
     const handleTimeChange = (event: any, selectedTime?: Date) => {
@@ -207,27 +218,53 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                 onPress={() => setShowStepGoalPicker(false)}
             >
                 <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>Select Step Goal</Text>
+                    <Text style={styles.modalTitle}>{t('Select Step Goal')}</Text>
                     <FlatList
                         data={stepGoalOptions}
                         keyExtractor={(item) => item.toString()}
                         renderItem={({ item }) => (
                             <TouchableOpacity
-                                style={[
-                                    styles.optionItem,
-                                    selectedStepGoal === item && styles.selectedOption
-                                ]}
+                                style={[styles.optionItem, selectedStepGoal === item && styles.selectedOption]}
                                 onPress={() => handleStepGoalSelect(item)}
                             >
-                                <Text style={[
-                                    styles.optionText,
-                                    selectedStepGoal === item && styles.selectedOptionText
-                                ]}>
-                                    {item.toLocaleString()} steps
+                                <Text style={[styles.optionText, selectedStepGoal === item && styles.selectedOptionText]}>
+                                    {item.toLocaleString()} {t('steps')}
                                 </Text>
-                                {selectedStepGoal === item && (
-                                    <Text style={styles.checkmark}>✓</Text>
-                                )}
+                                {selectedStepGoal === item && <Text style={styles.checkmark}>✓</Text>}
+                            </TouchableOpacity>
+                        )}
+                    />
+                </View>
+            </TouchableOpacity>
+        </Modal>
+    );
+
+    const LanguageModal = () => (
+        <Modal
+            visible={showLanguagePicker}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowLanguagePicker(false)}
+        >
+            <TouchableOpacity
+                style={styles.modalOverlay}
+                activeOpacity={1}
+                onPress={() => setShowLanguagePicker(false)}
+            >
+                <View style={styles.modalContent}>
+                    <Text style={styles.modalTitle}>{t('Select Language')}</Text>
+                    <FlatList
+                        data={languageOptions}
+                        keyExtractor={(item) => item.code}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={[styles.optionItem, language === item.code && styles.selectedOption]}
+                                onPress={() => handleLanguageSelect(item.code)}
+                            >
+                                <Text style={[styles.optionText, language === item.code && styles.selectedOptionText]}>
+                                    {t(item.label)}
+                                </Text>
+                                {language === item.code && <Text style={styles.checkmark}>✓</Text>}
                             </TouchableOpacity>
                         )}
                     />
@@ -238,7 +275,7 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
 
     return (
         <SafeAreaView style={styles.container}>
-            <Text style={styles.headerText}>PROFILE</Text>
+            <Text style={styles.headerText}>{t('PROFILE')}</Text>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <View style={styles.content}>
                     {/* Account Section */}
@@ -246,24 +283,22 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         <View style={[styles.section, styles.firstSection]}>
                             <Image source={require('../assets/images/trophy.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Achievements</Text>
+                                <Text style={styles.sectionTitle}>{t('Achievements')}</Text>
                             </View>
                             <View style={styles.achievementBadge}>
                                 <Text style={styles.achievementText}>1K</Text>
                             </View>
                         </View>
-
                         <TouchableOpacity style={styles.section} onPress={() => navigation.navigate('Login')}>
                             <Image source={require('../assets/images/user.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Login</Text>
+                                <Text style={styles.sectionTitle}>{t('Login')}</Text>
                             </View>
                         </TouchableOpacity>
-
                         <TouchableOpacity style={[styles.section, styles.lastSection]} onPress={() => navigation.navigate('SignUp')}>
                             <Image source={require('../assets/images/user.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Signup</Text>
+                                <Text style={styles.sectionTitle}>{t('Signup')}</Text>
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -273,16 +308,15 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         <TouchableOpacity style={[styles.section, styles.firstSection]}>
                             <Image source={require('../assets/images/user.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Personal information</Text>
-                                <Text style={styles.sectionSubtext}>Metric & Imperial Units, Step length, Gender</Text>
+                                <Text style={styles.sectionTitle}>{t('Personal information')}</Text>
+                                <Text style={styles.sectionSubtext}>{t('Metric & Imperial Units, Step length, Gender')}</Text>
                             </View>
                         </TouchableOpacity>
-
                         <View style={[styles.section, styles.lastSection]}>
                             <Image source={require('../assets/images/goal.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Step Goal</Text>
-                                <Text style={styles.sectionSubtext}>Daily step target</Text>
+                                <Text style={styles.sectionTitle}>{t('Step Goal')}</Text>
+                                <Text style={styles.sectionSubtext}>{t('Daily step target')}</Text>
                             </View>
                             <TouchableOpacity onPress={() => setShowStepGoalPicker(true)}>
                                 <Text style={styles.valueText}>{selectedStepGoal.toLocaleString()} ▼</Text>
@@ -295,16 +329,15 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         <TouchableOpacity style={[styles.section, styles.firstSection]}>
                             <Image source={require('../assets/images/backup.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Backup & Restore</Text>
+                                <Text style={styles.sectionTitle}>{t('Backup & Restore')}</Text>
                             </View>
                             <Image source={require('../assets/images/refresh.png')} style={styles.refreshIcon} />
                         </TouchableOpacity>
-
                         <View style={[styles.section, styles.lastSection]}>
                             <Image source={require('../assets/images/reminder.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Reminder</Text>
-                                <Text style={styles.sectionSubtext}>Every day</Text>
+                                <Text style={styles.sectionTitle}>{t('Reminder')}</Text>
+                                <Text style={styles.sectionSubtext}>{t('Every day')}</Text>
                             </View>
                             <TouchableOpacity onPress={() => setShowTimePicker(true)}>
                                 <Text style={styles.valueText}>{formatTime(reminderTime)} ▼</Text>
@@ -317,7 +350,7 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         <View style={[styles.section, styles.firstSection]}>
                             <Image source={require('../assets/images/darkmode.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Dark Mode</Text>
+                                <Text style={styles.sectionTitle}>{t('Dark Mode')}</Text>
                             </View>
                             <Switch
                                 value={isDarkMode}
@@ -326,13 +359,12 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                                 thumbColor={theme.switchThumb}
                             />
                         </View>
-
-                        <TouchableOpacity style={[styles.section, styles.lastSection]}>
+                        <TouchableOpacity style={[styles.section, styles.lastSection]} onPress={() => setShowLanguagePicker(true)}>
                             <Image source={require('../assets/images/language.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Language options</Text>
+                                <Text style={styles.sectionTitle}>{t('Language options')}</Text>
                             </View>
-                            <Text style={styles.valueText}>English ▼</Text>
+                            <Text style={styles.valueText}>{t(`language.${language}`)} ▼</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -341,35 +373,31 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         <TouchableOpacity style={[styles.section, styles.firstSection]}>
                             <Image source={require('../assets/images/help.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Instructions</Text>
+                                <Text style={styles.sectionTitle}>{t('Instructions')}</Text>
                             </View>
                         </TouchableOpacity>
-
                         <TouchableOpacity style={styles.section}>
                             <Image source={require('../assets/images/feedback.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Feedback</Text>
+                                <Text style={styles.sectionTitle}>{t('Feedback')}</Text>
                             </View>
                         </TouchableOpacity>
-
                         <TouchableOpacity style={styles.section}>
                             <Image source={require('../assets/images/privacy.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Privacy policy</Text>
+                                <Text style={styles.sectionTitle}>{t('Privacy policy')}</Text>
                             </View>
                         </TouchableOpacity>
-
                         <TouchableOpacity style={styles.section}>
                             <Image source={require('../assets/images/help.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>Help</Text>
+                                <Text style={styles.sectionTitle}>{t('Help')}</Text>
                             </View>
                         </TouchableOpacity>
-
                         <TouchableOpacity style={[styles.section, styles.lastSection]}>
                             <Image source={require('../assets/images/info.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>About Us</Text>
+                                <Text style={styles.sectionTitle}>{t('About Us')}</Text>
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -379,19 +407,20 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         <TouchableOpacity style={[styles.section, styles.firstSection, styles.lastSection]}>
                             <Image source={require('../assets/images/delete.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={[styles.sectionTitle, styles.deleteText]}>Delete all data</Text>
+                                <Text style={[styles.sectionTitle, styles.deleteText]}>{t('Delete all data')}</Text>
                             </View>
                         </TouchableOpacity>
                     </View>
 
                     {/* Version Information */}
                     <View style={styles.versionContainer}>
-                        <Text style={styles.versionText}>Version 1.0.0</Text>
+                        <Text style={styles.versionText}>{t('Version 1.0.0')}</Text>
                     </View>
                 </View>
             </ScrollView>
 
             <StepGoalModal />
+            <LanguageModal />
 
             {showTimePicker && (
                 <DateTimePicker

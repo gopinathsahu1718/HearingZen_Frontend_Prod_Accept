@@ -2,8 +2,9 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Image } from 'react-native';
+import { Image, Text } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 import SplashScreen from '../screens/SplashScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -22,6 +23,7 @@ const Tab = createBottomTabNavigator();
 
 const HomeTabs = () => {
     const { theme } = useTheme();
+    const { t } = useTranslation();
 
     return (
         <Tab.Navigator
@@ -62,6 +64,11 @@ const HomeTabs = () => {
                         />
                     );
                 },
+                tabBarLabel: ({ color }) => (
+                    <Text style={{ color, fontSize: 12, fontWeight: '500', paddingBottom: 2 }}>
+                        {t(route.name)}
+                    </Text>
+                ),
                 tabBarActiveTintColor: theme.tabBarActiveTint,
                 tabBarInactiveTintColor: theme.tabBarInactiveTint,
                 tabBarStyle: {
@@ -100,7 +107,7 @@ const AppNavigator = () => {
                 initialRouteName="Splash"
                 screenOptions={{
                     headerShown: false,
-                    cardStyle: { backgroundColor: theme.background }
+                    cardStyle: { backgroundColor: theme.background },
                 }}
             >
                 <Stack.Screen name="Splash" component={SplashScreen} />
