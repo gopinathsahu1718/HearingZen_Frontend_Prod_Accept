@@ -22,8 +22,22 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
 
     const stepGoalOptions = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000];
     const languageOptions = [
+        { code: 'bho', label: 'language.bho' },
+        { code: 'zh', label: 'language.zh' },
         { code: 'en', label: 'language.en' },
+        { code: 'hi', label: 'language.hi' },
+        { code: 'ja', label: 'language.ja' },
+        { code: 'kn', label: 'language.kn' },
+        { code: 'ko', label: 'language.ko' },
+        { code: 'ml', label: 'language.ml' },
+        { code: 'mr', label: 'language.mr' },
+        { code: 'or', label: 'language.or' },
+        { code: 'ru', label: 'language.ru' },
+        { code: 'sa', label: 'language.sa' },
         { code: 'es', label: 'language.es' },
+        { code: 'ta', label: 'language.ta' },
+        { code: 'te', label: 'language.te' },
+        { code: 'th', label: 'language.th' },
     ];
 
     const styles = useThemedStyles((theme) => StyleSheet.create({

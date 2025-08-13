@@ -17,7 +17,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         const loadLanguage = async () => {
             try {
                 const storedLanguage = await AsyncStorage.getItem('hearing_language');
-                if (storedLanguage && ['en', 'es'].includes(storedLanguage)) {
+                const supportedLanguages = ['en', 'es', 'te', 'or', 'hi', 'zh', 'ja', 'ml', 'ta', 'kn', 'ko', 'ru', 'th', 'mr', 'bho', 'sa'];
+                if (storedLanguage && supportedLanguages.includes(storedLanguage)) {
                     await i18n.changeLanguage(storedLanguage);
                     setLanguageState(storedLanguage);
                 } else {
