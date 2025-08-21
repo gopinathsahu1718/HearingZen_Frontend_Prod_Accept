@@ -1,263 +1,284 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
-    StyleSheet,
-    SafeAreaView,
-    ScrollView,
+    Button,
+    FlatList,
     TouchableOpacity,
-    Dimensions,
-    PermissionsAndroid,
+    TextInput,
+    StyleSheet,
+    ActivityIndicator,
     Platform,
     Alert,
-    DeviceEventEmitter,
-    NativeEventSubscription,
 } from 'react-native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../types/types';
-import BleManager, { Peripheral } from 'react-native-ble-manager';
-import RNBluetoothClassic, { BluetoothDevice } from 'react-native-bluetooth-classic';
-import { useTheme } from '../contexts/ThemeContext';
-import { useThemedStyles } from '../hooks/useThemedStyles';
+import RNBluetoothClassic, { BluetoothDevice as ClassicDevice } from 'react-native-bluetooth-classic';
+import { BleManager, Device as BleDevice } from 'react-native-ble-plx';
+import { PermissionsAndroid } from 'react-native';
+import { Buffer } from 'buffer'; // For base64 encoding
 
-const { width } = Dimensions.get('window');
-
-interface CommonDevice {
+interface UnifiedDevice {
     id: string;
     name: string | null;
-    rssi?: number;
-    type: 'BLE' | 'Classic' | 'Dual';
+    type: 'classic' | 'ble';
+    original: ClassicDevice | BleDevice;
 }
 
-type QuickScanDevicesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'QuickScanDevices'>;
-
-const QuickScanDevicesScreen = ({ navigation }: { navigation: QuickScanDevicesScreenNavigationProp }) => {
-    const { theme } = useTheme();
-    const [discoveredDevices, setDiscoveredDevices] = useState<CommonDevice[]>([]);
-    const [isScanning, setIsScanning] = useState(false);
-    const [scanError, setScanError] = useState<string | null>(null);
-    const [isBluetoothOn, setIsBluetoothOn] = useState(false);
-
-    const styles = useThemedStyles((theme) =>
-        StyleSheet.create({
-            container: {
-                flex: 1,
-                backgroundColor: theme.background,
-            },
-            scrollContainer: {
-                flexGrow: 1,
-                padding: 15,
-            },
-            devicesSection: { marginTop: 20 },
-            deviceItem: {
-                padding: 10,
-                borderBottomWidth: 1,
-                borderBottomColor: theme.border,
-            },
-            deviceText: { color: theme.text },
-            scanButton: {
-                marginTop: 10,
-                padding: 10,
-                backgroundColor: theme.primary,
-                borderRadius: 6,
-                alignItems: 'center',
-            },
-            stopScanButton: {
-                marginTop: 10,
-                padding: 10,
-                backgroundColor: '#FF4444',
-                borderRadius: 6,
-                alignItems: 'center',
-            },
-            buttonText: {
-                color: '#FFFFFF',
-                fontSize: 16,
-                fontWeight: '600',
-            },
-        })
-    );
-
-    const checkPermissions = async () => {
-        if (Platform.OS !== 'android') return true;
-        const permissions = [
-            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        ];
-        const granted = await PermissionsAndroid.requestMultiple(permissions);
-        return permissions.every((perm) => granted[perm] === PermissionsAndroid.RESULTS.GRANTED);
-    };
+const QuickScanDevicesScreen: React.FC = () => {
+    const [devices, setDevices] = useState<UnifiedDevice[]>([]);
+    const [selectedDevice, setSelectedDevice] = useState<UnifiedDevice | null>(null);
+    const [isConnected, setIsConnected] = useState<boolean>(false);
+    const [receivedData, setReceivedData] = useState<string>('');
+    const [testData, setTestData] = useState<string>('Test message');
+    const [scanning, setScanning] = useState<boolean>(false);
+    const [error, setError] = useState<string>('');
+    const bleManager = new BleManager();
 
     useEffect(() => {
-        const initializeBluetooth = async () => {
-            try {
-                await BleManager.start({ showAlert: false });
-                BleManager.checkState().then((state) => {
-                    setIsBluetoothOn(state === 'on');
-                });
-            } catch (error) {
-                setScanError('Failed to initialize BLE.');
-            }
+        initializeBluetooth();
+        return () => {
+            cleanup();
+        };
+    }, []);
 
-            if (Platform.OS === 'android') {
-                try {
-                    const classicEnabled = await RNBluetoothClassic.isBluetoothEnabled();
-                    setIsBluetoothOn(classicEnabled);
-                } catch (error) {
-                    setScanError('Failed to initialize Classic Bluetooth.');
+    const cleanup = async () => {
+        if (selectedDevice) {
+            disconnectDevice();
+        }
+        bleManager.stopDeviceScan();
+        RNBluetoothClassic.cancelDiscovery().catch(() => { });
+        bleManager.destroy();
+    };
+
+    const requestPermissions = async () => {
+        if (Platform.OS === 'android') {
+            const permissions = [
+                PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+                PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
+            ];
+            const granted = await PermissionsAndroid.requestMultiple(permissions);
+            const allGranted = Object.values(granted).every(status => status === PermissionsAndroid.RESULTS.GRANTED);
+            if (!allGranted) {
+                setError('Bluetooth and location permissions are required.');
+                Alert.alert('Permissions Denied', 'Please grant all required permissions.');
+                return false;
+            }
+            return true;
+        }
+        return true;
+    };
+
+    const initializeBluetooth = async () => {
+        try {
+            const enabled = await RNBluetoothClassic.isBluetoothEnabled();
+            if (!enabled) {
+                const requested = await RNBluetoothClassic.requestBluetoothEnabled();
+                if (!requested) {
+                    setError('Bluetooth must be enabled.');
+                    Alert.alert('Bluetooth Required', 'Please enable Bluetooth.');
+                    return;
                 }
             }
-        };
-
-        initializeBluetooth();
-
-        const bleStateSubscription: NativeEventSubscription = DeviceEventEmitter.addListener(
-            'BleManagerDidUpdateState',
-            (args: { state: string }) => {
-                setIsBluetoothOn(args.state === 'on');
-            }
-        );
-
-        return () => {
-            bleStateSubscription.remove();
-        };
-    }, []);
-
-    const startScan = async () => {
-        if (!isBluetoothOn) {
-            Alert.alert('Bluetooth Off', 'Enable Bluetooth to scan.');
-            return;
-        }
-        if (isScanning) return;
-        if (Platform.OS === 'android' && !(await checkPermissions())) {
-            Alert.alert('Permissions Denied', 'Grant permissions to scan.');
-            return;
-        }
-
-        setIsScanning(true);
-        setScanError(null);
-        setDiscoveredDevices([]);
-
-        try {
-            await BleManager.scan([] as string[], 15, true);
-        } catch (error) {
-            setScanError('Failed to start BLE scan.');
-        }
-
-        if (Platform.OS === 'android') {
-            try {
-                await RNBluetoothClassic.startDiscovery();
-            } catch (error) {
-                setScanError('Failed to start Classic scan.');
-            }
-        }
-
-        setTimeout(stopScan, 15000);
-    };
-
-    const stopScan = async () => {
-        try {
-            await BleManager.stopScan();
-            if (Platform.OS === 'android') {
-                await RNBluetoothClassic.cancelDiscovery();
-            }
-            setIsScanning(false);
-        } catch (error) {
-            setScanError('Failed to stop scan.');
-            setIsScanning(false);
+            await requestPermissions();
+        } catch (err) {
+            setError('Failed to initialize Bluetooth.');
+            console.error(err);
         }
     };
 
-    useEffect(() => {
-        const bleDiscoverSubscription: NativeEventSubscription = DeviceEventEmitter.addListener(
-            'BleManagerDiscoverPeripheral',
-            (peripheral: Peripheral) => {
-                const device: CommonDevice = {
-                    id: peripheral.id,
-                    name: peripheral.name || null,
-                    rssi: peripheral.rssi,
-                    type: 'BLE',
-                };
-                setDiscoveredDevices((prev) => {
-                    if (prev.some((d) => d.id === device.id)) return prev;
-                    return [...prev, device].sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
-                });
-            }
-        );
+    const scanDevices = async () => {
+        setScanning(true);
+        setError('');
+        setDevices([]);
+        try {
+            const hasPermissions = await requestPermissions();
+            if (!hasPermissions) return;
 
-        let classicDiscoverSubscription: NativeEventSubscription | undefined;
-        let classicEnabledSub: NativeEventSubscription | undefined;
-        let classicDisabledSub: NativeEventSubscription | undefined;
-        if (Platform.OS === 'android') {
-            classicDiscoverSubscription = RNBluetoothClassic.onDeviceDiscovered((event: any) => {
-                const device: CommonDevice = {
-                    id: event.address,
-                    name: event.name || null,
-                    rssi: event.extra?.rssi,
-                    type: event.type === 'DUAL' ? 'Dual' : 'Classic',
-                };
-                setDiscoveredDevices((prev) => {
-                    if (prev.some((d) => d.id === device.id)) return prev;
-                    return [...prev, device].sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
-                });
+            // Scan Classic
+            await RNBluetoothClassic.cancelDiscovery();
+            const paired = await RNBluetoothClassic.getBondedDevices();
+            const classicDevices = paired.map(d => ({ id: d.id, name: d.name, type: 'classic' as const, original: d }));
+            setDevices(classicDevices);
+
+            const discoveredClassic = await RNBluetoothClassic.startDiscovery();
+            const newClassic = discoveredClassic
+                .filter(d => !classicDevices.some(existing => existing.id === d.id))
+                .map(d => ({ id: d.id, name: d.name, type: 'classic' as const, original: d }));
+            setDevices(prev => [...prev, ...newClassic]);
+
+            // Scan BLE
+            bleManager.startDeviceScan(null, null, (scanError, device) => {
+                if (scanError) {
+                    console.error('BLE scan error:', scanError);
+                    return;
+                }
+                if (device) {
+                    setDevices(prev => {
+                        if (!prev.some(d => d.id === device.id)) {
+                            return [...prev, { id: device.id, name: device.name, type: 'ble' as const, original: device }];
+                        }
+                        return prev;
+                    });
+                }
             });
 
-            classicEnabledSub = RNBluetoothClassic.onBluetoothEnabled(() => setIsBluetoothOn(true));
-            classicDisabledSub = RNBluetoothClassic.onBluetoothDisabled(() => setIsBluetoothOn(false));
+            // Stop BLE scan after 10 seconds
+            setTimeout(() => {
+                bleManager.stopDeviceScan();
+                setScanning(false);
+                if (devices.length === 0) {
+                    setError('No devices found. Ensure devices are discoverable.');
+                }
+            }, 10000);
+        } catch (err) {
+            setError('Failed to scan devices.');
+            console.error('Scan error:', err);
+            Alert.alert('Scan Failed', 'Could not scan for devices.');
+            setScanning(false);
         }
+    };
 
-        return () => {
-            bleDiscoverSubscription.remove();
-            if (Platform.OS === 'android') {
-                classicDiscoverSubscription?.remove();
-                classicEnabledSub?.remove();
-                classicDisabledSub?.remove();
+    const connectToDevice = async (device: UnifiedDevice) => {
+        setError('');
+        try {
+            if (device.type === 'classic') {
+                const classicDev = device.original as ClassicDevice;
+                let connection = await classicDev.isConnected();
+                if (connection) {
+                    await classicDev.disconnect();
+                }
+                await classicDev.connect();
+                setSelectedDevice(device);
+                setIsConnected(true);
+
+                const subscription = classicDev.onDataReceived((data) => {
+                    setReceivedData(prev => prev + data.data);
+                });
+                // Cleanup handled in disconnect
+            } else if (device.type === 'ble') {
+                const bleDev = device.original as BleDevice;
+                await bleManager.connectToDevice(bleDev.id);
+                await bleDev.discoverAllServicesAndCharacteristics();
+                setSelectedDevice(device);
+                setIsConnected(true);
+
+                // For receive, need to monitor a characteristic - assuming we find one later
             }
-        };
-    }, []);
+        } catch (err) {
+            setError(`Failed to connect to ${device.name || device.id}.`);
+            console.error('Connect error:', err);
+            Alert.alert('Connection Failed', `Could not connect to ${device.name || device.id}.`);
+        }
+    };
+
+    const sendTestData = async () => {
+        if (!selectedDevice || !isConnected) {
+            setError('No device connected.');
+            return;
+        }
+        try {
+            if (selectedDevice.type === 'classic') {
+                const classicDev = selectedDevice.original as ClassicDevice;
+                await classicDev.write(testData + '\n');
+                console.log('Test data sent to classic device.');
+            } else if (selectedDevice.type === 'ble') {
+                const bleDev = selectedDevice.original as BleDevice;
+                const services = await bleDev.services();
+                let writableCharFound = false;
+                for (const service of services) {
+                    const chars = await bleDev.characteristicsForService(service.uuid);
+                    for (const char of chars) {
+                        if (char.isWritableWithResponse || char.isWritableWithoutResponse) {
+                            const base64Data = Buffer.from(testData).toString('base64');
+                            if (char.isWritableWithResponse) {
+                                await bleDev.writeCharacteristicWithResponseForService(service.uuid, char.uuid, base64Data);
+                            } else {
+                                await bleDev.writeCharacteristicWithoutResponseForService(service.uuid, char.uuid, base64Data);
+                            }
+                            writableCharFound = true;
+                            console.log('Test data sent to BLE device.');
+                            break;
+                        }
+                    }
+                    if (writableCharFound) break;
+                }
+                if (!writableCharFound) {
+                    setError('No writable characteristic found on BLE device.');
+                }
+            }
+        } catch (err) {
+            setError('Failed to send test data.');
+            console.error('Send error:', err);
+            Alert.alert('Send Failed', 'Could not send test data.');
+        }
+    };
+
+    const disconnectDevice = async () => {
+        if (selectedDevice) {
+            try {
+                if (selectedDevice.type === 'classic') {
+                    const classicDev = selectedDevice.original as ClassicDevice;
+                    await classicDev.disconnect();
+                } else if (selectedDevice.type === 'ble') {
+                    await bleManager.cancelDeviceConnection(selectedDevice.id);
+                }
+                setIsConnected(false);
+                setSelectedDevice(null);
+                setReceivedData('');
+                setError('');
+            } catch (err) {
+                setError('Failed to disconnect.');
+                console.error('Disconnect error:', err);
+            }
+        }
+    };
+
+    const renderDevice = ({ item }: { item: UnifiedDevice }) => (
+        <TouchableOpacity style={styles.deviceItem} onPress={() => connectToDevice(item)}>
+            <Text style={styles.deviceText}>{item.name || item.id} ({item.type.toUpperCase()})</Text>
+            {selectedDevice?.id === item.id && isConnected && <Text style={styles.connectedText}>Connected</Text>}
+        </TouchableOpacity>
+    );
 
     return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView
-                style={styles.container}
-                contentContainerStyle={styles.scrollContainer}
-                showsVerticalScrollIndicator={false}
-            >
-                <View style={styles.devicesSection}>
-                    <Text style={{ color: theme.text, fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
-                        Available Devices ({discoveredDevices.length})
-                    </Text>
-                    {!isScanning ? (
-                        <TouchableOpacity style={styles.scanButton} onPress={startScan}>
-                            <Text style={styles.buttonText}>Start Scan</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity style={styles.stopScanButton} onPress={stopScan}>
-                            <Text style={styles.buttonText}>Stop Scan</Text>
-                        </TouchableOpacity>
-                    )}
-                    {isScanning && <Text style={{ color: theme.textSecondary }}>Scanning...</Text>}
-                    {scanError && <Text style={{ color: theme.textSecondary }}>{scanError}</Text>}
-                    {!isScanning && discoveredDevices.length === 0 ? (
-                        <Text style={{ color: theme.textSecondary }}>
-                            No available devices found. Start a scan to discover nearby devices.
-                        </Text>
-                    ) : (
-                        discoveredDevices.map((device) => (
-                            <View key={device.id} style={styles.deviceItem}>
-                                <Text style={styles.deviceText}>
-                                    {device.name || 'Unknown Device'} ({device.id}) - {device.type}
-                                </Text>
-                                <Text style={styles.deviceText}>
-                                    RSSI: {device.rssi || 'N/A'}
-                                </Text>
-                            </View>
-                        ))
-                    )}
+        <View style={styles.container}>
+            <Text style={styles.title}>Bluetooth Device Scanner (Classic & BLE)</Text>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            <Button title={scanning ? 'Scanning...' : 'Scan Devices'} onPress={scanDevices} disabled={scanning} />
+            {scanning && <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />}
+            <FlatList
+                data={devices}
+                renderItem={renderDevice}
+                keyExtractor={item => item.id}
+                ListEmptyComponent={<Text style={styles.emptyText}>No devices found</Text>}
+            />
+            {isConnected && selectedDevice && (
+                <View style={styles.connectedContainer}>
+                    <Text style={styles.connectedTitle}>Connected to: {selectedDevice.name || selectedDevice.id} ({selectedDevice.type.toUpperCase()})</Text>
+                    <TextInput style={styles.input} value={testData} onChangeText={setTestData} placeholder="Enter test data" />
+                    <Button title="Send Test Data" onPress={sendTestData} />
+                    <Button title="Disconnect" onPress={disconnectDevice} color="red" />
+                    {receivedData ? <Text style={styles.receivedText}>Received: {receivedData}</Text> : null}
                 </View>
-            </ScrollView>
-        </SafeAreaView>
+            )}
+        </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: { flex: 1, padding: 20, backgroundColor: '#F5F5F5' },
+    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
+    deviceItem: { padding: 15, backgroundColor: '#FFFFFF', borderRadius: 8, marginVertical: 5, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, elevation: 2 },
+    deviceText: { fontSize: 16, color: '#333' },
+    connectedText: { fontSize: 14, color: '#007AFF', fontWeight: 'bold' },
+    connectedContainer: { marginTop: 20, padding: 15, backgroundColor: '#FFFFFF', borderRadius: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, elevation: 2 },
+    connectedTitle: { fontSize: 18, fontWeight: '600', marginBottom: 10 },
+    input: { borderWidth: 1, borderColor: '#CCC', borderRadius: 5, padding: 10, marginBottom: 10, fontSize: 16 },
+    receivedText: { fontSize: 14, color: '#333', marginTop: 10 },
+    errorText: { fontSize: 14, color: 'red', marginBottom: 10, textAlign: 'center' },
+    emptyText: { fontSize: 16, color: '#666', textAlign: 'center', marginTop: 20 },
+    loader: { marginVertical: 10 },
+});
 
 export default QuickScanDevicesScreen;
