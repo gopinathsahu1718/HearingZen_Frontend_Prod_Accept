@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import SplashScreen from '../screens/SplashScreen';
 import HomeScreen from '../screens/HomeScreen';
-import DummyScreen1 from '../screens/DummyScreen1';
+import StepsScreen from '../screens/StepsScreen';
 import DummyScreen2 from '../screens/DummyScreen2';
 import DummyScreen3 from '../screens/DummyScreen3';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -20,7 +20,13 @@ import PersonalInfoScreen from '../screens/PersonalInfoScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 
-const Stack = createStackNavigator();
+import BMICards from '../screens/StepScreen/BMICards';
+import BMIResultScreen from "../screens/StepScreen/BMIResultScreen";
+import NutritionScreen from '../screens/StepScreen/Nutrition';
+
+import type { RootStackParamList } from '../types/types';  // Adjust path
+
+const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
 const tabIcons: Record<string, any> = {
@@ -30,6 +36,7 @@ const tabIcons: Record<string, any> = {
     Dummy3: require('../assets/icons/user1.png'),
     Profile: require('../assets/icons/user.png'),
 };
+
 const HomeTabs = () => {
     const { theme } = useTheme();
     const { t } = useTranslation();
@@ -67,7 +74,7 @@ const HomeTabs = () => {
             })}
         >
             <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="Steps" component={DummyScreen1} />
+            <Tab.Screen name="Steps" component={StepsScreen} />
             <Tab.Screen name="Dummy2" component={DummyScreen2} />
             <Tab.Screen name="Dummy3" component={DummyScreen3} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
@@ -96,6 +103,10 @@ const AppNavigator = () => {
                 <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
                 <Stack.Screen name="QuickScanDevices" component={QuickScanDevicesScreen} />
                 <Stack.Screen name="PairedDevices" component={PairedDevicesScreen} />
+
+                <Stack.Screen name="BMIResult" component={BMIResultScreen} options={{ title: "BMI Result" }} />
+                <Stack.Screen name="BMI" component={BMICards} />
+                <Stack.Screen name="Nutrition" component={NutritionScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

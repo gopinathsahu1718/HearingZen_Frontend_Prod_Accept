@@ -12,5 +12,9 @@ export type RootStackParamList = {
     Dummy3: undefined;
     Profile: undefined;
     PersonalInfo: undefined;
-    ChangePassword: undefined
+    ChangePassword: undefined;
+    BMIResult: { bmi: string };
+    BMI: undefined;
+    Nutrition: undefined;
+    EditProfile: undefined;
 };

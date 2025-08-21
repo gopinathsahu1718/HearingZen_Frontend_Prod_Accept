@@ -2,8 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
+import StepCircle from './StepScreen/StepCircle';
+import Header from './StepScreen/Header';
+import StatsPanel from './StepScreen/StatsPanel';
+import StepsChart from './StepScreen/StepsChart';
+import BMICards from './StepScreen/BMICards';
+import { ScrollView } from 'react-native-gesture-handler';
 
-const DummyScreen1 = () => {
+const StepsScreen = () => {
     const { theme } = useTheme();
 
     const styles = useThemedStyles((theme) => StyleSheet.create({
@@ -42,17 +48,15 @@ const DummyScreen1 = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <View style={styles.accent} />
-                <Text style={styles.title}>Dummy Screen 1</Text>
-                <Text style={styles.subtitle}>
-                    This is a placeholder screen with additional content to fill the space.
-                    Explore more features and enjoy your time here! The interface automatically
-                    adapts to your preferred theme settings.
-                </Text>
-            </View>
+            <ScrollView>
+                <Header />
+                <StepCircle />
+                <StatsPanel />
+                <StepsChart />
+                <BMICards />
+            </ScrollView>
         </SafeAreaView>
     );
 };
 
-export default DummyScreen1;
+export default StepsScreen;
