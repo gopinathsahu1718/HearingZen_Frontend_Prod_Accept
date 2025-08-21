@@ -11,6 +11,7 @@ import {
     Alert,
     NativeEventSubscription,
     DeviceEventEmitter,
+    ScrollView,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types/types';
@@ -34,8 +35,8 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
                 backgroundColor: theme.background,
             },
             scrollContainer: {
-                flexGrow: 1,
                 padding: 15,
+                paddingBottom: 40,
             },
             bluetoothSection: {
                 alignItems: 'center',
@@ -116,11 +117,10 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
         const initializeBluetooth = async () => {
             try {
                 await BleManager.start({ showAlert: false });
-                BleManager.checkState().then((state) => {
-                    setIsBluetoothOn(state === 'on');
-                });
+                const state = await BleManager.checkState();
+                setIsBluetoothOn(state === 'on');
             } catch (error) {
-                Alert.alert('Error', 'Failed to initialize BLE.');
+                Alert.alert('Error', 'Failed to initialize BLE: ' + (error as Error).message);
             }
 
             if (Platform.OS === 'android') {
@@ -128,7 +128,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
                     const classicEnabled = await RNBluetoothClassic.isBluetoothEnabled();
                     setIsBluetoothOn(classicEnabled);
                 } catch (error) {
-                    Alert.alert('Error', 'Failed to initialize Classic Bluetooth.');
+                    Alert.alert('Error', 'Failed to initialize Classic Bluetooth: ' + (error as Error).message);
                 }
             }
         };
@@ -198,7 +198,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.scrollContainer}>
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.bluetoothSection}>
                     <View style={styles.bluetoothCircle}>
                         <Text style={styles.bluetoothIcon}>🔷</Text>
@@ -232,7 +232,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
                             icon="📱"
                             text="Paired Devices"
                             iconColor={styles.pairedDevicesIcon}
-                            onPress={() => navigation.navigate('PairedDevices')}
+                            onPress={() => console.log('Paired devices pressed')}
                         />
                     </View>
                     <View style={styles.gridRow}>
@@ -250,7 +250,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
                         />
                     </View>
                 </View>
-            </View>
+            </ScrollView>
         </SafeAreaView>
     );
 };

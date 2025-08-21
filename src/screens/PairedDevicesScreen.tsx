@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     Dimensions,
     Platform,
+    NativeEventSubscription,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types/types';
@@ -68,6 +69,7 @@ const PairedDevicesScreen = ({ navigation }: { navigation: PairedDevicesScreenNa
         if (Platform.OS !== 'android') {
             setPairedDevices([]);
             setIsLoadingPaired(false);
+            setError('Paired devices not supported on iOS.');
             return;
         }
         setIsLoadingPaired(true);
@@ -76,6 +78,7 @@ const PairedDevicesScreen = ({ navigation }: { navigation: PairedDevicesScreenNa
         try {
             const bondedDevices = await RNBluetoothClassic.getBondedDevices();
             const formattedDevices: CommonDevice[] = bondedDevices
+                .filter((d: BluetoothDevice) => d.bonded)
                 .map((d: BluetoothDevice) => ({
                     id: d.address,
                     name: d.name || null,
@@ -93,6 +96,20 @@ const PairedDevicesScreen = ({ navigation }: { navigation: PairedDevicesScreenNa
 
     useEffect(() => {
         loadPairedDevices();
+
+        let pairedSubscription: NativeEventSubscription | undefined;
+        let unpairedSubscription: NativeEventSubscription | undefined;
+        if (Platform.OS === 'android') {
+            pairedSubscription = RNBluetoothClassic.onDevicePaired(() => loadPairedDevices());
+            unpairedSubscription = RNBluetoothClassic.onDeviceUnpaired(() => loadPairedDevices());
+        }
+
+        return () => {
+            if (Platform.OS === 'android') {
+                pairedSubscription?.remove();
+                unpairedSubscription?.remove();
+            }
+        };
     }, []);
 
     return (
