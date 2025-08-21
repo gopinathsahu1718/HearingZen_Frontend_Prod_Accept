@@ -11,4 +11,6 @@ export type RootStackParamList = {
     Dummy2: undefined;
     Dummy3: undefined;
     Profile: undefined;
+    PersonalInfo: undefined;
+    ChangePassword: undefined
 };

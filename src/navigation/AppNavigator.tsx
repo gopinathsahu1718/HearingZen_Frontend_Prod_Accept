@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next';
 
 import SplashScreen from '../screens/SplashScreen';
 import HomeScreen from '../screens/HomeScreen';
-import ScanningScreen from '../screens/ScanningScreen';
 import DummyScreen1 from '../screens/DummyScreen1';
 import DummyScreen2 from '../screens/DummyScreen2';
 import DummyScreen3 from '../screens/DummyScreen3';
@@ -17,10 +16,20 @@ import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import PairedDevicesScreen from '../screens/PairedDevicesScreen';
 import QuickScanDevicesScreen from '../screens/QuickScanDevicesScreen';
+import PersonalInfoScreen from '../screens/PersonalInfoScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+const tabIcons: Record<string, any> = {
+    Home: require('../assets/icons/home.png'),
+    Steps: require('../assets/icons/steps.png'),
+    Dummy2: require('../assets/icons/user.png'),
+    Dummy3: require('../assets/icons/user1.png'),
+    Profile: require('../assets/icons/user.png'),
+};
 const HomeTabs = () => {
     const { theme } = useTheme();
     const { t } = useTranslation();
@@ -29,41 +38,17 @@ const HomeTabs = () => {
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: false,
-                tabBarIcon: ({ focused, color, size }) => {
-                    let iconSource;
-
-                    switch (route.name) {
-                        case 'Home':
-                            iconSource = require('../assets/icons/home.png');
-                            break;
-                        case 'Steps':
-                            iconSource = require('../assets/icons/steps.png');
-                            break;
-                        case 'Dummy2':
-                            iconSource = require('../assets/icons/user.png');
-                            break;
-                        case 'Dummy3':
-                            iconSource = require('../assets/icons/user1.png');
-                            break;
-                        case 'Profile':
-                            iconSource = require('../assets/icons/user.png');
-                            break;
-                        default:
-                            iconSource = require('../assets/icons/home.png');
-                    }
-
-                    return (
-                        <Image
-                            source={iconSource}
-                            style={{
-                                width: size,
-                                height: size,
-                                tintColor: color,
-                                resizeMode: 'contain',
-                            }}
-                        />
-                    );
-                },
+                tabBarIcon: ({ color, size }) => (
+                    <Image
+                        source={tabIcons[route.name] || tabIcons.Home}
+                        style={{
+                            width: size,
+                            height: size,
+                            tintColor: color,
+                            resizeMode: 'contain',
+                        }}
+                    />
+                ),
                 tabBarLabel: ({ color }) => (
                     <Text style={{ color, fontSize: 12, fontWeight: '500', paddingBottom: 2 }}>
                         {t(route.name)}
@@ -78,14 +63,6 @@ const HomeTabs = () => {
                     paddingBottom: 5,
                     paddingTop: 5,
                     height: 65,
-                },
-                tabBarLabelStyle: {
-                    fontSize: 12,
-                    fontWeight: '500',
-                    paddingBottom: 2,
-                },
-                tabBarItemStyle: {
-                    paddingVertical: 2,
                 },
             })}
         >
@@ -114,26 +91,9 @@ const AppNavigator = () => {
                 <Stack.Screen name="HomeTabs" component={HomeTabs} />
                 <Stack.Screen name="Login" component={LoginScreen} />
                 <Stack.Screen name="SignUp" component={SignUpScreen} />
-                <Stack.Screen
-                    name="ScanningScreen"
-                    component={ScanningScreen}
-                    options={{
-                        cardStyleInterpolator: ({ current, layouts }) => {
-                            return {
-                                cardStyle: {
-                                    transform: [
-                                        {
-                                            translateX: current.progress.interpolate({
-                                                inputRange: [0, 1],
-                                                outputRange: [layouts.screen.width, 0],
-                                            }),
-                                        },
-                                    ],
-                                },
-                            };
-                        },
-                    }}
-                />
+                <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
+                <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+                <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
                 <Stack.Screen name="QuickScanDevices" component={QuickScanDevicesScreen} />
                 <Stack.Screen name="PairedDevices" component={PairedDevicesScreen} />
             </Stack.Navigator>

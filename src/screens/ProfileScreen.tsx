@@ -319,7 +319,7 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
 
                     {/* Personal Settings Section */}
                     <View style={styles.sectionGroup}>
-                        <TouchableOpacity style={[styles.section, styles.firstSection]}>
+                        <TouchableOpacity style={[styles.section, styles.firstSection]} onPress={() => navigation.navigate('PersonalInfo')}>
                             <Image source={require('../assets/images/user.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
                                 <Text style={styles.sectionTitle}>{t('Personal information')}</Text>
@@ -338,14 +338,14 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         </View>
                     </View>
 
-                    {/* Data & Backup Section */}
+                    {/* Data Section */}
                     <View style={styles.sectionGroup}>
-                        <TouchableOpacity style={[styles.section, styles.firstSection]}>
-                            <Image source={require('../assets/images/backup.png')} style={styles.icon} />
+                        <TouchableOpacity style={[styles.section, styles.firstSection]} onPress={() => navigation.navigate('ChangePassword')}>
+                            <Image source={require('../assets/images/password.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>{t('Backup & Restore')}</Text>
+                                <Text style={styles.sectionTitle}>{t('Change Password')}</Text>
                             </View>
-                            <Image source={require('../assets/images/refresh.png')} style={styles.refreshIcon} />
+                            {/* <Image source={require('../assets/images/refresh.png')} style={styles.refreshIcon} /> */}
                         </TouchableOpacity>
                         <View style={[styles.section, styles.lastSection]}>
                             <Image source={require('../assets/images/reminder.png')} style={styles.icon} />
