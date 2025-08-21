@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
     View,
     Text,
@@ -14,7 +14,7 @@ import {
 import RNBluetoothClassic, { BluetoothDevice as ClassicDevice } from 'react-native-bluetooth-classic';
 import { BleManager, Device as BleDevice } from 'react-native-ble-plx';
 import { PermissionsAndroid } from 'react-native';
-import { Buffer } from 'buffer'; // For base64 encoding
+import { Buffer } from 'buffer';
 
 interface UnifiedDevice {
     id: string;
@@ -32,6 +32,8 @@ const QuickScanDevicesScreen: React.FC = () => {
     const [scanning, setScanning] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
     const bleManager = new BleManager();
+    const keepAliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const connectionCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         initializeBluetooth();
@@ -42,11 +44,13 @@ const QuickScanDevicesScreen: React.FC = () => {
 
     const cleanup = async () => {
         if (selectedDevice) {
-            disconnectDevice();
+            await disconnectDevice();
         }
         bleManager.stopDeviceScan();
         RNBluetoothClassic.cancelDiscovery().catch(() => { });
         bleManager.destroy();
+        if (keepAliveIntervalRef.current) clearInterval(keepAliveIntervalRef.current);
+        if (connectionCheckIntervalRef.current) clearInterval(connectionCheckIntervalRef.current);
     };
 
     const requestPermissions = async () => {
@@ -83,7 +87,60 @@ const QuickScanDevicesScreen: React.FC = () => {
             await requestPermissions();
         } catch (err) {
             setError('Failed to initialize Bluetooth.');
-            console.error(err);
+            console.error('Bluetooth init error:', err);
+        }
+    };
+
+    const startKeepAlive = (device: UnifiedDevice) => {
+        if (device.type === 'classic') {
+            keepAliveIntervalRef.current = setInterval(async () => {
+                try {
+                    const classicDev = device.original as ClassicDevice;
+                    if (await classicDev.isConnected()) {
+                        await classicDev.write('\0');
+                        console.log('Keep-alive sent');
+                    } else {
+                        console.log('Keep-alive stopped: device disconnected');
+                        clearInterval(keepAliveIntervalRef.current!);
+                        handleUnexpectedDisconnect(device);
+                    }
+                } catch (err) {
+                    console.error('Keep-alive error:', err);
+                }
+            }, 5000); // Reduced to 5 seconds
+        }
+    };
+
+    const startConnectionCheck = (device: UnifiedDevice) => {
+        connectionCheckIntervalRef.current = setInterval(async () => {
+            try {
+                if (device.type === 'classic') {
+                    const classicDev = device.original as ClassicDevice;
+                    const connected = await classicDev.isConnected();
+                    if (!connected && isConnected) {
+                        console.log('Connection check: Classic device disconnected');
+                        clearInterval(connectionCheckIntervalRef.current!);
+                        handleUnexpectedDisconnect(device);
+                    }
+                }
+            } catch (err) {
+                console.error('Connection check error:', err);
+            }
+        }, 3000); // Check every 3 seconds
+    };
+
+    const handleUnexpectedDisconnect = async (device: UnifiedDevice) => {
+        setIsConnected(false);
+        setSelectedDevice(null);
+        setReceivedData('');
+        setError(`Unexpected disconnect from ${device.name || device.id}. Attempting to reconnect...`);
+        console.log('Attempting reconnection to:', device.name || device.id);
+        try {
+            await connectToDevice(device); // Attempt to reconnect
+            Alert.alert('Reconnected', `Reconnected to ${device.name || device.id}.`);
+        } catch (err) {
+            setError(`Failed to reconnect to ${device.name || device.id}.`);
+            Alert.alert('Reconnection Failed', `Could not reconnect to ${device.name || device.id}.`);
         }
     };
 
@@ -123,7 +180,6 @@ const QuickScanDevicesScreen: React.FC = () => {
                 }
             });
 
-            // Stop BLE scan after 10 seconds
             setTimeout(() => {
                 bleManager.stopDeviceScan();
                 setScanning(false);
@@ -148,22 +204,50 @@ const QuickScanDevicesScreen: React.FC = () => {
                 if (connection) {
                     await classicDev.disconnect();
                 }
-                await classicDev.connect();
+                await classicDev.connect({ timeout: 0 });
                 setSelectedDevice(device);
                 setIsConnected(true);
+                startKeepAlive(device);
+                startConnectionCheck(device);
 
                 const subscription = classicDev.onDataReceived((data) => {
                     setReceivedData(prev => prev + data.data);
+                    console.log('Data received:', data.data);
                 });
-                // Cleanup handled in disconnect
             } else if (device.type === 'ble') {
                 const bleDev = device.original as BleDevice;
-                await bleManager.connectToDevice(bleDev.id);
+                await bleManager.connectToDevice(bleDev.id, { autoConnect: true });
                 await bleDev.discoverAllServicesAndCharacteristics();
                 setSelectedDevice(device);
                 setIsConnected(true);
 
-                // For receive, need to monitor a characteristic - assuming we find one later
+                bleDev.onDisconnected((err, disconnectedDevice) => {
+                    if (isConnected) {
+                        console.log('BLE device disconnected:', err);
+                        handleUnexpectedDisconnect(device);
+                    }
+                });
+
+                const services = await bleDev.services();
+                for (const service of services) {
+                    const chars = await bleDev.characteristicsForService(service.uuid);
+                    for (const char of chars) {
+                        if (char.isNotifiable) {
+                            await bleDev.monitorCharacteristicForService(service.uuid, char.uuid, (error, characteristic) => {
+                                if (error) {
+                                    console.error('Monitor error:', error);
+                                    return;
+                                }
+                                if (characteristic?.value) {
+                                    const data = Buffer.from(characteristic.value, 'base64').toString();
+                                    setReceivedData(prev => prev + data);
+                                    console.log('BLE data received:', data);
+                                }
+                            });
+                            break;
+                        }
+                    }
+                }
             }
         } catch (err) {
             setError(`Failed to connect to ${device.name || device.id}.`);
@@ -220,6 +304,8 @@ const QuickScanDevicesScreen: React.FC = () => {
                 if (selectedDevice.type === 'classic') {
                     const classicDev = selectedDevice.original as ClassicDevice;
                     await classicDev.disconnect();
+                    if (keepAliveIntervalRef.current) clearInterval(keepAliveIntervalRef.current);
+                    if (connectionCheckIntervalRef.current) clearInterval(connectionCheckIntervalRef.current);
                 } else if (selectedDevice.type === 'ble') {
                     await bleManager.cancelDeviceConnection(selectedDevice.id);
                 }
