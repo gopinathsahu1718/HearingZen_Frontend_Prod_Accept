@@ -8,8 +8,8 @@ export type RootStackParamList = {
     PairedDevices: undefined;
     Home: undefined;
     Steps: undefined;
-    Dummy2: undefined;
-    Dummy3: undefined;
+    Weather: undefined;
+    LMS: undefined;
     Profile: undefined;
     PersonalInfo: undefined;
     ChangePassword: undefined;
@@ -17,4 +17,8 @@ export type RootStackParamList = {
     BMI: undefined;
     Nutrition: undefined;
     EditProfile: undefined;
+    Subjects: undefined;
+    SubjectDetailScreen: undefined;
+    TopicDetailScreen: undefined;
+    LessonsPage: undefined;
 };

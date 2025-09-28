@@ -24,7 +24,12 @@ import BMICards from '../screens/StepScreen/BMICards';
 import BMIResultScreen from "../screens/StepScreen/BMIResultScreen";
 import NutritionScreen from '../screens/StepScreen/Nutrition';
 
-import type { RootStackParamList } from '../types/types';  // Adjust path
+import SubjectDetailScreen from '../screens/LMS/SubjectDetailScreen';
+import Subjects from '../screens/LMS/subjects';
+import TopicDetailScreen from '../screens/LMS/TopicDetailScreen';
+import LessonsPage from '../screens/LMS/LessonsPage';
+
+import type { RootStackParamList } from '../types/types';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -32,8 +37,8 @@ const Tab = createBottomTabNavigator();
 const tabIcons: Record<string, any> = {
     Home: require('../assets/icons/home.png'),
     Steps: require('../assets/icons/steps.png'),
-    Dummy2: require('../assets/icons/user.png'),
-    Dummy3: require('../assets/icons/user1.png'),
+    Weather: require('../assets/icons/cloudy.png'),
+    LMS: require('../assets/icons/LMS.png'),
     Profile: require('../assets/icons/user.png'),
 };
 
@@ -75,8 +80,8 @@ const HomeTabs = () => {
         >
             <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Steps" component={StepsScreen} />
-            <Tab.Screen name="Dummy2" component={DummyScreen2} />
-            <Tab.Screen name="Dummy3" component={DummyScreen3} />
+            <Tab.Screen name="Weather" component={DummyScreen2} />
+            <Tab.Screen name="LMS" component={DummyScreen3} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
     );
@@ -107,6 +112,15 @@ const AppNavigator = () => {
                 <Stack.Screen name="BMIResult" component={BMIResultScreen} options={{ title: "BMI Result" }} />
                 <Stack.Screen name="BMI" component={BMICards} />
                 <Stack.Screen name="Nutrition" component={NutritionScreen} />
+
+
+                <Stack.Screen name="Subjects" component={Subjects} />
+                <Stack.Screen
+                    name="SubjectDetailScreen"
+                    component={SubjectDetailScreen}
+                />
+                <Stack.Screen name="TopicDetailScreen" component={TopicDetailScreen} />
+                <Stack.Screen name="LessonsPage" component={LessonsPage} />
             </Stack.Navigator>
         </NavigationContainer>
     );

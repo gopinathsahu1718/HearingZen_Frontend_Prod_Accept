@@ -17,50 +17,47 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 type RootStackParamList = {
     BMIResult: { bmi: string };
     Nutrition: undefined;
+    // add other screens if needed
 };
-
-type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function BMICards() {
-    const navigation = useNavigation<NavigationProp>();
+    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const [bmi, setBmi] = useState(null);
+    const [status, setStatus] = useState('');
+    const [modalVisible, setModalVisible] = useState(false);
+    const [weight, setWeight] = useState('');
+    const [height, setHeight] = useState('');
+    const [age, setAge] = useState('');
+    const [gender, setGender] = useState('male');
 
-    const [bmi, setBmi] = useState<string | null>(null);
-    const [status, setStatus] = useState<string>('');
-    const [modalVisible, setModalVisible] = useState<boolean>(false);
-    const [weight, setWeight] = useState<string>('');
-    const [height, setHeight] = useState<string>('');
-    const [age, setAge] = useState<string>('');
-    const [gender, setGender] = useState<'male' | 'female'>('male');
-
-    const [errors, setErrors] = useState<{
-        age: string;
-        weight: string;
-        height: string;
-    }>({
+    // Validation error states
+    const [errors, setErrors] = useState({
         age: '',
         weight: '',
         height: '',
     });
 
+    // Handle back button press
     useEffect(() => {
         const backAction = () => {
             if (modalVisible) {
                 closeModal();
-                return true;
+                return true; // Prevent default back action
             }
-            return false;
+            return false; // Allow default back action
         };
 
         const backHandler = BackHandler.addEventListener(
             'hardwareBackPress',
-            backAction
+            backAction,
         );
 
         return () => backHandler.remove();
     }, [modalVisible]);
 
+    // Clear all errors
     const clearErrors = () => {
         setErrors({
             age: '',
@@ -69,58 +66,87 @@ export default function BMICards() {
         });
     };
 
-    const validateAge = (ageValue: string): string => {
+    // Validate individual fields
+    const validateAge = ageValue => {
         const ageNum = parseFloat(ageValue);
-        if (!ageValue.trim()) return 'Age is required';
-        if (isNaN(ageNum)) return 'Please enter a valid age';
-        if (ageNum < 2) return 'Age must be at least 2 years';
-        if (ageNum > 120) return 'Age must be less than 120 years';
+        if (!ageValue.trim()) {
+            return 'Age is required';
+        }
+        if (isNaN(ageNum)) {
+            return 'Please enter a valid age';
+        }
+        if (ageNum < 2) {
+            return 'Age must be at least 2 years';
+        }
+        if (ageNum > 120) {
+            return 'Age must be less than 120 years';
+        }
         return '';
     };
 
-    const validateWeight = (weightValue: string): string => {
+    const validateWeight = weightValue => {
         const weightNum = parseFloat(weightValue);
-        if (!weightValue.trim()) return 'Weight is required';
-        if (isNaN(weightNum)) return 'Please enter a valid weight';
-        if (weightNum < 10) return 'Weight must be at least 10 kg';
-        if (weightNum > 500) return 'Weight must be less than 500 kg';
+        if (!weightValue.trim()) {
+            return 'Weight is required';
+        }
+        if (isNaN(weightNum)) {
+            return 'Please enter a valid weight';
+        }
+        if (weightNum < 10) {
+            return 'Weight must be at least 10 kg';
+        }
+        if (weightNum > 500) {
+            return 'Weight must be less than 500 kg';
+        }
         return '';
     };
 
-    const validateHeight = (heightValue: string): string => {
+    const validateHeight = heightValue => {
         const heightNum = parseFloat(heightValue);
-        if (!heightValue.trim()) return 'Height is required';
-        if (isNaN(heightNum)) return 'Please enter a valid height';
-        if (heightNum < 50) return 'Height must be at least 50 cm';
-        if (heightNum > 250) return 'Height must be less than 250 cm';
+        if (!heightValue.trim()) {
+            return 'Height is required';
+        }
+        if (isNaN(heightNum)) {
+            return 'Please enter a valid height';
+        }
+        if (heightNum < 50) {
+            return 'Height must be at least 50 cm';
+        }
+        if (heightNum > 250) {
+            return 'Height must be less than 250 cm';
+        }
         return '';
     };
 
-    const handleAgeChange = (value: string) => {
+    // Handle input changes with real-time validation
+    const handleAgeChange = value => {
         setAge(value);
         const error = validateAge(value);
         setErrors(prev => ({ ...prev, age: error }));
     };
 
-    const handleWeightChange = (value: string) => {
+    const handleWeightChange = value => {
         setWeight(value);
         const error = validateWeight(value);
         setErrors(prev => ({ ...prev, weight: error }));
     };
 
-    const handleHeightChange = (value: string) => {
+    const handleHeightChange = value => {
         setHeight(value);
         const error = validateHeight(value);
         setErrors(prev => ({ ...prev, height: error }));
     };
 
     const calculateBMI = () => {
+        // Clear previous errors
         clearErrors();
 
+        // Validate all fields
         const ageError = validateAge(age);
         const weightError = validateWeight(weight);
         const heightError = validateHeight(height);
 
+        // Update errors state
         const newErrors = {
             age: ageError,
             weight: weightError,
@@ -128,21 +154,27 @@ export default function BMICards() {
         };
         setErrors(newErrors);
 
-        if (ageError || weightError || heightError) {
+        // Check if there are any errors
+        const hasErrors = ageError || weightError || heightError;
+
+        if (hasErrors) {
+            // Show alert with first error found
             const firstError = ageError || weightError || heightError;
             Alert.alert('Validation Error', firstError, [{ text: 'OK' }]);
             return;
         }
 
+        // Additional BMI calculation validation
         const heightInMeters = parseFloat(height) / 100;
         const weightNum = parseFloat(weight);
         const bmiValue = weightNum / (heightInMeters * heightInMeters);
 
+        // Check for unrealistic BMI values
         if (bmiValue < 10 || bmiValue > 100) {
             Alert.alert(
                 'Unrealistic BMI',
                 'The calculated BMI seems unrealistic. Please check your height and weight values.',
-                [{ text: 'OK' }]
+                [{ text: 'OK' }],
             );
             return;
         }
@@ -150,15 +182,23 @@ export default function BMICards() {
         const rounded = bmiValue.toFixed(2);
         setBmi(rounded);
 
+        // Determine BMI status
         let statusText = '';
-        if (bmiValue < 18.5) statusText = 'Underweight';
-        else if (bmiValue < 24.9) statusText = 'Normal';
-        else if (bmiValue < 29.9) statusText = 'Overweight';
-        else statusText = 'Obese';
-
+        if (bmiValue < 18.5) {
+            statusText = 'Underweight';
+        } else if (bmiValue >= 18.5 && bmiValue < 24.9) {
+            statusText = 'Normal';
+        } else if (bmiValue >= 25 && bmiValue < 29.9) {
+            statusText = 'Overweight';
+        } else {
+            statusText = 'Obese';
+        }
         setStatus(statusText);
+
         setModalVisible(false);
         navigation.navigate('BMIResult', { bmi: rounded });
+
+        // Clear form after successful calculation
         clearForm();
     };
 
@@ -177,49 +217,45 @@ export default function BMICards() {
 
     return (
         <View style={styles.container}>
-            {/* BMI Card */}
-            <TouchableOpacity style={styles.card} onPress={() => setModalVisible(true)}>
+            {/* BMI Report Card */}
+            <TouchableOpacity
+                style={styles.card}
+                onPress={() => setModalVisible(true)}
+            >
                 <View style={styles.cardContent}>
                     <Image
-                        source={require('../../assets/stepIcons/man.png')}
+                        source={require('../../assets/icons/man.png')}
                         style={styles.icon}
                     />
                     <View>
                         <Text style={styles.title}>BMI</Text>
-                        {bmi && (
-                            <Text
-                                style={[
-                                    styles.bmiValue,
-                                    status === 'Normal' && styles.greenText,
-                                ]}
-                            >
-                                {bmi} ({status})
-                            </Text>
-                        )}
                     </View>
                 </View>
                 <Image
-                    source={require('../../assets/stepIcons/arrow-right.png')}
+                    source={require('../../assets/icons/arrow-right.png')}
                     style={styles.arrow}
                 />
             </TouchableOpacity>
 
-            {/* Nutrition Card */}
-            <TouchableOpacity onPress={() => navigation.navigate('Nutrition')} style={styles.card}>
+            {/* Balanced Nutrition Card */}
+            <TouchableOpacity
+                onPress={() => navigation.navigate('Nutrition')}
+                style={styles.card}
+            >
                 <View style={styles.cardContent}>
                     <Image
-                        source={require('../../assets/stepIcons/diet.png')}
+                        source={require('../../assets/icons/diet.png')}
                         style={styles.icon}
                     />
                     <Text style={styles.title}>Nutrition</Text>
                 </View>
                 <Image
-                    source={require('../../assets/stepIcons/arrow-right.png')}
+                    source={require('../../assets/icons/arrow-right.png')}
                     style={styles.arrow}
                 />
             </TouchableOpacity>
 
-            {/* Modal for BMI input */}
+            {/* BMI Modal with Validation */}
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
                     <View style={styles.metricBox}>
@@ -230,7 +266,7 @@ export default function BMICards() {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Age Input */}
+                        {/* Age */}
                         <View style={styles.fieldRow}>
                             <Text style={styles.label}>Age *</Text>
                             <TextInput
@@ -244,9 +280,11 @@ export default function BMICards() {
                             />
                             <Text style={styles.unitText}>years</Text>
                         </View>
-                        {errors.age ? <Text style={styles.errorText}>{errors.age}</Text> : null}
+                        {errors.age ? (
+                            <Text style={styles.errorText}>{errors.age}</Text>
+                        ) : null}
 
-                        {/* Gender Selector */}
+                        {/* Gender */}
                         <View style={styles.fieldRow}>
                             <Text style={styles.label}>Gender</Text>
                             <View style={styles.radioRow}>
@@ -285,42 +323,48 @@ export default function BMICards() {
                             </View>
                         </View>
 
-                        {/* Height Input */}
+                        {/* Height */}
                         <View style={styles.fieldRow}>
                             <Text style={styles.label}>Height *</Text>
                             <TextInput
                                 style={[styles.fieldInput, errors.height && styles.fieldError]}
-                                placeholder="180"
+                                placeholder="180.5"
                                 placeholderTextColor="#888"
-                                keyboardType="numeric"
+                                keyboardType="decimal-pad"
                                 value={height}
                                 onChangeText={handleHeightChange}
-                                maxLength={3}
+                                maxLength={6}
                             />
                             <Text style={styles.unitText}>cm</Text>
                         </View>
-                        {errors.height ? <Text style={styles.errorText}>{errors.height}</Text> : null}
+                        {errors.height ? (
+                            <Text style={styles.errorText}>{errors.height}</Text>
+                        ) : null}
 
-                        {/* Weight Input */}
+                        {/* Weight */}
                         <View style={styles.fieldRow}>
                             <Text style={styles.label}>Weight *</Text>
                             <TextInput
                                 style={[styles.fieldInput, errors.weight && styles.fieldError]}
-                                placeholder="65"
+                                placeholder="65.2"
                                 placeholderTextColor="#888"
-                                keyboardType="numeric"
+                                keyboardType="decimal-pad"
                                 value={weight}
                                 onChangeText={handleWeightChange}
-                                maxLength={3}
+                                maxLength={6}
                             />
                             <Text style={styles.unitText}>kg</Text>
                         </View>
-                        {errors.weight ? <Text style={styles.errorText}>{errors.weight}</Text> : null}
+                        {errors.weight ? (
+                            <Text style={styles.errorText}>{errors.weight}</Text>
+                        ) : null}
 
+                        {/* Helper Text */}
                         <Text style={styles.helperText}>
                             * Required fields. BMI = Weight (kg) / Height² (m)
                         </Text>
 
+                        {/* Buttons */}
                         <View style={styles.btnRow}>
                             <TouchableOpacity style={styles.calcBtn} onPress={calculateBMI}>
                                 <Text style={styles.btnText}>Calculate BMI</Text>
@@ -343,7 +387,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 15,
         marginTop: 20,
-        flexWrap: 'nowrap',
+        flexWrap: 'nowrap', // ensure buttons stay side by side
         width: '100%',
         maxWidth: screenWidth,
     },
@@ -421,7 +465,7 @@ const styles = StyleSheet.create({
         width: 30,
         height: 30,
         borderRadius: 15,
-        backgroundColor: '#d30f0f',
+        backgroundColor: '#d30f0fff',
         justifyContent: 'center',
         alignItems: 'center',
     },
