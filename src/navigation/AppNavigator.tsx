@@ -2,8 +2,9 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Image, Text } from 'react-native';
+import { Image, Text, ActivityIndicator, View } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
 import SplashScreen from '../screens/SplashScreen';
@@ -14,6 +15,10 @@ import DummyScreen3 from '../screens/DummyScreen3';
 import ProfileScreen from '../screens/ProfileScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
+import OTPScreen from '../screens/OTPScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import ResetPasswordOTPScreen from '../screens/ResetPasswordOTPScreen';
+import NewPasswordScreen from '../screens/NewPasswordScreen';
 import PairedDevicesScreen from '../screens/PairedDevicesScreen';
 import QuickScanDevicesScreen from '../screens/QuickScanDevicesScreen';
 import PersonalInfoScreen from '../screens/PersonalInfoScreen';
@@ -89,6 +94,15 @@ const HomeTabs = () => {
 
 const AppNavigator = () => {
     const { theme } = useTheme();
+    const { isLoading } = useAuth();
+
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }}>
+                <ActivityIndicator size="large" color={theme.primary} />
+            </View>
+        );
+    }
 
     return (
         <NavigationContainer>
@@ -100,9 +114,29 @@ const AppNavigator = () => {
                 }}
             >
                 <Stack.Screen name="Splash" component={SplashScreen} />
-                <Stack.Screen name="HomeTabs" component={HomeTabs} />
+                <Stack.Screen
+                    name="HomeTabs"
+                    component={HomeTabs}
+                    options={{ gestureEnabled: false }}
+                />
                 <Stack.Screen name="Login" component={LoginScreen} />
                 <Stack.Screen name="SignUp" component={SignUpScreen} />
+                <Stack.Screen
+                    name="OTPScreen"
+                    component={OTPScreen}
+                    options={{ gestureEnabled: false }}
+                />
+                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+                <Stack.Screen
+                    name="ResetPasswordOTP"
+                    component={ResetPasswordOTPScreen}
+                    options={{ gestureEnabled: false }}
+                />
+                <Stack.Screen
+                    name="NewPassword"
+                    component={NewPasswordScreen}
+                    options={{ gestureEnabled: false }}
+                />
                 <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
                 <Stack.Screen name="EditProfile" component={EditProfileScreen} />
                 <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
@@ -112,7 +146,6 @@ const AppNavigator = () => {
                 <Stack.Screen name="BMIResult" component={BMIResultScreen} options={{ title: "BMI Result" }} />
                 <Stack.Screen name="BMI" component={BMICards} />
                 <Stack.Screen name="Nutrition" component={NutritionScreen} />
-
 
                 <Stack.Screen name="Subjects" component={Subjects} />
                 <Stack.Screen

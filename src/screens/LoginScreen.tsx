@@ -1,15 +1,31 @@
-// screens/LoginScreen.tsx (Updated with Theme-Based Image)
-import React from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    Image,
+    SafeAreaView,
+    Alert,
+    ActivityIndicator
+} from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { CommonActions } from '@react-navigation/native';
 import { RootStackParamList } from '../types/types';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
 const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) => {
     const { theme, isDarkMode } = useTheme();
+    const { login } = useAuth();
+
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const styles = useThemedStyles((theme) => StyleSheet.create({
         container: {
@@ -79,12 +95,45 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         buttonText: {
             color: '#fff',
             fontSize: 16,
+            fontWeight: '600',
         },
         link: {
             color: isDarkMode ? theme.primary : '#007BFF',
             marginTop: 10,
+            fontSize: 14,
+        },
+        forgotPassword: {
+            alignSelf: 'flex-end',
+            marginBottom: 10,
+        },
+        forgotPasswordText: {
+            color: isDarkMode ? theme.primary : '#007BFF',
+            fontSize: 14,
         },
     }));
+
+    const handleLogin = async () => {
+        if (!email || !password) {
+            Alert.alert('Error', 'Email and password are required');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await login(email.toLowerCase(), password);
+            // Reset navigation stack to prevent going back to login
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'HomeTabs' }],
+                })
+            );
+        } catch (error: any) {
+            Alert.alert('Login Failed', error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -93,7 +142,6 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                     <Text style={styles.headerText}>Login</Text>
                 </View>
 
-                {/* Theme-based image */}
                 <Image
                     source={
                         isDarkMode
@@ -107,7 +155,10 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                     style={styles.input}
                     placeholder="Email"
                     placeholderTextColor={theme.textSecondary}
-                    defaultValue="hello@reallygreatsite.com"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
                 />
 
                 <View style={styles.passwordContainer}>
@@ -116,7 +167,8 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                         placeholder="Password"
                         placeholderTextColor={theme.textSecondary}
                         secureTextEntry={true}
-                        defaultValue="******"
+                        value={password}
+                        onChangeText={setPassword}
                     />
                     <Image
                         source={require('../assets/images/lock.png')}
@@ -124,12 +176,27 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                     />
                 </View>
 
-                <TouchableOpacity style={styles.button}>
-                    <Text style={styles.buttonText}>Login</Text>
+                <TouchableOpacity
+                    style={styles.forgotPassword}
+                    onPress={() => navigation.navigate('ForgotPassword')}
+                >
+                    <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={handleLogin}
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text style={styles.buttonText}>Login</Text>
+                    )}
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                    <Text style={styles.link}>Not have account? Signup here</Text>
+                    <Text style={styles.link}>Don't have an account? Sign up here</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

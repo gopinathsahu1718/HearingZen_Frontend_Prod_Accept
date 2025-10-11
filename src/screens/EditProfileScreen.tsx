@@ -8,74 +8,102 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation();
+  const { getUserProfile, updateProfile } = useAuth();
 
-  //  contact details
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [location, setLocation] = useState('');
+  // Contact details
   const [username, setUsername] = useState('');
+  const [contact, setContact] = useState('');
+  const [email, setEmail] = useState('');
+  const [currentLocation, setCurrentLocation] = useState('');
 
   // Health card
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [gender, setGender] = useState('');
-  const [bloodGroup, setBloodGroup] = useState('');
+  const [age, setAge] = useState('');
+  const [deafnessLevel, setDeafnessLevel] = useState('');
+  const [disabilityPercentage, setDisabilityPercentage] = useState('');
 
   const [selectedTab, setSelectedTab] = useState<'info' | 'health'>('info');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  // 🔹 Load data when screen opens
+  // Load profile data when screen opens
   useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const storedProfile = await AsyncStorage.getItem('userProfile');
-        if (storedProfile) {
-          const data = JSON.parse(storedProfile);
-          setFullName(data.fullName || '');
-          setPhone(data.phone || '');
-          setEmail(data.email || '');
-          setLocation(data.location || '');
-          setUsername(data.username || '');
-          setHeight(data.height || '');
-          setWeight(data.weight || '');
-          setGender(data.gender || '');
-          setBloodGroup(data.bloodGroup || '');
-        }
-      } catch (error) {
-        console.log('Error loading profile:', error);
-      }
-    };
     loadProfile();
   }, []);
 
-  // 🔹 Save data permanently
-  const handleSave = async () => {
-    const profileData = {
-      fullName,
-      phone,
-      email,
-      location,
-      username,
-      height,
-      weight,
-      gender,
-      bloodGroup,
-    };
-
+  const loadProfile = async () => {
     try {
-      await AsyncStorage.setItem('userProfile', JSON.stringify(profileData));
-      Alert.alert('✅ Success', 'Profile updated successfully!');
-      navigation.goBack();
-    } catch (error) {
-      console.log('Error saving profile:', error);
+      setLoading(true);
+      const data = await getUserProfile();
+
+      // Set contact details
+      setUsername(data.username || '');
+      setContact(data.contact || '');
+      setEmail(data.email || '');
+      setCurrentLocation(data.currentLocation || '');
+
+      // Set health data
+      setHeight(data.height?.toString() || '');
+      setWeight(data.weight?.toString() || '');
+      setGender(data.gender || '');
+      setAge(data.age?.toString() || '');
+      setDeafnessLevel(data.deafnessLevel || '');
+      setDisabilityPercentage(data.disabilityPercentage?.toString() || '');
+    } catch (error: any) {
+      console.error('Error loading profile:', error);
+      Alert.alert('Error', 'Failed to load profile data');
+    } finally {
+      setLoading(false);
     }
   };
+
+  // Save data to backend
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+
+      const profileData: any = {
+        username,
+        contact,
+        currentLocation,
+      };
+
+      // Only include health fields if they have values
+      if (height) profileData.height = parseFloat(height);
+      if (weight) profileData.weight = parseFloat(weight);
+      if (gender) profileData.gender = gender;
+      if (age) profileData.age = parseInt(age);
+      if (deafnessLevel) profileData.deafnessLevel = deafnessLevel;
+      if (disabilityPercentage) profileData.disabilityPercentage = parseFloat(disabilityPercentage);
+
+      await updateProfile(profileData);
+
+      Alert.alert('✅ Success', 'Profile updated successfully!');
+      navigation.goBack();
+    } catch (error: any) {
+      console.error('Error saving profile:', error);
+      Alert.alert('Error', error.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#000" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -95,8 +123,8 @@ export default function EditProfileScreen() {
             <Image source={require('../assets/icons/camera.png')} style={styles.cameraIcon} />
           </TouchableOpacity>
         </View>
-        <Text style={styles.profileName}>{fullName || 'Your Name'}</Text>
-        <Text style={styles.profileSubText}>{username || '@username'}</Text>
+        <Text style={styles.profileName}>{username || 'Your Name'}</Text>
+        <Text style={styles.profileSubText}>@{username?.toLowerCase().replace(/\s+/g, '') || 'username'}</Text>
       </View>
 
       {/* Tabs */}
@@ -124,49 +152,109 @@ export default function EditProfileScreen() {
       <View style={styles.card}>
         {selectedTab === 'info' ? (
           <>
-            <InputField label="Full Name" value={fullName} onChangeText={setFullName} />
-            <InputField label="Phone" value={phone} onChangeText={setPhone} />
-            <InputField label="Email" value={email} onChangeText={setEmail} />
-            <InputField label="Location" value={location} onChangeText={setLocation} />
-            <InputField label="Username" value={username} onChangeText={setUsername} />
+            <InputField label="Full Name" value={username} onChangeText={setUsername} />
+            <InputField label="Phone" value={contact} onChangeText={setContact} keyboardType="phone-pad" />
+            <InputField label="Email" value={email} onChangeText={setEmail} editable={false} />
+            <InputField label="Location" value={currentLocation} onChangeText={setCurrentLocation} />
           </>
         ) : (
           <>
-            <InputField label="Height" value={height} onChangeText={setHeight} />
-            <InputField label="Weight" value={weight} onChangeText={setWeight} />
-            <InputField label="Gender" value={gender} onChangeText={setGender} />
-            <InputField label="Blood Group" value={bloodGroup} onChangeText={setBloodGroup} />
+            <InputField
+              label="Height (in cm or feet)"
+              value={height}
+              onChangeText={setHeight}
+              keyboardType="numeric"
+              placeholder="e.g., 170 or 5.7"
+            />
+            <InputField
+              label="Weight (kg)"
+              value={weight}
+              onChangeText={setWeight}
+              keyboardType="numeric"
+              placeholder="e.g., 70"
+            />
+            <InputField
+              label="Gender"
+              value={gender}
+              onChangeText={setGender}
+              placeholder="e.g., Male, Female, Other"
+            />
+            <InputField
+              label="Age"
+              value={age}
+              onChangeText={setAge}
+              keyboardType="numeric"
+              placeholder="e.g., 25"
+            />
+            <InputField
+              label="Deafness Level"
+              value={deafnessLevel}
+              onChangeText={setDeafnessLevel}
+              placeholder="e.g., none, mild, moderate, severe"
+            />
+            <InputField
+              label="Disability Percentage"
+              value={disabilityPercentage}
+              onChangeText={setDisabilityPercentage}
+              keyboardType="numeric"
+              placeholder="e.g., 0-100"
+            />
           </>
         )}
       </View>
 
       {/* Save Button */}
       <View style={styles.saveContainer}>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save Changes</Text>
+        <TouchableOpacity
+          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Changes</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
 
-type InputProps = { label: string; value: string; onChangeText: (text: string) => void };
+type InputProps = {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  editable?: boolean;
+  keyboardType?: 'default' | 'numeric' | 'phone-pad' | 'email-address';
+  placeholder?: string;
+};
 
-const InputField: React.FC<InputProps> = ({ label, value, onChangeText }) => (
+const InputField: React.FC<InputProps> = ({
+  label,
+  value,
+  onChangeText,
+  editable = true,
+  keyboardType = 'default',
+  placeholder
+}) => (
   <View style={styles.inputField}>
     <Text style={styles.label}>{label}</Text>
     <TextInput
-      style={styles.input}
+      style={[styles.input, !editable && styles.inputDisabled]}
       value={value}
       onChangeText={onChangeText}
-      placeholder={label}
+      placeholder={placeholder || label}
       placeholderTextColor="#aaa"
+      editable={editable}
+      keyboardType={keyboardType}
     />
   </View>
 );
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+  centerContent: { justifyContent: 'center', alignItems: 'center' },
 
   header: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   backButton: { padding: 5, marginRight: 10 },
@@ -231,6 +319,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     color: '#000',
   },
+  inputDisabled: {
+    backgroundColor: '#e9e9e9',
+    color: '#666',
+  },
 
   saveContainer: { alignItems: 'center', marginTop: 20, marginBottom: 30 },
   saveButton: {
@@ -238,6 +330,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingVertical: 12,
     borderRadius: 8,
+    minWidth: 150,
+    alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
   saveButtonText: { color: '#fff', fontWeight: '600', fontSize: 15 },
 });

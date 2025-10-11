@@ -3,6 +3,10 @@ export type RootStackParamList = {
     HomeTabs: undefined;
     Login: undefined;
     SignUp: undefined;
+    OTPScreen: { tempToken: string; email: string; fromSignup?: boolean };
+    ForgotPassword: undefined;
+    ResetPasswordOTP: { resetInitToken: string; email: string };
+    NewPassword: { resetToken: string };
     ScanningScreen: undefined;
     QuickScanDevices: undefined;
     PairedDevices: undefined;

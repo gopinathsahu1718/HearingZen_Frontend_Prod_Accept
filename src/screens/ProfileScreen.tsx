@@ -1,9 +1,10 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, Switch, ScrollView, Modal, FlatList } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, Switch, ScrollView, Modal, FlatList, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types/types';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +14,7 @@ type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Prof
 const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp }) => {
     const { theme, isDarkMode, setDarkMode } = useTheme();
     const { language, setLanguage } = useLanguage();
+    const { isAuthenticated, user, logout } = useAuth();
     const { t } = useTranslation();
     const [selectedStepGoal, setSelectedStepGoal] = React.useState(6000);
     const [reminderTime, setReminderTime] = React.useState(new Date());
@@ -96,11 +98,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
             height: 24,
             marginRight: 16,
             tintColor: theme.iconTint,
-        },
-        refreshIcon: {
-            width: 20,
-            height: 20,
-            tintColor: theme.refreshIconTint,
         },
         sectionContent: {
             flex: 1,
@@ -192,6 +189,27 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
             color: theme.textSecondary,
             fontWeight: '400',
         },
+        userInfoSection: {
+            backgroundColor: theme.cardBackground,
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            shadowColor: theme.shadowColor,
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 2,
+        },
+        userName: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: theme.text,
+            marginBottom: 4,
+        },
+        userEmail: {
+            fontSize: 14,
+            color: theme.textSecondary,
+        },
     }));
 
     const formatTime = (date: Date) => {
@@ -217,6 +235,24 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
             setReminderTime(selectedTime);
         }
         setShowTimePicker(false);
+    };
+
+    const handleLogout = () => {
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to logout?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await logout();
+                        Alert.alert('Success', 'Logged out successfully');
+                    },
+                },
+            ]
+        );
     };
 
     const StepGoalModal = () => (
@@ -292,6 +328,14 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
             <Text style={styles.headerText}>{t('PROFILE')}</Text>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <View style={styles.content}>
+                    {/* User Info Section - Only show when authenticated */}
+                    {isAuthenticated && user && (
+                        <View style={styles.userInfoSection}>
+                            <Text style={styles.userName}>{user.username}</Text>
+                            <Text style={styles.userEmail}>{user.email}</Text>
+                        </View>
+                    )}
+
                     {/* Account Section */}
                     <View style={styles.sectionGroup}>
                         <View style={[styles.section, styles.firstSection]}>
@@ -303,23 +347,45 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                                 <Text style={styles.achievementText}>1K</Text>
                             </View>
                         </View>
-                        <TouchableOpacity style={styles.section} onPress={() => navigation.navigate('Login')}>
-                            <Image source={require('../assets/images/user.png')} style={styles.icon} />
-                            <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>{t('Login')}</Text>
-                            </View>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.section, styles.lastSection]} onPress={() => navigation.navigate('SignUp')}>
-                            <Image source={require('../assets/images/user.png')} style={styles.icon} />
-                            <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>{t('Signup')}</Text>
-                            </View>
-                        </TouchableOpacity>
+
+                        {/* Conditional rendering based on authentication */}
+                        {!isAuthenticated ? (
+                            <>
+                                <TouchableOpacity style={styles.section} onPress={() => navigation.navigate('Login')}>
+                                    <Image source={require('../assets/images/user.png')} style={styles.icon} />
+                                    <View style={styles.sectionContent}>
+                                        <Text style={styles.sectionTitle}>{t('Login')}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.section, styles.lastSection]} onPress={() => navigation.navigate('SignUp')}>
+                                    <Image source={require('../assets/images/user.png')} style={styles.icon} />
+                                    <View style={styles.sectionContent}>
+                                        <Text style={styles.sectionTitle}>{t('Signup')}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <TouchableOpacity style={[styles.section, styles.lastSection]} onPress={handleLogout}>
+                                <Image source={require('../assets/images/user.png')} style={styles.icon} />
+                                <View style={styles.sectionContent}>
+                                    <Text style={styles.sectionTitle}>{t('Logout')}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     {/* Personal Settings Section */}
                     <View style={styles.sectionGroup}>
-                        <TouchableOpacity style={[styles.section, styles.firstSection]} onPress={() => navigation.navigate('PersonalInfo')}>
+                        <TouchableOpacity
+                            style={[styles.section, styles.firstSection]}
+                            onPress={() => {
+                                if (isAuthenticated) {
+                                    navigation.navigate('PersonalInfo');
+                                } else {
+                                    Alert.alert('Authentication Required', 'Please login to access this feature');
+                                }
+                            }}
+                        >
                             <Image source={require('../assets/images/user.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
                                 <Text style={styles.sectionTitle}>{t('Personal information')}</Text>
@@ -338,16 +404,20 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         </View>
                     </View>
 
-                    {/* Data Section */}
+                    {/* Data Section - Conditional Change Password */}
                     <View style={styles.sectionGroup}>
-                        <TouchableOpacity style={[styles.section, styles.firstSection]} onPress={() => navigation.navigate('ChangePassword')}>
-                            <Image source={require('../assets/images/password.png')} style={styles.icon} />
-                            <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>{t('Change Password')}</Text>
-                            </View>
-                            {/* <Image source={require('../assets/images/refresh.png')} style={styles.refreshIcon} /> */}
-                        </TouchableOpacity>
-                        <View style={[styles.section, styles.lastSection]}>
+                        {isAuthenticated && (
+                            <TouchableOpacity
+                                style={[styles.section, styles.firstSection]}
+                                onPress={() => navigation.navigate('ChangePassword')}
+                            >
+                                <Image source={require('../assets/images/password.png')} style={styles.icon} />
+                                <View style={styles.sectionContent}>
+                                    <Text style={styles.sectionTitle}>{t('Change Password')}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        )}
+                        <View style={[styles.section, isAuthenticated ? {} : styles.firstSection, styles.lastSection]}>
                             <Image source={require('../assets/images/reminder.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
                                 <Text style={styles.sectionTitle}>{t('Reminder')}</Text>
@@ -416,15 +486,17 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         </TouchableOpacity>
                     </View>
 
-                    {/* Danger Zone */}
-                    <View style={styles.sectionGroup}>
-                        <TouchableOpacity style={[styles.section, styles.firstSection, styles.lastSection]}>
-                            <Image source={require('../assets/images/delete.png')} style={styles.icon} />
-                            <View style={styles.sectionContent}>
-                                <Text style={[styles.sectionTitle, styles.deleteText]}>{t('Delete all data')}</Text>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
+                    {/* Danger Zone - Only show when authenticated */}
+                    {isAuthenticated && (
+                        <View style={styles.sectionGroup}>
+                            <TouchableOpacity style={[styles.section, styles.firstSection, styles.lastSection]}>
+                                <Image source={require('../assets/images/delete.png')} style={styles.icon} />
+                                <View style={styles.sectionContent}>
+                                    <Text style={[styles.sectionTitle, styles.deleteText]}>{t('Delete all data')}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
                     {/* Version Information */}
                     <View style={styles.versionContainer}>
