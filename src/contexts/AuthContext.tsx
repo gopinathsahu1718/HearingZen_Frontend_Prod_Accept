@@ -1,5 +1,13 @@
+// Updated Frontend: AuthContext.tsx - Provider feature removed
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+    GoogleSignin,
+    isSuccessResponse,
+    isErrorWithCode,
+    statusCodes,
+} from '@react-native-google-signin/google-signin';
 
 const API_BASE_URL = 'http://13.200.222.176/api/user';
 
@@ -9,6 +17,7 @@ interface User {
     email: string;
     contact?: string;
     role: string;
+    googleId?: string;
 }
 
 interface AuthContextType {
@@ -17,6 +26,9 @@ interface AuthContextType {
     isLoading: boolean;
     isAuthenticated: boolean;
     login: (email: string, password: string) => Promise<void>;
+    googleSignIn: () => Promise<void>;
+    linkGoogle: () => Promise<void>;
+    unlinkGoogle: () => Promise<void>;
     register: (username: string, contact: string, email: string, password: string) => Promise<string>;
     verifyEmail: (tempToken: string, code: string) => Promise<void>;
     resendOTP: (tempToken: string) => Promise<string>;
@@ -44,14 +56,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loadStoredAuth();
     }, []);
 
+    useEffect(() => {
+        GoogleSignin.configure({
+            webClientId: "1000081878315-tlp813267usjpdq7bi0qvs31kslfivo7.apps.googleusercontent.com",
+            iosClientId: "1000081878315-g6pkql3f870j3531mnhnc82v221nh8h9.apps.googleusercontent.com",
+        });
+    }, []);
+
     const loadStoredAuth = async () => {
         try {
             const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
             const storedUser = await AsyncStorage.getItem(USER_KEY);
 
             if (storedToken && storedUser) {
+                const parsedUser = JSON.parse(storedUser);
                 setToken(storedToken);
-                setUser(JSON.parse(storedUser));
+                setUser(parsedUser);
+                // Refresh profile with stored token to ensure up-to-date data
+                getUserProfileInternal(storedToken).catch(console.error);
             }
         } catch (error) {
             console.error('Error loading auth data:', error);
@@ -79,6 +101,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUser(null);
         } catch (error) {
             console.error('Error clearing auth data:', error);
+        }
+    };
+
+    // Internal function for getUserProfile that accepts override token
+    const getUserProfileInternal = async (overrideToken?: string): Promise<any> => {
+        const authToken = overrideToken || token;
+        if (!authToken) throw new Error('Not authenticated');
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/profile`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                },
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to fetch profile');
+            }
+
+            setUser(data.data);
+            await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.data));
+            return data.data;
+        } catch (error: any) {
+            throw new Error(error.message || 'Network error');
         }
     };
 
@@ -174,7 +223,141 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw new Error(data.message || 'Login failed');
             }
 
-            await saveAuth(data.token, data.user);
+            const newToken = data.token;
+            const newUser = data.user;
+            await saveAuth(newToken, newUser);
+            await getUserProfileInternal(newToken); // Use override to avoid state lag
+        } catch (error: any) {
+            throw new Error(error.message || 'Network error');
+        }
+    };
+
+    const googleSignIn = async (): Promise<void> => {
+        try {
+            await GoogleSignin.hasPlayServices();
+            // Fixed: Sign out first to force account selection dialog every time
+            await GoogleSignin.signOut();
+            const response = await GoogleSignin.signIn();
+            if (isSuccessResponse(response)) {
+                const { idToken } = response.data;
+                const backendResponse = await fetch(`${API_BASE_URL}/auth/google`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idToken }),
+                });
+
+                const data = await backendResponse.json();
+
+                if (!backendResponse.ok) {
+                    // Sign out on backend failure to ensure clean state
+                    await GoogleSignin.signOut();
+                    throw new Error(data.message || 'Google auth failed');
+                }
+
+                const newToken = data.token;
+                const newUser = data.user;
+                await saveAuth(newToken, newUser);
+                await getUserProfileInternal(newToken);
+            }
+        } catch (error: any) {
+            // Ensure signed out on any error
+            try {
+                await GoogleSignin.signOut();
+            } catch (e) {
+                console.log('Google sign out on error ignored:', e);
+            }
+
+            if (isErrorWithCode(error)) {
+                switch (error.code) {
+                    case statusCodes.IN_PROGRESS:
+                        throw new Error('Sign in is in progress');
+                    case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+                        throw new Error('Play services not available');
+                    default:
+                        throw new Error('Google sign in failed');
+                }
+            } else {
+                throw new Error(error.message || 'Google sign in failed');
+            }
+        }
+    };
+
+    const linkGoogle = async (): Promise<void> => {
+        if (!token) throw new Error('Not authenticated');
+
+        try {
+            await GoogleSignin.hasPlayServices();
+            // Fixed: Sign out first to force account selection for linking
+            await GoogleSignin.signOut();
+            const response = await GoogleSignin.signIn();
+            if (isSuccessResponse(response)) {
+                const { idToken } = response.data;
+                const backendResponse = await fetch(`${API_BASE_URL}/auth/google/link`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ idToken }),
+                });
+
+                const data = await backendResponse.json();
+
+                if (!backendResponse.ok) {
+                    // Sign out on backend failure
+                    await GoogleSignin.signOut();
+                    throw new Error(data.message || 'Link failed');
+                }
+
+                // Update token if provided
+                if (data.token) {
+                    await saveAuth(data.token, user!);
+                    await getUserProfileInternal(data.token);
+                } else {
+                    await getUserProfileInternal(); // Use state token
+                }
+            }
+        } catch (error: any) {
+            // Ensure signed out on any error
+            try {
+                await GoogleSignin.signOut();
+            } catch (e) {
+                console.log('Google sign out on error ignored:', e);
+            }
+
+            if (isErrorWithCode(error)) {
+                switch (error.code) {
+                    case statusCodes.IN_PROGRESS:
+                        throw new Error('Sign in is in progress');
+                    case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+                        throw new Error('Play services not available');
+                    default:
+                        throw new Error('Google link failed');
+                }
+            } else {
+                throw new Error(error.message || 'Google link failed');
+            }
+        }
+    };
+
+    const unlinkGoogle = async (): Promise<void> => {
+        if (!token) throw new Error('Not authenticated');
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/google/unlink`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Unlink failed');
+            }
+
+            await getUserProfileInternal(); // Refresh with state token
         } catch (error: any) {
             throw new Error(error.message || 'Network error');
         }
@@ -287,29 +470,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
+    // Public getUserProfile uses state token
     const getUserProfile = async (): Promise<any> => {
-        if (!token) throw new Error('Not authenticated');
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/profile`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to fetch profile');
-            }
-
-            setUser(data.data);
-            await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.data));
-            return data.data;
-        } catch (error: any) {
-            throw new Error(error.message || 'Network error');
-        }
+        return getUserProfileInternal();
     };
 
     const logout = async (): Promise<void> => {
@@ -321,6 +484,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         'Authorization': `Bearer ${token}`,
                     },
                 });
+            }
+            // Sign out from Google if signed in
+            try {
+                await GoogleSignin.signOut();
+            } catch (e) {
+                // Ignore if not signed in with Google
+                console.log('Google sign out ignored:', e);
             }
         } catch (error) {
             console.error('Logout error:', error);
@@ -337,6 +507,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 isLoading,
                 isAuthenticated: !!token && !!user,
                 login,
+                googleSignIn,
+                linkGoogle,
+                unlinkGoogle,
                 register,
                 verifyEmail,
                 resendOTP,

@@ -1,3 +1,5 @@
+// Updated Frontend: ProfileScreen.tsx - Provider feature removed, Change Password always shown if authenticated
+
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, Switch, ScrollView, Modal, FlatList, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -14,13 +16,14 @@ type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Prof
 const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp }) => {
     const { theme, isDarkMode, setDarkMode } = useTheme();
     const { language, setLanguage } = useLanguage();
-    const { isAuthenticated, user, logout } = useAuth();
+    const { isAuthenticated, user, logout, linkGoogle, unlinkGoogle } = useAuth();
     const { t } = useTranslation();
     const [selectedStepGoal, setSelectedStepGoal] = React.useState(6000);
     const [reminderTime, setReminderTime] = React.useState(new Date());
     const [showStepGoalPicker, setShowStepGoalPicker] = React.useState(false);
     const [showLanguagePicker, setShowLanguagePicker] = React.useState(false);
     const [showTimePicker, setShowTimePicker] = React.useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
 
     const stepGoalOptions = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000];
     const languageOptions = [
@@ -41,6 +44,8 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
         { code: 'te', label: 'language.te' },
         { code: 'th', label: 'language.th' },
     ];
+
+    const isGoogleLinked = !!user?.googleId;
 
     const styles = useThemedStyles((theme) => StyleSheet.create({
         container: {
@@ -210,6 +215,26 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
             fontSize: 14,
             color: theme.textSecondary,
         },
+        googleSection: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        googleStatus: {
+            color: isGoogleLinked ? theme.primary : theme.textSecondary,
+            fontWeight: '500',
+        },
+        googleActionButton: {
+            backgroundColor: isGoogleLinked ? theme.danger : theme.primary,
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 4,
+        },
+        googleActionText: {
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: '600',
+        },
     }));
 
     const formatTime = (date: Date) => {
@@ -253,6 +278,43 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                 },
             ]
         );
+    };
+
+    const handleGoogleAction = async () => {
+        if (isGoogleLinked) {
+            Alert.alert(
+                'Unlink Google',
+                'Are you sure you want to unlink your Google account?',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Unlink',
+                        style: 'destructive',
+                        onPress: async () => {
+                            setGoogleLoading(true);
+                            try {
+                                await unlinkGoogle();
+                                Alert.alert('Success', 'Google account unlinked');
+                            } catch (error: any) {
+                                Alert.alert('Error', error.message);
+                            } finally {
+                                setGoogleLoading(false);
+                            }
+                        },
+                    },
+                ]
+            );
+        } else {
+            setGoogleLoading(true);
+            try {
+                await linkGoogle();
+                Alert.alert('Success', 'Google account linked');
+            } catch (error: any) {
+                Alert.alert('Error', error.message);
+            } finally {
+                setGoogleLoading(false);
+            }
+        }
     };
 
     const StepGoalModal = () => (
@@ -374,7 +436,7 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         )}
                     </View>
 
-                    {/* Personal Settings Section */}
+                    {/* Personal Settings Section - Added Google link/unlink */}
                     <View style={styles.sectionGroup}>
                         <TouchableOpacity
                             style={[styles.section, styles.firstSection]}
@@ -392,6 +454,27 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                                 <Text style={styles.sectionSubtext}>{t('Metric & Imperial Units, Step length, Gender')}</Text>
                             </View>
                         </TouchableOpacity>
+                        {isAuthenticated && (
+                            <View style={styles.section}>
+                                <Image source={require('../assets/images/google-icon.png')} style={styles.icon} />
+                                <View style={styles.sectionContent}>
+                                    <Text style={styles.sectionTitle}>Google Account</Text>
+                                    <Text style={styles.sectionSubtext}>Link your Google account for easier sign-in</Text>
+                                </View>
+                                <View style={styles.googleSection}>
+                                    <Text style={styles.googleStatus}>{isGoogleLinked ? 'Linked' : 'Not linked'}</Text>
+                                    <TouchableOpacity
+                                        style={styles.googleActionButton}
+                                        onPress={handleGoogleAction}
+                                        disabled={googleLoading}
+                                    >
+                                        <Text style={styles.googleActionText}>
+                                            {googleLoading ? '...' : (isGoogleLinked ? 'Unlink' : 'Link')}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        )}
                         <View style={[styles.section, styles.lastSection]}>
                             <Image source={require('../assets/images/goal.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
@@ -404,7 +487,7 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         </View>
                     </View>
 
-                    {/* Data Section - Conditional Change Password */}
+                    {/* Data Section - Change Password always shown if authenticated */}
                     <View style={styles.sectionGroup}>
                         {isAuthenticated && (
                             <TouchableOpacity

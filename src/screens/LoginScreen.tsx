@@ -1,3 +1,4 @@
+// Updated Frontend: LoginScreen
 import React, { useState } from 'react';
 import {
     View,
@@ -16,12 +17,15 @@ import { RootStackParamList } from '../types/types';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
+import {
+    GoogleSigninButton,
+} from '@react-native-google-signin/google-signin';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
 const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) => {
     const { theme, isDarkMode } = useTheme();
-    const { login } = useAuth();
+    const { login, googleSignIn } = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -110,6 +114,16 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
             color: isDarkMode ? theme.primary : '#007BFF',
             fontSize: 14,
         },
+        googleButton: {
+            width: '100%',
+            height: 48,
+            marginVertical: 10,
+        },
+        orText: {
+            marginVertical: 10,
+            color: theme.textSecondary,
+            fontSize: 14,
+        },
     }));
 
     const handleLogin = async () => {
@@ -130,6 +144,24 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
             );
         } catch (error: any) {
             Alert.alert('Login Failed', error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleSignIn = async () => {
+        setLoading(true);
+        try {
+            await googleSignIn();
+            // Reset navigation stack to prevent going back to login
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'HomeTabs' }],
+                })
+            );
+        } catch (error: any) {
+            Alert.alert('Google Sign In Failed', error.message);
         } finally {
             setLoading(false);
         }
@@ -194,6 +226,15 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                         <Text style={styles.buttonText}>Login</Text>
                     )}
                 </TouchableOpacity>
+
+                <Text style={styles.orText}>Or</Text>
+
+                <GoogleSigninButton
+                    style={styles.googleButton}
+                    color={isDarkMode ? GoogleSigninButton.Color.Dark : GoogleSigninButton.Color.Light}
+                    onPress={handleGoogleSignIn}
+                    disabled={loading}
+                />
 
                 <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
                     <Text style={styles.link}>Don't have an account? Sign up here</Text>

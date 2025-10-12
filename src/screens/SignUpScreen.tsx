@@ -1,3 +1,4 @@
+// Updated Frontend: SignUpScreen.tsx
 import React, { useState } from 'react';
 import {
     View,
@@ -12,16 +13,20 @@ import {
     Modal,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { CommonActions } from '@react-navigation/native';
 import { RootStackParamList } from '../types/types';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
+import {
+    GoogleSigninButton,
+} from '@react-native-google-signin/google-signin';
 
 type SignupScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SignUp'>;
 
 const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }) => {
     const { theme, isDarkMode } = useTheme();
-    const { register, getVerificationToken } = useAuth();
+    const { register, getVerificationToken, googleSignIn } = useAuth();
 
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -31,6 +36,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
     const [showVerifyModal, setShowVerifyModal] = useState(false);
     const [verifyEmail, setVerifyEmail] = useState('');
     const [verifyLoading, setVerifyLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
 
     const styles = useThemedStyles((theme) =>
         StyleSheet.create({
@@ -164,6 +170,16 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
             confirmButton: {
                 backgroundColor: theme.primary,
             },
+            googleButton: {
+                width: '100%',
+                height: 48,
+                marginVertical: 10,
+            },
+            orText: {
+                marginVertical: 10,
+                color: theme.textSecondary,
+                fontSize: 14,
+            },
         })
     );
 
@@ -181,6 +197,25 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
             Alert.alert('Registration Failed', error.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleGoogleSignUp = async () => {
+        setGoogleLoading(true);
+        try {
+            await googleSignIn();
+            // Reset navigation stack to prevent going back to signup
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'HomeTabs' }],
+                })
+            );
+        } catch (error: any) {
+            console.log(error);
+            Alert.alert('Google Sign Up Failed', error.message);
+        } finally {
+            setGoogleLoading(false);
         }
     };
 
@@ -262,7 +297,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                 <TouchableOpacity
                     style={styles.button}
                     onPress={handleSignUp}
-                    disabled={loading}
+                    disabled={loading || googleLoading}
                 >
                     {loading ? (
                         <ActivityIndicator color="#fff" />
@@ -270,6 +305,15 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                         <Text style={styles.buttonText}>Sign Up</Text>
                     )}
                 </TouchableOpacity>
+
+                <Text style={styles.orText}>Or</Text>
+
+                <GoogleSigninButton
+                    style={styles.googleButton}
+                    color={isDarkMode ? GoogleSigninButton.Color.Dark : GoogleSigninButton.Color.Light}
+                    onPress={handleGoogleSignUp}
+                    disabled={loading || googleLoading}
+                />
 
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
                     <Text style={styles.link}>Already Registered? Log in here.</Text>
