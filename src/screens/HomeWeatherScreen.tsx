@@ -10,7 +10,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import Svg, { Circle, Line, Path, G } from 'react-native-svg';
+import Svg, { Circle, Line, Path, G, Text as SvgText } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from 'react-native-geolocation-service';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
@@ -431,6 +431,15 @@ const HomeWeatherScreen: React.FC = () => {
     );
   }
 
+  const minTemp = weatherData.low;
+  const maxTemp = weatherData.high;
+  const tempRange = Math.max(maxTemp - minTemp, 5);
+  const bottomTemp = maxTemp - tempRange;
+  const baseY = 25;
+  const plotHeight = 50;
+  const xStart = 40;
+  const xStep = (width - 120) / 4;
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header with City and Refresh */}
@@ -464,18 +473,49 @@ const HomeWeatherScreen: React.FC = () => {
         <Text style={styles.cardTitle}>5-Day Forecast</Text>
         <View style={styles.forecastChart}>
           <Svg width={width - 80} height={100}>
+            {/* Y-axis */}
+            <Line
+              x1="25"
+              y1={baseY}
+              x2="25"
+              y2={baseY + plotHeight}
+              stroke="#E5E7EB"
+              strokeWidth="1"
+            />
+            {/* Y-axis labels */}
+            <SvgText
+              x="20"
+              y={baseY + 3}
+              fontSize="12"
+              fill="#6B7280"
+              textAnchor="end"
+            >
+              {Math.round(maxTemp)}°
+            </SvgText>
+            <SvgText
+              x="20"
+              y={baseY + plotHeight + 3}
+              fontSize="12"
+              fill="#6B7280"
+              textAnchor="end"
+            >
+              {Math.round(bottomTemp)}°
+            </SvgText>
+            {/* Plot points and lines */}
             {weatherData.forecast.map((day, i) => {
-              const x = 30 + i * ((width - 140) / 4);
-              const y = 80 - (day.temp - 20) * 2.5;
+              const x = xStart + i * xStep;
+              const y = baseY + (maxTemp - day.temp) / tempRange * plotHeight;
               const nextDay = weatherData.forecast[i + 1];
+              const nextX = nextDay ? xStart + (i + 1) * xStep : x;
+              const nextY = nextDay ? baseY + (maxTemp - nextDay.temp) / tempRange * plotHeight : y;
               return (
                 <G key={i}>
                   {nextDay && (
                     <Line
                       x1={x}
                       y1={y}
-                      x2={30 + (i + 1) * ((width - 140) / 4)}
-                      y2={80 - (nextDay.temp - 20) * 2.5}
+                      x2={nextX}
+                      y2={nextY}
                       stroke="#3B82F6"
                       strokeWidth="2"
                     />
