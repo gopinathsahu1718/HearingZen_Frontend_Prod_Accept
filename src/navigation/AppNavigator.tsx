@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import SplashScreen from '../screens/SplashScreen';
 import HomeScreen from '../screens/HomeScreen';
 import StepsScreen from '../screens/StepsScreen';
-import DummyScreen2 from '../screens/DummyScreen2';
+import HomeWeatherScreen from '../screens/HomeWeatherScreen';
 import DummyScreen3 from '../screens/DummyScreen3';
 import ProfileScreen from '../screens/ProfileScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -85,7 +85,7 @@ const HomeTabs = () => {
         >
             <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Steps" component={StepsScreen} />
-            <Tab.Screen name="Weather" component={DummyScreen2} />
+            <Tab.Screen name="Weather" component={HomeWeatherScreen} />
             <Tab.Screen name="LMS" component={DummyScreen3} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
