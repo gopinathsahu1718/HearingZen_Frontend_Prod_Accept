@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,8 @@ import {
   Sun,
   RefreshCw,
 } from 'lucide-react-native';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../hooks/useThemedStyles';
 
 const { width } = Dimensions.get('window');
 
@@ -135,11 +137,274 @@ interface CachedData {
 }
 
 const HomeWeatherScreen: React.FC = () => {
+  const { theme } = useTheme();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [weatherData, setWeatherData] = useState<ProcessedWeatherData | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [locationError, setLocationError] = useState<string>('');
+
+  const styles = useThemedStyles((theme) => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    centerContent: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      marginTop: 16,
+      fontSize: 16,
+      color: theme.textSecondary,
+    },
+    errorText: {
+      fontSize: 16,
+      color: theme.deleteText,
+      marginBottom: 16,
+      textAlign: 'center',
+      paddingHorizontal: 24,
+    },
+    retryButton: {
+      backgroundColor: theme.primary,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 8,
+    },
+    retryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 20,
+      backgroundColor: theme.cardBackground,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    cityName: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    refreshButton: {
+      padding: 8,
+    },
+    rotating: {
+      transform: [{ rotate: '360deg' }],
+    },
+    weatherCard: {
+      backgroundColor: theme.cardBackground,
+      borderRadius: 24,
+      padding: 24,
+      marginHorizontal: 16,
+      marginTop: 16,
+      marginBottom: 16,
+      shadowColor: theme.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    tempRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    temperature: {
+      fontSize: 64,
+      fontWeight: '300',
+      color: theme.text,
+    },
+    sunIcon: {
+      width: 60,
+      height: 60,
+      backgroundColor: '#F97316',
+      borderRadius: 30,
+      marginBottom: 8,
+    },
+    condition: {
+      fontSize: 18,
+      fontWeight: '500',
+      color: theme.text,
+      marginBottom: 8,
+    },
+    tempDetails: {
+      fontSize: 14,
+      color: theme.textSecondary,
+    },
+    card: {
+      backgroundColor: theme.cardBackground,
+      borderRadius: 24,
+      padding: 24,
+      marginHorizontal: 16,
+      marginBottom: 16,
+      shadowColor: theme.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    cardTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.text,
+      marginBottom: 16,
+    },
+    cardTitleCenter: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.text,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    forecastChart: {
+      alignItems: 'center',
+    },
+    forecastDates: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: width - 80,
+      marginTop: 8,
+    },
+    forecastDate: {
+      fontSize: 11,
+      color: theme.textSecondary,
+      textAlign: 'center',
+      flex: 1,
+    },
+    detailsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+    },
+    detailItem: {
+      width: '30%',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    detailIconContainer: {
+      width: 40,
+      height: 40,
+      backgroundColor: `${theme.primary}20`,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    detailIcon: {
+      fontSize: 20,
+    },
+    detailValue: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.text,
+      marginBottom: 4,
+    },
+    detailLabel: {
+      fontSize: 11,
+      color: theme.textSecondary,
+      textAlign: 'center',
+    },
+    aqiContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    aqiCircle: {
+      width: 120,
+      height: 120,
+      position: 'relative',
+      marginRight: 20,
+    },
+    aqiTextContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    aqiValue: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    aqiLabel: {
+      fontSize: 11,
+      color: theme.textSecondary,
+    },
+    aqiLevel: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#10B981',
+    },
+    pollutantsGrid: {
+      flex: 1,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+    },
+    pollutantItem: {
+      width: '48%',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    barContainer: {
+      width: 20,
+      height: 70,
+      backgroundColor: theme.border,
+      borderRadius: 4,
+      justifyContent: 'flex-end',
+      overflow: 'hidden',
+      marginBottom: 8,
+    },
+    bar: {
+      width: '100%',
+      backgroundColor: theme.primary,
+      borderTopLeftRadius: 4,
+      borderTopRightRadius: 4,
+    },
+    pollutantValue: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.text,
+      marginBottom: 4,
+    },
+    pollutantLabel: {
+      fontSize: 11,
+      color: theme.textSecondary,
+    },
+    sunriseSunsetContainer: {
+      alignItems: 'center',
+    },
+    sunriseSunsetLabels: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: width - 120,
+      marginTop: -20,
+    },
+    sunriseLabel: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    sunsetLabel: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    sunTime: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: theme.textSecondary,
+    },
+  }));
 
   useEffect(() => {
     initializeWeatherData();
@@ -412,7 +677,7 @@ const HomeWeatherScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color={theme.primary} />
         <Text style={styles.loadingText}>Loading weather data...</Text>
       </View>
     );
@@ -450,7 +715,7 @@ const HomeWeatherScreen: React.FC = () => {
         <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
           <RefreshCw
             size={24}
-            color="#3B82F6"
+            color={theme.primary}
             style={refreshing ? styles.rotating : undefined}
           />
         </TouchableOpacity>
@@ -479,7 +744,7 @@ const HomeWeatherScreen: React.FC = () => {
               y1={baseY}
               x2="25"
               y2={baseY + plotHeight}
-              stroke="#E5E7EB"
+              stroke={theme.border}
               strokeWidth="1"
             />
             {/* Y-axis labels */}
@@ -487,7 +752,7 @@ const HomeWeatherScreen: React.FC = () => {
               x="20"
               y={baseY + 3}
               fontSize="12"
-              fill="#6B7280"
+              fill={theme.textSecondary}
               textAnchor="end"
             >
               {Math.round(maxTemp)}°
@@ -496,7 +761,7 @@ const HomeWeatherScreen: React.FC = () => {
               x="20"
               y={baseY + plotHeight + 3}
               fontSize="12"
-              fill="#6B7280"
+              fill={theme.textSecondary}
               textAnchor="end"
             >
               {Math.round(bottomTemp)}°
@@ -516,11 +781,11 @@ const HomeWeatherScreen: React.FC = () => {
                       y1={y}
                       x2={nextX}
                       y2={nextY}
-                      stroke="#3B82F6"
+                      stroke={theme.primary}
                       strokeWidth="2"
                     />
                   )}
-                  <Circle cx={x} cy={y} r="5" fill="#3B82F6" />
+                  <Circle cx={x} cy={y} r="5" fill={theme.primary} />
                 </G>
               );
             })}
@@ -548,7 +813,7 @@ const HomeWeatherScreen: React.FC = () => {
 
           <View style={styles.detailItem}>
             <View style={styles.detailIconContainer}>
-              <Wind size={20} color="#3B82F6" />
+              <Wind size={20} color={theme.primary} />
             </View>
             <Text style={styles.detailValue}>{weatherData.wind.speed} km/h</Text>
             <Text style={styles.detailLabel}>Wind {weatherData.wind.direction}</Text>
@@ -556,7 +821,7 @@ const HomeWeatherScreen: React.FC = () => {
 
           <View style={styles.detailItem}>
             <View style={styles.detailIconContainer}>
-              <Droplets size={20} color="#3B82F6" />
+              <Droplets size={20} color={theme.primary} />
             </View>
             <Text style={styles.detailValue}>{weatherData.humidity}%</Text>
             <Text style={styles.detailLabel}>Humidity</Text>
@@ -564,7 +829,7 @@ const HomeWeatherScreen: React.FC = () => {
 
           <View style={styles.detailItem}>
             <View style={styles.detailIconContainer}>
-              <Sun size={20} color="#3B82F6" />
+              <Sun size={20} color={theme.primary} />
             </View>
             <Text style={styles.detailValue}>{weatherData.uv}</Text>
             <Text style={styles.detailLabel}>UV Index</Text>
@@ -572,7 +837,7 @@ const HomeWeatherScreen: React.FC = () => {
 
           <View style={styles.detailItem}>
             <View style={styles.detailIconContainer}>
-              <Eye size={20} color="#3B82F6" />
+              <Eye size={20} color={theme.primary} />
             </View>
             <Text style={styles.detailValue}>{weatherData.visibility} km</Text>
             <Text style={styles.detailLabel}>Visibility</Text>
@@ -580,7 +845,7 @@ const HomeWeatherScreen: React.FC = () => {
 
           <View style={styles.detailItem}>
             <View style={styles.detailIconContainer}>
-              <Gauge size={20} color="#3B82F6" />
+              <Gauge size={20} color={theme.primary} />
             </View>
             <Text style={styles.detailValue}>{weatherData.pressure} hPa</Text>
             <Text style={styles.detailLabel}>Air pressure</Text>
@@ -597,7 +862,7 @@ const HomeWeatherScreen: React.FC = () => {
                 cx="60"
                 cy="60"
                 r="52"
-                stroke="#E5E7EB"
+                stroke={theme.border}
                 strokeWidth="12"
                 fill="none"
               />
@@ -605,7 +870,7 @@ const HomeWeatherScreen: React.FC = () => {
                 cx="60"
                 cy="60"
                 r="52"
-                stroke="#3B82F6"
+                stroke={theme.primary}
                 strokeWidth="12"
                 fill="none"
                 strokeDasharray={`${(weatherData.aqi / 100) * 326} 326`}
@@ -690,267 +955,5 @@ const HomeWeatherScreen: React.FC = () => {
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F0F4F8',
-  },
-  centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#EF4444',
-    marginBottom: 16,
-    textAlign: 'center',
-    paddingHorizontal: 24,
-  },
-  retryButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  cityName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  refreshButton: {
-    padding: 8,
-  },
-  rotating: {
-    transform: [{ rotate: '360deg' }],
-  },
-  weatherCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  tempRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  temperature: {
-    fontSize: 64,
-    fontWeight: '300',
-    color: '#1F2937',
-  },
-  sunIcon: {
-    width: 60,
-    height: 60,
-    backgroundColor: '#F97316',
-    borderRadius: 30,
-    marginBottom: 8,
-  },
-  condition: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  tempDetails: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
-  },
-  cardTitleCenter: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  forecastChart: {
-    alignItems: 'center',
-  },
-  forecastDates: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: width - 80,
-    marginTop: 8,
-  },
-  forecastDate: {
-    fontSize: 11,
-    color: '#6B7280',
-    textAlign: 'center',
-    flex: 1,
-  },
-  detailsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  detailItem: {
-    width: '30%',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  detailIconContainer: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#DBEAFE',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  detailIcon: {
-    fontSize: 20,
-  },
-  detailValue: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  detailLabel: {
-    fontSize: 11,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  aqiContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  aqiCircle: {
-    width: 120,
-    height: 120,
-    position: 'relative',
-    marginRight: 20,
-  },
-  aqiTextContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aqiValue: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  aqiLabel: {
-    fontSize: 11,
-    color: '#6B7280',
-  },
-  aqiLevel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#10B981',
-  },
-  pollutantsGrid: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  pollutantItem: {
-    width: '48%',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  barContainer: {
-    width: 20,
-    height: 70,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 4,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  bar: {
-    width: '100%',
-    backgroundColor: '#60A5FA',
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-  },
-  pollutantValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  pollutantLabel: {
-    fontSize: 11,
-    color: '#6B7280',
-  },
-  sunriseSunsetContainer: {
-    alignItems: 'center',
-  },
-  sunriseSunsetLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: width - 120,
-    marginTop: -20,
-  },
-  sunriseLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sunsetLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sunTime: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#374151',
-  },
-});
 
 export default HomeWeatherScreen;
