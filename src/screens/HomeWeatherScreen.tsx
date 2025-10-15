@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,9 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Animated,
 } from 'react-native';
-import Svg, { Circle, Line, Path, G, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Path, G, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from 'react-native-geolocation-service';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
@@ -21,13 +22,20 @@ import {
   Gauge,
   Sun,
   RefreshCw,
+  Cloud,
+  CloudRain,
+  Sunrise as SunriseIcon,
+  Sunset as SunsetIcon,
+  MapPin,
+  TrendingUp,
+  AlertCircle,
 } from 'lucide-react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
+const CACHE_DURATION = 15 * 60 * 1000;
 const STORAGE_KEY = 'weather_data_cache';
 const API_BASE_URL = 'http://13.200.222.176/api/v1/weather';
 
@@ -103,6 +111,7 @@ interface ProcessedForecast {
   date: string;
   temp: number;
   description: string;
+  icon: string;
 }
 
 interface ProcessedWeatherData {
@@ -129,6 +138,9 @@ interface ProcessedWeatherData {
   forecast: ProcessedForecast[];
   high: number;
   low: number;
+  easScore: number;
+  nh3: number;
+  no: number;
 }
 
 interface CachedData {
@@ -143,6 +155,7 @@ const HomeWeatherScreen: React.FC = () => {
   const [weatherData, setWeatherData] = useState<ProcessedWeatherData | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [locationError, setLocationError] = useState<string>('');
+  const rotateAnim = new Animated.Value(0);
 
   const styles = useThemedStyles((theme) => StyleSheet.create({
     container: {
@@ -150,6 +163,7 @@ const HomeWeatherScreen: React.FC = () => {
       backgroundColor: theme.background,
     },
     centerContent: {
+      flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -169,7 +183,7 @@ const HomeWeatherScreen: React.FC = () => {
       backgroundColor: theme.primary,
       paddingHorizontal: 24,
       paddingVertical: 12,
-      borderRadius: 8,
+      borderRadius: 12,
     },
     retryButtonText: {
       color: '#FFFFFF',
@@ -177,232 +191,365 @@ const HomeWeatherScreen: React.FC = () => {
       fontWeight: '600',
     },
     header: {
+      paddingHorizontal: 20,
+      paddingTop: Platform.OS === 'ios' ? 60 : 40,
+      paddingBottom: 20,
+      backgroundColor: theme.primary,
+    },
+    locationRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 20,
-      backgroundColor: theme.cardBackground,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.border,
+      marginBottom: 8,
     },
     cityName: {
-      fontSize: 24,
+      fontSize: 28,
       fontWeight: '700',
-      color: theme.text,
+      color: '#FFFFFF',
+      marginLeft: 8,
+    },
+    currentDate: {
+      fontSize: 14,
+      color: 'rgba(255, 255, 255, 0.8)',
+      marginLeft: 32,
     },
     refreshButton: {
+      position: 'absolute',
+      top: Platform.OS === 'ios' ? 60 : 40,
+      right: 20,
       padding: 8,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      borderRadius: 20,
     },
-    rotating: {
-      transform: [{ rotate: '360deg' }],
-    },
-    weatherCard: {
+    heroCard: {
+      marginHorizontal: 20,
+      marginTop: -40,
       backgroundColor: theme.cardBackground,
       borderRadius: 24,
       padding: 24,
-      marginHorizontal: 16,
-      marginTop: 16,
-      marginBottom: 16,
-      shadowColor: theme.shadowColor,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.15,
+      shadowRadius: 16,
+      elevation: 8,
     },
-    tempRow: {
+    mainTempRow: {
       flexDirection: 'row',
-      alignItems: 'flex-end',
       justifyContent: 'space-between',
-      marginBottom: 8,
+      alignItems: 'center',
+      marginBottom: 16,
     },
-    temperature: {
-      fontSize: 64,
-      fontWeight: '300',
+    tempSection: {
+      flex: 1,
+    },
+    mainTemp: {
+      fontSize: 72,
+      fontWeight: '200',
       color: theme.text,
-    },
-    sunIcon: {
-      width: 60,
-      height: 60,
-      backgroundColor: '#F97316',
-      borderRadius: 30,
-      marginBottom: 8,
+      lineHeight: 80,
     },
     condition: {
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: '500',
       color: theme.text,
-      marginBottom: 8,
+      marginTop: 4,
     },
-    tempDetails: {
+    weatherIcon: {
+      width: 100,
+      height: 100,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    minMaxRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    minMaxItem: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    minMaxLabel: {
       fontSize: 14,
       color: theme.textSecondary,
+      marginRight: 8,
     },
-    card: {
+    minMaxValue: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.text,
+    },
+    feelsLikeText: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      marginLeft: 'auto',
+    },
+    easScoreContainer: {
+      marginTop: 16,
+      padding: 12,
+      backgroundColor: `${theme.primary}15`,
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    easScoreLabel: {
+      fontSize: 14,
+      color: theme.text,
+      fontWeight: '600',
+    },
+    easScoreValue: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: theme.primary,
+    },
+    easScoreText: {
+      fontSize: 12,
+      color: theme.textSecondary,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.text,
+      marginHorizontal: 20,
+      marginTop: 24,
+      marginBottom: 12,
+    },
+    forecastCard: {
+      marginHorizontal: 20,
       backgroundColor: theme.cardBackground,
-      borderRadius: 24,
-      padding: 24,
-      marginHorizontal: 16,
-      marginBottom: 16,
-      shadowColor: theme.shadowColor,
-      shadowOffset: { width: 0, height: 2 },
+      borderRadius: 20,
+      padding: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.1,
       shadowRadius: 8,
       elevation: 4,
     },
-    cardTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: theme.text,
-      marginBottom: 16,
-    },
-    cardTitleCenter: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: theme.text,
-      marginBottom: 16,
-      textAlign: 'center',
-    },
-    forecastChart: {
-      alignItems: 'center',
-    },
-    forecastDates: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      width: width - 80,
+    forecastScroll: {
       marginTop: 8,
     },
-    forecastDate: {
-      fontSize: 11,
+    forecastItem: {
+      width: 80,
+      alignItems: 'center',
+      marginRight: 16,
+      padding: 12,
+      backgroundColor: theme.background,
+      borderRadius: 16,
+    },
+    forecastDay: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.textSecondary,
+      marginBottom: 8,
+    },
+    forecastIcon: {
+      marginVertical: 8,
+    },
+    forecastTemp: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.text,
+      marginTop: 8,
+    },
+    forecastDesc: {
+      fontSize: 10,
       color: theme.textSecondary,
       textAlign: 'center',
-      flex: 1,
+      marginTop: 4,
+    },
+    detailsCard: {
+      marginHorizontal: 20,
+      backgroundColor: theme.cardBackground,
+      borderRadius: 20,
+      padding: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
     },
     detailsGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between',
+      marginTop: 8,
     },
-    detailItem: {
-      width: '30%',
+    detailBox: {
+      width: '50%',
+      padding: 12,
+    },
+    detailInner: {
+      backgroundColor: theme.background,
+      padding: 16,
+      borderRadius: 16,
       alignItems: 'center',
-      marginBottom: 20,
     },
-    detailIconContainer: {
-      width: 40,
-      height: 40,
+    detailIconBg: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
       backgroundColor: `${theme.primary}20`,
-      borderRadius: 8,
-      alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 8,
-    },
-    detailIcon: {
-      fontSize: 20,
+      alignItems: 'center',
+      marginBottom: 12,
     },
     detailValue: {
-      fontSize: 18,
-      fontWeight: '600',
+      fontSize: 20,
+      fontWeight: '700',
       color: theme.text,
       marginBottom: 4,
     },
     detailLabel: {
-      fontSize: 11,
+      fontSize: 12,
       color: theme.textSecondary,
       textAlign: 'center',
     },
-    aqiContainer: {
+    aqiCard: {
+      marginHorizontal: 20,
+      backgroundColor: theme.cardBackground,
+      borderRadius: 20,
+      padding: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    aqiHeader: {
       flexDirection: 'row',
       alignItems: 'center',
+      marginBottom: 20,
     },
-    aqiCircle: {
+    aqiMainCircle: {
       width: 120,
       height: 120,
-      position: 'relative',
       marginRight: 20,
     },
-    aqiTextContainer: {
+    aqiTextOverlay: {
       position: 'absolute',
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
-      alignItems: 'center',
       justifyContent: 'center',
+      alignItems: 'center',
     },
     aqiValue: {
-      fontSize: 28,
+      fontSize: 32,
       fontWeight: '700',
       color: theme.text,
     },
-    aqiLabel: {
+    aqiSubtext: {
       fontSize: 11,
       color: theme.textSecondary,
+      marginTop: 2,
     },
-    aqiLevel: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: '#10B981',
+    aqiLevelBadge: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 12,
+      marginTop: 8,
     },
-    pollutantsGrid: {
+    aqiLevelText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#FFFFFF',
+    },
+    aqiInfo: {
       flex: 1,
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
     },
-    pollutantItem: {
-      width: '48%',
-      alignItems: 'center',
-      marginBottom: 16,
-    },
-    barContainer: {
-      width: 20,
-      height: 70,
-      backgroundColor: theme.border,
-      borderRadius: 4,
-      justifyContent: 'flex-end',
-      overflow: 'hidden',
-      marginBottom: 8,
-    },
-    bar: {
-      width: '100%',
-      backgroundColor: theme.primary,
-      borderTopLeftRadius: 4,
-      borderTopRightRadius: 4,
-    },
-    pollutantValue: {
+    aqiTitle: {
       fontSize: 16,
       fontWeight: '600',
       color: theme.text,
-      marginBottom: 4,
+      marginBottom: 8,
+    },
+    aqiDescription: {
+      fontSize: 13,
+      color: theme.textSecondary,
+      lineHeight: 18,
+    },
+    pollutantsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginTop: 20,
+      paddingTop: 20,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    pollutantBox: {
+      width: '25%',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    pollutantBar: {
+      width: 24,
+      height: 80,
+      backgroundColor: theme.border,
+      borderRadius: 12,
+      overflow: 'hidden',
+      justifyContent: 'flex-end',
+    },
+    pollutantFill: {
+      width: '100%',
+      borderRadius: 12,
+    },
+    pollutantValue: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.text,
+      marginTop: 8,
     },
     pollutantLabel: {
       fontSize: 11,
       color: theme.textSecondary,
+      marginTop: 2,
     },
-    sunriseSunsetContainer: {
+    sunCard: {
+      marginHorizontal: 20,
+      backgroundColor: theme.cardBackground,
+      borderRadius: 20,
+      padding: 24,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
+      marginBottom: 24,
+    },
+    sunContent: {
       alignItems: 'center',
     },
-    sunriseSunsetLabels: {
+    sunTimesRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      width: width - 120,
-      marginTop: -20,
+      justifyContent: 'space-around',
+      width: '100%',
+      marginTop: 16,
     },
-    sunriseLabel: {
-      flexDirection: 'row',
+    sunTimeBox: {
       alignItems: 'center',
-      gap: 8,
     },
-    sunsetLabel: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    sunTime: {
-      fontSize: 13,
-      fontWeight: '500',
+    sunTimeLabel: {
+      fontSize: 12,
       color: theme.textSecondary,
+      marginBottom: 8,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    sunTimeValue: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    sunIconBg: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 8,
     },
   }));
 
@@ -410,17 +557,28 @@ const HomeWeatherScreen: React.FC = () => {
     initializeWeatherData();
   }, []);
 
+  const startRotation = () => {
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      })
+    ).start();
+  };
+
+  const stopRotation = () => {
+    rotateAnim.setValue(0);
+  };
+
   const initializeWeatherData = async (): Promise<void> => {
     try {
-      // Check if cached data is available and valid
       const cachedData = await getCachedData();
       if (cachedData) {
         setWeatherData(cachedData);
         setLoading(false);
         return;
       }
-
-      // If no valid cache, fetch fresh data
       await fetchWeatherData();
     } catch (error) {
       console.error('Error initializing weather data:', error);
@@ -437,12 +595,10 @@ const HomeWeatherScreen: React.FC = () => {
       const { data, timestamp }: CachedData = JSON.parse(cached);
       const now = Date.now();
 
-      // Check if cache is still valid (within 15 minutes)
       if (now - timestamp < CACHE_DURATION) {
         return data;
       }
 
-      // Cache expired, remove it
       await AsyncStorage.removeItem(STORAGE_KEY);
       return null;
     } catch (error) {
@@ -475,10 +631,10 @@ const HomeWeatherScreen: React.FC = () => {
         setLocationError('');
         return true;
       } else if (result === RESULTS.DENIED) {
-        setLocationError('Location permission denied. Please enable location access in settings.');
+        setLocationError('Location permission denied.');
         return false;
       } else if (result === RESULTS.BLOCKED) {
-        setLocationError('Location permission blocked. Please enable location access in device settings.');
+        setLocationError('Location permission blocked.');
         return false;
       } else {
         setLocationError('Location permission not granted.');
@@ -501,22 +657,15 @@ const HomeWeatherScreen: React.FC = () => {
           });
         },
         (error) => {
-          // console.error('Location error:', error);
-
-          // Handle different error codes
           if (error.code === 1) {
-            // PERMISSION_DENIED
-            setLocationError('Location access denied. Please enable location services.');
+            setLocationError('Location access denied.');
           } else if (error.code === 2) {
-            // POSITION_UNAVAILABLE
-            setLocationError('Unable to determine your location. Please check your GPS.');
+            setLocationError('Unable to determine location.');
           } else if (error.code === 3) {
-            // TIMEOUT
-            setLocationError('Location request timed out. Please try again.');
+            setLocationError('Location request timed out.');
           } else {
-            setLocationError('Failed to get your location. Please ensure location services are enabled.');
+            setLocationError('Failed to get location.');
           }
-
           reject(error);
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
@@ -527,30 +676,22 @@ const HomeWeatherScreen: React.FC = () => {
   const fetchWeatherData = async (): Promise<void> => {
     try {
       setRefreshing(true);
+      startRotation();
       setLocationError('');
 
-      // Request location permission
       const hasPermission = await requestLocationPermission();
       if (!hasPermission) {
         Alert.alert(
           'Location Permission Required',
-          'Please enable location access to view weather data. You can enable it in your device settings.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Open Settings', onPress: () => {
-                // You can use Linking.openSettings() here if needed
-                console.log('Open settings');
-              }
-            }
-          ]
+          'Please enable location access to view weather data.',
+          [{ text: 'OK' }]
         );
         setRefreshing(false);
+        stopRotation();
         setLoading(false);
         return;
       }
 
-      // Get current location
       let locationData: Location;
       try {
         locationData = await getCurrentLocation();
@@ -558,15 +699,15 @@ const HomeWeatherScreen: React.FC = () => {
       } catch (error) {
         Alert.alert(
           'Location Error',
-          locationError || 'Unable to get your location. Please ensure location services are enabled and try again.',
+          locationError || 'Unable to get your location.',
           [{ text: 'OK' }]
         );
         setRefreshing(false);
+        stopRotation();
         setLoading(false);
         return;
       }
 
-      // Fetch all three APIs in parallel
       const [currentResponse, forecastResponse, pollutionResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/current?lat=${locationData.latitude}&lon=${locationData.longitude}`),
         fetch(`${API_BASE_URL}/forecast?lat=${locationData.latitude}&lon=${locationData.longitude}&days=5`),
@@ -577,21 +718,52 @@ const HomeWeatherScreen: React.FC = () => {
       const forecastData: ForecastData = await forecastResponse.json();
       const pollutionData: PollutionData = await pollutionResponse.json();
 
-      // Process and combine the data
       const processedData = processWeatherData(currentData, forecastData, pollutionData);
 
-      // Cache the data
       await setCachedData(processedData);
-
-      // Update state
       setWeatherData(processedData);
     } catch (error) {
       console.error('Error fetching weather data:', error);
-      Alert.alert('Error', 'Failed to fetch weather data. Please check your internet connection and try again.');
+      Alert.alert('Error', 'Failed to fetch weather data.');
     } finally {
       setRefreshing(false);
+      stopRotation();
       setLoading(false);
     }
+  };
+
+  const getWeatherIcon = (description: string) => {
+    const desc = description.toLowerCase();
+    if (desc.includes('rain')) return <CloudRain size={40} color={theme.primary} />;
+    if (desc.includes('cloud')) return <Cloud size={40} color={theme.primary} />;
+    return <Sun size={40} color="#F59E0B" />;
+  };
+
+  const getAQIColor = (aqi: number): string => {
+    if (aqi <= 25) return '#10B981';
+    if (aqi <= 50) return '#3B82F6';
+    if (aqi <= 75) return '#F59E0B';
+    if (aqi <= 100) return '#EF4444';
+    return '#991B1B';
+  };
+
+  const getAQIDescription = (level: string): string => {
+    const descriptions: { [key: string]: string } = {
+      'Good': 'Air quality is satisfactory, and air pollution poses little or no risk.',
+      'Fair': 'Air quality is acceptable. However, there may be a risk for some people.',
+      'Moderate': 'Members of sensitive groups may experience health effects.',
+      'Poor': 'Some members of the general public may experience health effects.',
+      'Very Poor': 'Health alert: The risk of health effects is increased for everyone.',
+    };
+    return descriptions[level] || 'Air quality information unavailable.';
+  };
+
+  const getPollutantColor = (value: number, max: number): string => {
+    const percentage = (value / max) * 100;
+    if (percentage <= 25) return '#10B981';
+    if (percentage <= 50) return '#3B82F6';
+    if (percentage <= 75) return '#F59E0B';
+    return '#EF4444';
   };
 
   const processWeatherData = (
@@ -602,10 +774,8 @@ const HomeWeatherScreen: React.FC = () => {
     const currentData = current.data;
     const pollutionData = pollution.pollution;
 
-    // Calculate AQI from components (simplified calculation)
     const calculateAQI = (components: WeatherComponents): { aqi: number; level: string } => {
       const pm25 = components.pm2_5 || 0;
-      // Simplified AQI calculation based on PM2.5
       if (pm25 <= 12) return { aqi: 25, level: 'Good' };
       if (pm25 <= 35) return { aqi: 50, level: 'Fair' };
       if (pm25 <= 55) return { aqi: 75, level: 'Moderate' };
@@ -615,19 +785,19 @@ const HomeWeatherScreen: React.FC = () => {
 
     const aqiInfo = calculateAQI(pollutionData.components);
 
-    // Format sunrise and sunset times
     const formatTime = (isoString: string): string => {
       const date = new Date(isoString);
       return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     };
 
-    // Format forecast dates
-    const formatDate = (isoString: string): string => {
+    const formatDate = (isoString: string, short: boolean = false): string => {
       const date = new Date(isoString);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (short) {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+      return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     };
 
-    // Get UV index level
     const getUVLevel = (uvIndex: number): string => {
       if (uvIndex <= 2) return 'Low';
       if (uvIndex <= 5) return 'Moderate';
@@ -637,42 +807,56 @@ const HomeWeatherScreen: React.FC = () => {
     };
 
     return {
-      city: currentData.city,
-      temp: Math.round(currentData.temperature),
-      condition: currentData.description.charAt(0).toUpperCase() + currentData.description.slice(1),
-      feelsLike: Math.round(currentData.feelsLike),
+      city: currentData.city || 'Unknown',
+      temp: Math.round(currentData.temperature || 0),
+      condition: currentData.description ? currentData.description.charAt(0).toUpperCase() + currentData.description.slice(1) : 'N/A',
+      feelsLike: Math.round(currentData.feelsLike || 0),
       wind: {
-        speed: Math.round(currentData.windSpeed),
-        direction: 'N' // You can calculate this from wind data if available
+        speed: Math.round(currentData.windSpeed || 0),
+        direction: 'N'
       },
-      humidity: currentData.humidity,
-      uv: getUVLevel(currentData.uvIndex),
-      uvIndex: currentData.uvIndex,
-      visibility: 10, // Not provided in API, using default
-      pressure: currentData.pressure,
+      humidity: currentData.humidity || 0,
+      uv: getUVLevel(currentData.uvIndex || 0),
+      uvIndex: currentData.uvIndex || 0,
+      visibility: 10,
+      pressure: currentData.pressure || 0,
       aqi: aqiInfo.aqi,
       aqiLevel: aqiInfo.level,
-      pm25: pollutionData.components.pm2_5,
-      pm10: pollutionData.components.pm10,
-      co: pollutionData.components.co,
-      no2: pollutionData.components.no2,
-      so2: pollutionData.components.so2,
-      o3: pollutionData.components.o3,
+      pm25: pollutionData.components.pm2_5 || 0,
+      pm10: pollutionData.components.pm10 || 0,
+      co: pollutionData.components.co || 0,
+      no2: pollutionData.components.no2 || 0,
+      so2: pollutionData.components.so2 || 0,
+      o3: pollutionData.components.o3 || 0,
+      nh3: pollutionData.components.nh3 || 0,
+      no: pollutionData.components.no || 0,
       sunrise: formatTime(currentData.sunrise),
       sunset: formatTime(currentData.sunset),
       forecast: forecast.forecast.map((day: ForecastDay) => ({
-        date: formatDate(day.date),
-        temp: Math.round(day.temperature),
-        description: day.description,
+        date: formatDate(day.date, true),
+        temp: Math.round(day.temperature || 0),
+        description: day.description || 'N/A',
+        icon: day.description || 'N/A',
       })),
-      high: Math.max(...forecast.forecast.map((d: ForecastDay) => d.temperature)),
-      low: Math.min(...forecast.forecast.map((d: ForecastDay) => d.temperature)),
+      high: Math.max(...forecast.forecast.map((d: ForecastDay) => d.temperature || 0)),
+      low: Math.min(...forecast.forecast.map((d: ForecastDay) => d.temperature || 0)),
+      easScore: currentData.easScore || 0,
     };
   };
 
   const handleRefresh = async (): Promise<void> => {
     await fetchWeatherData();
   };
+
+  const getCurrentDate = (): string => {
+    const date = new Date();
+    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  };
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   if (loading) {
     return (
@@ -686,6 +870,7 @@ const HomeWeatherScreen: React.FC = () => {
   if (!weatherData) {
     return (
       <View style={[styles.container, styles.centerContent]}>
+        <AlertCircle size={48} color={theme.deleteText} />
         <Text style={styles.errorText}>
           {locationError || 'Unable to load weather data'}
         </Text>
@@ -696,262 +881,352 @@ const HomeWeatherScreen: React.FC = () => {
     );
   }
 
-  const minTemp = weatherData.low;
-  const maxTemp = weatherData.high;
-  const tempRange = Math.max(maxTemp - minTemp, 5);
-  const bottomTemp = maxTemp - tempRange;
-  const baseY = 25;
-  const plotHeight = 50;
-  const xStart = 40;
-  const xStep = (width - 120) / 4;
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header with City and Refresh */}
+      {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={styles.locationRow}>
+          <MapPin size={20} color="#FFFFFF" />
           <Text style={styles.cityName}>{weatherData.city}</Text>
         </View>
+        <Text style={styles.currentDate}>{getCurrentDate()}</Text>
+
         <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
-          <RefreshCw
-            size={24}
-            color={theme.primary}
-            style={refreshing ? styles.rotating : undefined}
-          />
+          <Animated.View style={{ transform: [{ rotate: spin }] }}>
+            <RefreshCw size={20} color="#FFFFFF" />
+          </Animated.View>
         </TouchableOpacity>
       </View>
 
-      {/* Main Weather Card */}
-      <View style={styles.weatherCard}>
-        <View style={styles.tempRow}>
-          <Text style={styles.temperature}>{weatherData.temp}°</Text>
-          <View style={styles.sunIcon} />
+      {/* Hero Weather Card */}
+      <View style={styles.heroCard}>
+        <View style={styles.mainTempRow}>
+          <View style={styles.tempSection}>
+            <Text style={styles.mainTemp}>{weatherData.temp}°</Text>
+            <Text style={styles.condition}>{weatherData.condition}</Text>
+          </View>
+          <View style={styles.weatherIcon}>
+            {getWeatherIcon(weatherData.condition)}
+          </View>
         </View>
-        <Text style={styles.condition}>{weatherData.condition}</Text>
-        <Text style={styles.tempDetails}>
-          ↑{Math.round(weatherData.high)}° · ↓{Math.round(weatherData.low)}° · Feels {weatherData.feelsLike}°
-        </Text>
+
+        <View style={styles.minMaxRow}>
+          <View style={styles.minMaxItem}>
+            <Text style={styles.minMaxLabel}>High</Text>
+            <Text style={styles.minMaxValue}>{Math.round(weatherData.high)}°</Text>
+          </View>
+          <View style={styles.minMaxItem}>
+            <Text style={styles.minMaxLabel}>Low</Text>
+            <Text style={styles.minMaxValue}>{Math.round(weatherData.low)}°</Text>
+          </View>
+          <Text style={styles.feelsLikeText}>Feels like {weatherData.feelsLike}°</Text>
+        </View>
+
+        {/* EAS Score */}
+        <View style={styles.easScoreContainer}>
+          <View>
+            <Text style={styles.easScoreLabel}>Environmental Air Score</Text>
+            <Text style={styles.easScoreText}>Overall air quality rating</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={styles.easScoreValue}>{(weatherData.easScore || 0).toFixed(1)}</Text>
+            <TrendingUp size={16} color={theme.primary} />
+          </View>
+        </View>
       </View>
 
       {/* 5-Day Forecast */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>5-Day Forecast</Text>
-        <View style={styles.forecastChart}>
-          <Svg width={width - 80} height={100}>
-            {/* Y-axis */}
-            <Line
-              x1="25"
-              y1={baseY}
-              x2="25"
-              y2={baseY + plotHeight}
-              stroke={theme.border}
-              strokeWidth="1"
-            />
-            {/* Y-axis labels */}
-            <SvgText
-              x="20"
-              y={baseY + 3}
-              fontSize="12"
-              fill={theme.textSecondary}
-              textAnchor="end"
-            >
-              {Math.round(maxTemp)}°
-            </SvgText>
-            <SvgText
-              x="20"
-              y={baseY + plotHeight + 3}
-              fontSize="12"
-              fill={theme.textSecondary}
-              textAnchor="end"
-            >
-              {Math.round(bottomTemp)}°
-            </SvgText>
-            {/* Plot points and lines */}
-            {weatherData.forecast.map((day, i) => {
-              const x = xStart + i * xStep;
-              const y = baseY + (maxTemp - day.temp) / tempRange * plotHeight;
-              const nextDay = weatherData.forecast[i + 1];
-              const nextX = nextDay ? xStart + (i + 1) * xStep : x;
-              const nextY = nextDay ? baseY + (maxTemp - nextDay.temp) / tempRange * plotHeight : y;
-              return (
-                <G key={i}>
-                  {nextDay && (
-                    <Line
-                      x1={x}
-                      y1={y}
-                      x2={nextX}
-                      y2={nextY}
-                      stroke={theme.primary}
-                      strokeWidth="2"
-                    />
-                  )}
-                  <Circle cx={x} cy={y} r="5" fill={theme.primary} />
-                </G>
-              );
-            })}
-          </Svg>
-          <View style={styles.forecastDates}>
-            {weatherData.forecast.map((day, i) => (
-              <Text key={i} style={styles.forecastDate}>
-                {day.date}
+      <Text style={styles.sectionTitle}>5-Day Forecast</Text>
+      <View style={styles.forecastCard}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.forecastScroll}>
+          {weatherData.forecast.map((day, index) => (
+            <View key={index} style={styles.forecastItem}>
+              <Text style={styles.forecastDay}>{day.date}</Text>
+              <View style={styles.forecastIcon}>
+                {getWeatherIcon(day.description)}
+              </View>
+              <Text style={styles.forecastTemp}>{day.temp}°</Text>
+              <Text style={styles.forecastDesc} numberOfLines={2}>
+                {day.description}
               </Text>
-            ))}
-          </View>
-        </View>
+            </View>
+          ))}
+        </ScrollView>
       </View>
 
-      {/* Weather Details Grid */}
-      <View style={styles.card}>
+      {/* Weather Details */}
+      <Text style={styles.sectionTitle}>Weather Details</Text>
+      <View style={styles.detailsCard}>
         <View style={styles.detailsGrid}>
-          <View style={styles.detailItem}>
-            <View style={styles.detailIconContainer}>
-              <Text style={styles.detailIcon}>🌡️</Text>
+          <View style={styles.detailBox}>
+            <View style={styles.detailInner}>
+              <View style={styles.detailIconBg}>
+                <Wind size={24} color={theme.primary} />
+              </View>
+              <Text style={styles.detailValue}>{weatherData.wind.speed} km/h</Text>
+              <Text style={styles.detailLabel}>Wind Speed</Text>
             </View>
-            <Text style={styles.detailValue}>{weatherData.feelsLike}°C</Text>
-            <Text style={styles.detailLabel}>Feels like</Text>
           </View>
 
-          <View style={styles.detailItem}>
-            <View style={styles.detailIconContainer}>
-              <Wind size={20} color={theme.primary} />
+          <View style={styles.detailBox}>
+            <View style={styles.detailInner}>
+              <View style={styles.detailIconBg}>
+                <Droplets size={24} color={theme.primary} />
+              </View>
+              <Text style={styles.detailValue}>{weatherData.humidity}%</Text>
+              <Text style={styles.detailLabel}>Humidity</Text>
             </View>
-            <Text style={styles.detailValue}>{weatherData.wind.speed} km/h</Text>
-            <Text style={styles.detailLabel}>Wind {weatherData.wind.direction}</Text>
           </View>
 
-          <View style={styles.detailItem}>
-            <View style={styles.detailIconContainer}>
-              <Droplets size={20} color={theme.primary} />
+          <View style={styles.detailBox}>
+            <View style={styles.detailInner}>
+              <View style={styles.detailIconBg}>
+                <Sun size={24} color={theme.primary} />
+              </View>
+              <Text style={styles.detailValue}>{weatherData.uvIndex}</Text>
+              <Text style={styles.detailLabel}>UV Index ({weatherData.uv})</Text>
             </View>
-            <Text style={styles.detailValue}>{weatherData.humidity}%</Text>
-            <Text style={styles.detailLabel}>Humidity</Text>
           </View>
 
-          <View style={styles.detailItem}>
-            <View style={styles.detailIconContainer}>
-              <Sun size={20} color={theme.primary} />
+          <View style={styles.detailBox}>
+            <View style={styles.detailInner}>
+              <View style={styles.detailIconBg}>
+                <Gauge size={24} color={theme.primary} />
+              </View>
+              <Text style={styles.detailValue}>{weatherData.pressure}</Text>
+              <Text style={styles.detailLabel}>Pressure (hPa)</Text>
             </View>
-            <Text style={styles.detailValue}>{weatherData.uv}</Text>
-            <Text style={styles.detailLabel}>UV Index</Text>
           </View>
 
-          <View style={styles.detailItem}>
-            <View style={styles.detailIconContainer}>
-              <Eye size={20} color={theme.primary} />
+          <View style={styles.detailBox}>
+            <View style={styles.detailInner}>
+              <View style={styles.detailIconBg}>
+                <Eye size={24} color={theme.primary} />
+              </View>
+              <Text style={styles.detailValue}>{weatherData.visibility} km</Text>
+              <Text style={styles.detailLabel}>Visibility</Text>
             </View>
-            <Text style={styles.detailValue}>{weatherData.visibility} km</Text>
-            <Text style={styles.detailLabel}>Visibility</Text>
           </View>
 
-          <View style={styles.detailItem}>
-            <View style={styles.detailIconContainer}>
-              <Gauge size={20} color={theme.primary} />
+          <View style={styles.detailBox}>
+            <View style={styles.detailInner}>
+              <View style={styles.detailIconBg}>
+                <Text style={{ fontSize: 24 }}>🌡️</Text>
+              </View>
+              <Text style={styles.detailValue}>{weatherData.feelsLike}°</Text>
+              <Text style={styles.detailLabel}>Feels Like</Text>
             </View>
-            <Text style={styles.detailValue}>{weatherData.pressure} hPa</Text>
-            <Text style={styles.detailLabel}>Air pressure</Text>
           </View>
         </View>
       </View>
 
       {/* Air Quality Index */}
-      <View style={styles.card}>
-        <View style={styles.aqiContainer}>
-          <View style={styles.aqiCircle}>
+      <Text style={styles.sectionTitle}>Air Quality Index</Text>
+      <View style={styles.aqiCard}>
+        <View style={styles.aqiHeader}>
+          <View style={styles.aqiMainCircle}>
             <Svg width={120} height={120}>
+              <Defs>
+                <LinearGradient id="aqiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <Stop offset="0%" stopColor={getAQIColor(weatherData.aqi)} stopOpacity="0.8" />
+                  <Stop offset="100%" stopColor={getAQIColor(weatherData.aqi)} stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
               <Circle
                 cx="60"
                 cy="60"
-                r="52"
+                r="54"
                 stroke={theme.border}
-                strokeWidth="12"
+                strokeWidth="8"
                 fill="none"
               />
               <Circle
                 cx="60"
                 cy="60"
-                r="52"
-                stroke={theme.primary}
-                strokeWidth="12"
+                r="54"
+                stroke="url(#aqiGradient)"
+                strokeWidth="8"
                 fill="none"
-                strokeDasharray={`${(weatherData.aqi / 100) * 326} 326`}
+                strokeDasharray={`${(weatherData.aqi / 150) * 339} 339`}
                 strokeLinecap="round"
                 rotation="-90"
                 origin="60, 60"
               />
             </Svg>
-            <View style={styles.aqiTextContainer}>
+            <View style={styles.aqiTextOverlay}>
               <Text style={styles.aqiValue}>{weatherData.aqi}</Text>
-              <Text style={styles.aqiLabel}>AQI</Text>
-              <Text style={styles.aqiLevel}>{weatherData.aqiLevel}</Text>
+              <Text style={styles.aqiSubtext}>AQI</Text>
+              <View style={[styles.aqiLevelBadge, { backgroundColor: getAQIColor(weatherData.aqi) }]}>
+                <Text style={styles.aqiLevelText}>{weatherData.aqiLevel}</Text>
+              </View>
             </View>
           </View>
 
-          <View style={styles.pollutantsGrid}>
-            <View style={styles.pollutantItem}>
-              <View style={styles.barContainer}>
-                <View style={[styles.bar, { height: `${Math.min(weatherData.pm25, 100)}%` }]} />
-              </View>
-              <Text style={styles.pollutantValue}>{weatherData.pm25.toFixed(1)}</Text>
-              <Text style={styles.pollutantLabel}>PM2.5</Text>
-            </View>
+          <View style={styles.aqiInfo}>
+            <Text style={styles.aqiTitle}>Air Quality</Text>
+            <Text style={styles.aqiDescription}>
+              {getAQIDescription(weatherData.aqiLevel)}
+            </Text>
+          </View>
+        </View>
 
-            <View style={styles.pollutantItem}>
-              <View style={styles.barContainer}>
-                <View style={[styles.bar, { height: `${Math.min(weatherData.pm10, 100)}%` }]} />
-              </View>
-              <Text style={styles.pollutantValue}>{weatherData.pm10.toFixed(1)}</Text>
-              <Text style={styles.pollutantLabel}>PM10</Text>
+        <View style={styles.pollutantsGrid}>
+          <View style={styles.pollutantBox}>
+            <View style={styles.pollutantBar}>
+              <View style={[
+                styles.pollutantFill,
+                {
+                  height: `${Math.min(((weatherData.pm25 || 0) / 50) * 100, 100)}%`,
+                  backgroundColor: getPollutantColor(weatherData.pm25 || 0, 50)
+                }
+              ]} />
             </View>
+            <Text style={styles.pollutantValue}>{(weatherData.pm25 || 0).toFixed(1)}</Text>
+            <Text style={styles.pollutantLabel}>PM2.5</Text>
+          </View>
 
-            <View style={styles.pollutantItem}>
-              <View style={styles.barContainer}>
-                <View style={[styles.bar, { height: `${Math.min(weatherData.co / 10, 100)}%` }]} />
-              </View>
-              <Text style={styles.pollutantValue}>{weatherData.co.toFixed(1)}</Text>
-              <Text style={styles.pollutantLabel}>CO</Text>
+          <View style={styles.pollutantBox}>
+            <View style={styles.pollutantBar}>
+              <View style={[
+                styles.pollutantFill,
+                {
+                  height: `${Math.min(((weatherData.pm10 || 0) / 100) * 100, 100)}%`,
+                  backgroundColor: getPollutantColor(weatherData.pm10 || 0, 100)
+                }
+              ]} />
             </View>
+            <Text style={styles.pollutantValue}>{(weatherData.pm10 || 0).toFixed(1)}</Text>
+            <Text style={styles.pollutantLabel}>PM10</Text>
+          </View>
 
-            <View style={styles.pollutantItem}>
-              <View style={styles.barContainer}>
-                <View style={[styles.bar, { height: `${Math.min(weatherData.so2 * 2, 100)}%` }]} />
-              </View>
-              <Text style={styles.pollutantValue}>{weatherData.so2.toFixed(1)}</Text>
-              <Text style={styles.pollutantLabel}>SO₂</Text>
+          <View style={styles.pollutantBox}>
+            <View style={styles.pollutantBar}>
+              <View style={[
+                styles.pollutantFill,
+                {
+                  height: `${Math.min(((weatherData.co || 0) / 500) * 100, 100)}%`,
+                  backgroundColor: getPollutantColor(weatherData.co || 0, 500)
+                }
+              ]} />
             </View>
+            <Text style={styles.pollutantValue}>{(weatherData.co || 0).toFixed(0)}</Text>
+            <Text style={styles.pollutantLabel}>CO</Text>
+          </View>
+
+          <View style={styles.pollutantBox}>
+            <View style={styles.pollutantBar}>
+              <View style={[
+                styles.pollutantFill,
+                {
+                  height: `${Math.min(((weatherData.no2 || 0) / 50) * 100, 100)}%`,
+                  backgroundColor: getPollutantColor(weatherData.no2 || 0, 50)
+                }
+              ]} />
+            </View>
+            <Text style={styles.pollutantValue}>{(weatherData.no2 || 0).toFixed(1)}</Text>
+            <Text style={styles.pollutantLabel}>NO₂</Text>
+          </View>
+
+          <View style={styles.pollutantBox}>
+            <View style={styles.pollutantBar}>
+              <View style={[
+                styles.pollutantFill,
+                {
+                  height: `${Math.min(((weatherData.so2 || 0) / 50) * 100, 100)}%`,
+                  backgroundColor: getPollutantColor(weatherData.so2 || 0, 50)
+                }
+              ]} />
+            </View>
+            <Text style={styles.pollutantValue}>{(weatherData.so2 || 0).toFixed(1)}</Text>
+            <Text style={styles.pollutantLabel}>SO₂</Text>
+          </View>
+
+          <View style={styles.pollutantBox}>
+            <View style={styles.pollutantBar}>
+              <View style={[
+                styles.pollutantFill,
+                {
+                  height: `${Math.min(((weatherData.o3 || 0) / 100) * 100, 100)}%`,
+                  backgroundColor: getPollutantColor(weatherData.o3 || 0, 100)
+                }
+              ]} />
+            </View>
+            <Text style={styles.pollutantValue}>{(weatherData.o3 || 0).toFixed(1)}</Text>
+            <Text style={styles.pollutantLabel}>O₃</Text>
+          </View>
+
+          <View style={styles.pollutantBox}>
+            <View style={styles.pollutantBar}>
+              <View style={[
+                styles.pollutantFill,
+                {
+                  height: `${Math.min(((weatherData.nh3 || 0) / 10) * 100, 100)}%`,
+                  backgroundColor: getPollutantColor(weatherData.nh3 || 0, 10)
+                }
+              ]} />
+            </View>
+            <Text style={styles.pollutantValue}>{(weatherData.nh3 || 0).toFixed(2)}</Text>
+            <Text style={styles.pollutantLabel}>NH₃</Text>
+          </View>
+
+          <View style={styles.pollutantBox}>
+            <View style={styles.pollutantBar}>
+              <View style={[
+                styles.pollutantFill,
+                {
+                  height: `${Math.min(((weatherData.no || 0) / 10) * 100, 100)}%`,
+                  backgroundColor: getPollutantColor(weatherData.no || 0, 10)
+                }
+              ]} />
+            </View>
+            <Text style={styles.pollutantValue}>{(weatherData.no || 0).toFixed(2)}</Text>
+            <Text style={styles.pollutantLabel}>NO</Text>
           </View>
         </View>
       </View>
 
       {/* Sunrise & Sunset */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitleCenter}>Sunrise & Sunset</Text>
-        <View style={styles.sunriseSunsetContainer}>
-          <Svg width={width - 80} height={140}>
+      <Text style={styles.sectionTitle}>Sun Schedule</Text>
+      <View style={styles.sunCard}>
+        <View style={styles.sunContent}>
+          <Svg width={width - 80} height={100}>
+            <Defs>
+              <LinearGradient id="sunGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#FCD34D" stopOpacity="1" />
+                <Stop offset="100%" stopColor="#F59E0B" stopOpacity="1" />
+              </LinearGradient>
+            </Defs>
             <Path
-              d={`M 40 110 Q ${(width - 80) / 2} 30 ${width - 120} 110`}
+              d={`M 30 80 Q ${(width - 80) / 2} 20 ${width - 110} 80`}
               stroke="#93C5FD"
-              strokeWidth="2"
-              strokeDasharray="5,5"
+              strokeWidth="3"
+              strokeDasharray="6,6"
               fill="none"
             />
-            <Circle cx={(width - 80) / 2} cy="40" r="12" fill="#FBBF24" />
-            <Circle cx="40" cy="110" r="10" fill="#FBBF24" />
-            <Circle cx={width - 120} cy="110" r="10" fill="#F87171" />
+            <Circle cx={(width - 80) / 2} cy="30" r="16" fill="url(#sunGradient)" />
+            <Circle cx="30" cy="80" r="12" fill="#FCD34D" opacity="0.6" />
+            <Circle cx={width - 110} cy="80" r="12" fill="#F97316" opacity="0.6" />
           </Svg>
-          <View style={styles.sunriseSunsetLabels}>
-            <View style={styles.sunriseLabel}>
-              <Sun size={18} color="#EAB308" />
-              <Text style={styles.sunTime}>{weatherData.sunrise}</Text>
+
+          <View style={styles.sunTimesRow}>
+            <View style={styles.sunTimeBox}>
+              <View style={[styles.sunIconBg, { backgroundColor: '#FEF3C7' }]}>
+                <SunriseIcon size={24} color="#F59E0B" />
+              </View>
+              <Text style={styles.sunTimeLabel}>Sunrise</Text>
+              <Text style={styles.sunTimeValue}>{weatherData.sunrise}</Text>
             </View>
-            <View style={styles.sunsetLabel}>
-              <Sun size={18} color="#F97316" />
-              <Text style={styles.sunTime}>{weatherData.sunset}</Text>
+
+            <View style={styles.sunTimeBox}>
+              <View style={[styles.sunIconBg, { backgroundColor: '#FED7AA' }]}>
+                <SunsetIcon size={24} color="#F97316" />
+              </View>
+              <Text style={styles.sunTimeLabel}>Sunset</Text>
+              <Text style={styles.sunTimeValue}>{weatherData.sunset}</Text>
             </View>
           </View>
         </View>
       </View>
-
-      <View style={{ height: 20 }} />
     </ScrollView>
   );
 };
