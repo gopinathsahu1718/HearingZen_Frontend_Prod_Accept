@@ -1,3 +1,5 @@
+// navigation/AppNavigator.tsx - Complete File
+
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -11,7 +13,6 @@ import SplashScreen from '../screens/SplashScreen';
 import HomeScreen from '../screens/HomeScreen';
 import StepsScreen from '../screens/StepsScreen';
 import HomeWeatherScreen from '../screens/HomeWeatherScreen';
-import DummyScreen3 from '../screens/DummyScreen3';
 import ProfileScreen from '../screens/ProfileScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
@@ -29,10 +30,15 @@ import BMICards from '../screens/StepScreen/BMICards';
 import BMIResultScreen from "../screens/StepScreen/BMIResultScreen";
 import NutritionScreen from '../screens/StepScreen/Nutrition';
 
-import SubjectDetailScreen from '../screens/LMS/SubjectDetailScreen';
-import Subjects from '../screens/LMS/subjects';
-import TopicDetailScreen from '../screens/LMS/TopicDetailScreen';
-import LessonsPage from '../screens/LMS/LessonsPage';
+// Import LMS Screens
+import CourseCategoriesScreen from '../screens/CourseCategoriesScreen';
+import CourseListScreen from '../screens/CourseListScreen';
+import CourseDetailScreen from '../screens/CourseDetailScreen ';
+
+// Import New Enrollment Screens
+import MyEnrollmentsScreen from '../screens/MyEnrollmentsScreen';
+import EnrolledCourseScreen from '../screens/EnrolledCourseScreen';
+import LessonPlayerScreen from '../screens/LessonPlayerScreen';
 
 import type { RootStackParamList } from '../types/types';
 
@@ -86,7 +92,7 @@ const HomeTabs = () => {
             <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Steps" component={StepsScreen} />
             <Tab.Screen name="Weather" component={HomeWeatherScreen} />
-            <Tab.Screen name="LMS" component={DummyScreen3} />
+            <Tab.Screen name="LMS" component={CourseCategoriesScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
     );
@@ -147,13 +153,27 @@ const AppNavigator = () => {
                 <Stack.Screen name="BMI" component={BMICards} />
                 <Stack.Screen name="Nutrition" component={NutritionScreen} />
 
-                <Stack.Screen name="Subjects" component={Subjects} />
+                {/* LMS Screens */}
+                <Stack.Screen name="CourseCategories" component={CourseCategoriesScreen} />
+                <Stack.Screen name="CourseList" component={CourseListScreen} />
+                <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
+
+                {/* Enrollment Screens */}
                 <Stack.Screen
-                    name="SubjectDetailScreen"
-                    component={SubjectDetailScreen}
+                    name="MyEnrollments"
+                    component={MyEnrollmentsScreen}
+                    options={{ title: "My Enrollments" }}
                 />
-                <Stack.Screen name="TopicDetailScreen" component={TopicDetailScreen} />
-                <Stack.Screen name="LessonsPage" component={LessonsPage} />
+                <Stack.Screen
+                    name="EnrolledCourse"
+                    component={EnrolledCourseScreen}
+                    options={{ title: "Course Content" }}
+                />
+                <Stack.Screen
+                    name="LessonPlayer"
+                    component={LessonPlayerScreen}
+                    options={{ title: "Lesson" }}
+                />
             </Stack.Navigator>
         </NavigationContainer>
     );
