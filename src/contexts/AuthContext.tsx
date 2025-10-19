@@ -247,6 +247,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 });
 
                 const data = await backendResponse.json();
+                // console.log(data);
 
                 if (!backendResponse.ok) {
                     // Sign out on backend failure to ensure clean state

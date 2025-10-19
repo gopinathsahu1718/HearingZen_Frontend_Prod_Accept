@@ -123,19 +123,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
             color: theme.primary,
             fontWeight: '500',
         },
-        achievementBadge: {
-            backgroundColor: theme.achievementBackground,
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: 12,
-            minWidth: 30,
-            alignItems: 'center',
-        },
-        achievementText: {
-            color: theme.achievementText,
-            fontSize: 12,
-            fontWeight: 'bold',
-        },
         deleteText: {
             color: theme.deleteText,
         },
@@ -234,6 +221,30 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
             color: '#fff',
             fontSize: 12,
             fontWeight: '600',
+        },
+
+        menuArrow: {
+            fontSize: 24,
+            color: '#9CA3AF',
+            fontWeight: '300',
+        },
+
+        // Badge Styles (Optional)
+        badge: {
+            backgroundColor: '#3B82F6',
+            borderRadius: 10,
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+            marginLeft: 8,
+            minWidth: 24,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+
+        badgeText: {
+            color: '#FFFFFF',
+            fontSize: 12,
+            fontWeight: 'bold',
         },
     }));
 
@@ -400,16 +411,6 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
 
                     {/* Account Section */}
                     <View style={styles.sectionGroup}>
-                        <View style={[styles.section, styles.firstSection]}>
-                            <Image source={require('../assets/images/trophy.png')} style={styles.icon} />
-                            <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>{t('Achievements')}</Text>
-                            </View>
-                            <View style={styles.achievementBadge}>
-                                <Text style={styles.achievementText}>1K</Text>
-                            </View>
-                        </View>
-
                         {/* Conditional rendering based on authentication */}
                         {!isAuthenticated ? (
                             <>
@@ -427,12 +428,30 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                                 </TouchableOpacity>
                             </>
                         ) : (
-                            <TouchableOpacity style={[styles.section, styles.lastSection]} onPress={handleLogout}>
-                                <Image source={require('../assets/images/user.png')} style={styles.icon} />
-                                <View style={styles.sectionContent}>
-                                    <Text style={styles.sectionTitle}>{t('Logout')}</Text>
-                                </View>
-                            </TouchableOpacity>
+                            <>
+                                <TouchableOpacity
+                                    style={[styles.section, styles.firstSection]}
+                                    onPress={() => navigation.navigate('MyEnrollments')}
+                                    activeOpacity={0.7}
+                                >
+                                    <Image
+                                        source={require('../assets/icons/LMS.png')}
+                                        style={[styles.icon, { tintColor: theme.primary }]}
+                                    />
+                                    <View style={styles.sectionContent}>
+                                        <Text style={styles.sectionTitle}>
+                                            My Enrollments
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.menuArrow}>›</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.section, styles.lastSection]} onPress={handleLogout}>
+                                    <Image source={require('../assets/images/user.png')} style={styles.icon} />
+                                    <View style={styles.sectionContent}>
+                                        <Text style={styles.sectionTitle}>{t('Logout')}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </>
                         )}
                     </View>
 

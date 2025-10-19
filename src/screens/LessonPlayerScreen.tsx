@@ -39,6 +39,13 @@ interface Progress {
     user_id: string;
     status: 'in_progress' | 'completed';
     completed_at: string | null;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+}
+
+interface LessonWithProgress extends Lesson {
+    progress?: Progress;
 }
 
 interface ProgressData {
@@ -63,13 +70,43 @@ const LessonPlayerScreen = () => {
     const [showLessonNav, setShowLessonNav] = useState(false);
     const [loadingProgress, setLoadingProgress] = useState(true);
     const [isVideoLoading, setIsVideoLoading] = useState(true);
+    const [currentLesson, setCurrentLesson] = useState<LessonWithProgress>(lesson);
 
     useEffect(() => {
+        setCurrentLesson(lesson);
+        fetchLessonDetails();
         fetchProgress();
         setIsVideoLoading(true); // Ensure loading starts fresh for each lesson
     }, [lesson._id]);
 
+    const fetchLessonDetails = async () => {
+        if (!token) return;
+
+        try {
+            const response = await fetch(
+                `${BASE_URL}/api/course/lesson/${lesson._id}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                }
+            );
+            const data = await response.json();
+            if (data.success) {
+                setCurrentLesson(data.data);
+            }
+        } catch (error) {
+            console.error('Error fetching lesson details:', error);
+            // Fallback to passed lesson if fetch fails
+        }
+    };
+
     const fetchProgress = async () => {
+        if (!token) {
+            setLoadingProgress(false);
+            return;
+        }
+
         try {
             const response = await fetch(
                 `${BASE_URL}/api/course/progress/${courseId}`,
@@ -97,11 +134,16 @@ const LessonPlayerScreen = () => {
         );
     };
 
-    const isCurrentLessonCompleted = isLessonCompleted(lesson._id);
+    const isCurrentLessonCompleted = currentLesson.progress?.status === 'completed' || false;
 
     const handleMarkComplete = async () => {
         if (isCurrentLessonCompleted) {
             Alert.alert('Already Completed', 'This lesson is already marked as complete');
+            return;
+        }
+
+        if (!token) {
+            Alert.alert('Authentication Required', 'Please login to mark lesson as complete');
             return;
         }
 
@@ -113,13 +155,14 @@ const LessonPlayerScreen = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ lessonId: lesson._id }),
+                body: JSON.stringify({ lessonId: currentLesson._id }),
             });
 
             const data = await response.json();
             if (data.success) {
                 Alert.alert('Success', 'Lesson marked as complete!');
-                fetchProgress(); // Refresh progress
+                fetchLessonDetails(); // Refresh current lesson progress
+                fetchProgress(); // Refresh overall progress
             } else {
                 throw new Error(data.message || 'Failed to mark lesson as complete');
             }
@@ -218,17 +261,16 @@ const LessonPlayerScreen = () => {
         return null;
     };
 
-    const videoId = getYouTubeVideoId(lesson.video_url);
+    const videoId = getYouTubeVideoId(currentLesson.video_url);
 
     const renderVideoPlayer = () => {
-        console.log('Lesson video_url:', lesson.video_url);
+        console.log('Lesson video_url:', currentLesson.video_url);
 
         if (!videoId) {
-            setIsVideoLoading(false); // No loading if invalid
             return (
                 <View style={[styles.videoContainer, styles.errorContainer]}>
                     <Text style={styles.errorText}>Invalid video URL</Text>
-                    <Text style={styles.videoUrl}>URL: {lesson.video_url}</Text>
+                    <Text style={styles.videoUrl}>URL: {currentLesson.video_url}</Text>
                     <Text style={styles.videoUrl}>
                         Expected format: https://youtu.be/VIDEO_ID or https://www.youtube.com/watch?v=VIDEO_ID
                     </Text>
@@ -483,7 +525,7 @@ const LessonPlayerScreen = () => {
                 {/* Lesson Content */}
                 <View style={styles.lessonContent}>
                     <Text style={[styles.lessonTitle, { color: theme.text }]}>
-                        {lesson.title}
+                        {currentLesson.title}
                     </Text>
 
                     {/* Completion Status or Button */}
