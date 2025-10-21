@@ -274,12 +274,19 @@ const CourseCategoriesScreen = () => {
                 </Text>
 
                 <View style={styles.categoriesContainer}>
-                    {categories.map((item) => (
-                        <View key={item.category._id}>
-                            {renderCategoryCard({ item })}
-                        </View>
-                    ))}
+                    {categories.length === 0 ? (
+                        <Text style={[styles.noCategoriesText, { color: theme.textSecondary }]}>
+                            No categories available.
+                        </Text>
+                    ) : (
+                        categories.map((item) => (
+                            <View key={item.category._id}>
+                                {renderCategoryCard({ item })}
+                            </View>
+                        ))
+                    )}
                 </View>
+
             </ScrollView>
         </View>
     );
@@ -459,6 +466,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingBottom: 20,
     },
+
+    noCategoriesText: {
+        fontSize: 16,
+        textAlign: 'center',
+        paddingVertical: 20,
+        fontStyle: 'italic',
+    },
+
     card: {
         borderRadius: 16,
         marginBottom: 20,

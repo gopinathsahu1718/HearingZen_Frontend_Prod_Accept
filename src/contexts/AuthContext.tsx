@@ -1,5 +1,3 @@
-// Updated Frontend: AuthContext.tsx - Provider feature removed
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -44,8 +42,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Constants
 const TOKEN_KEY = '@auth_token';
 const USER_KEY = '@user_data';
+const TOKEN_TIMESTAMP_KEY = '@token_timestamp';
+const TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
@@ -65,15 +66,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const loadStoredAuth = async () => {
         try {
-            const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
-            const storedUser = await AsyncStorage.getItem(USER_KEY);
+            const [storedToken, storedUser, storedTimestamp] = await AsyncStorage.multiGet([
+                TOKEN_KEY,
+                USER_KEY,
+                TOKEN_TIMESTAMP_KEY,
+            ]);
 
-            if (storedToken && storedUser) {
-                const parsedUser = JSON.parse(storedUser);
-                setToken(storedToken);
-                setUser(parsedUser);
-                // Refresh profile with stored token to ensure up-to-date data
-                getUserProfileInternal(storedToken).catch(console.error);
+            const token = storedToken[1];
+            const user = storedUser[1];
+            const timestamp = storedTimestamp[1];
+
+            if (token && user && timestamp) {
+                const savedAt = parseInt(timestamp, 10);
+                const now = Date.now();
+
+                if (now - savedAt < TOKEN_EXPIRY_MS) {
+                    const parsedUser = JSON.parse(user);
+                    setToken(token);
+                    setUser(parsedUser);
+                    await getUserProfileInternal(token); // Refresh profile
+                } else {
+                    console.log('Token expired, clearing auth');
+                    await clearAuth();
+                }
             }
         } catch (error) {
             console.error('Error loading auth data:', error);
@@ -84,8 +99,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const saveAuth = async (newToken: string, newUser: User) => {
         try {
-            await AsyncStorage.setItem(TOKEN_KEY, newToken);
-            await AsyncStorage.setItem(USER_KEY, JSON.stringify(newUser));
+            const timestamp = Date.now().toString();
+            await AsyncStorage.multiSet([
+                [TOKEN_KEY, newToken],
+                [USER_KEY, JSON.stringify(newUser)],
+                [TOKEN_TIMESTAMP_KEY, timestamp],
+            ]);
             setToken(newToken);
             setUser(newUser);
         } catch (error) {
@@ -96,7 +115,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const clearAuth = async () => {
         try {
-            await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
+            await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY, TOKEN_TIMESTAMP_KEY]);
             setToken(null);
             setUser(null);
         } catch (error) {
@@ -104,7 +123,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    // Internal function for getUserProfile that accepts override token
     const getUserProfileInternal = async (overrideToken?: string): Promise<any> => {
         const authToken = overrideToken || token;
         if (!authToken) throw new Error('Not authenticated');
@@ -226,7 +244,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const newToken = data.token;
             const newUser = data.user;
             await saveAuth(newToken, newUser);
-            await getUserProfileInternal(newToken); // Use override to avoid state lag
+            await getUserProfileInternal(newToken);
         } catch (error: any) {
             throw new Error(error.message || 'Network error');
         }
@@ -235,8 +253,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const googleSignIn = async (): Promise<void> => {
         try {
             await GoogleSignin.hasPlayServices();
-            // Fixed: Sign out first to force account selection dialog every time
-            await GoogleSignin.signOut();
+            await GoogleSignin.signOut(); // Force account selection
             const response = await GoogleSignin.signIn();
             if (isSuccessResponse(response)) {
                 const { idToken } = response.data;
@@ -247,10 +264,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 });
 
                 const data = await backendResponse.json();
-                // console.log(data);
 
                 if (!backendResponse.ok) {
-                    // Sign out on backend failure to ensure clean state
                     await GoogleSignin.signOut();
                     throw new Error(data.message || 'Google auth failed');
                 }
@@ -261,7 +276,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 await getUserProfileInternal(newToken);
             }
         } catch (error: any) {
-            // Ensure signed out on any error
             try {
                 await GoogleSignin.signOut();
             } catch (e) {
@@ -288,7 +302,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         try {
             await GoogleSignin.hasPlayServices();
-            // Fixed: Sign out first to force account selection for linking
             await GoogleSignin.signOut();
             const response = await GoogleSignin.signIn();
             if (isSuccessResponse(response)) {
@@ -305,21 +318,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const data = await backendResponse.json();
 
                 if (!backendResponse.ok) {
-                    // Sign out on backend failure
                     await GoogleSignin.signOut();
                     throw new Error(data.message || 'Link failed');
                 }
 
-                // Update token if provided
                 if (data.token) {
                     await saveAuth(data.token, user!);
                     await getUserProfileInternal(data.token);
                 } else {
-                    await getUserProfileInternal(); // Use state token
+                    await getUserProfileInternal();
                 }
             }
         } catch (error: any) {
-            // Ensure signed out on any error
             try {
                 await GoogleSignin.signOut();
             } catch (e) {
@@ -358,7 +368,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw new Error(data.message || 'Unlink failed');
             }
 
-            await getUserProfileInternal(); // Refresh with state token
+            await getUserProfileInternal();
         } catch (error: any) {
             throw new Error(error.message || 'Network error');
         }
@@ -471,7 +481,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    // Public getUserProfile uses state token
     const getUserProfile = async (): Promise<any> => {
         return getUserProfileInternal();
     };
@@ -486,11 +495,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     },
                 });
             }
-            // Sign out from Google if signed in
+
             try {
                 await GoogleSignin.signOut();
             } catch (e) {
-                // Ignore if not signed in with Google
                 console.log('Google sign out ignored:', e);
             }
         } catch (error) {
