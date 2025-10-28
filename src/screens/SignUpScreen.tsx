@@ -1,4 +1,3 @@
-// Updated Frontend: SignUpScreen.tsx
 import React, { useState } from 'react';
 import {
     View,
@@ -11,6 +10,11 @@ import {
     Alert,
     ActivityIndicator,
     Modal,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    TouchableWithoutFeedback,
+    Keyboard,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { CommonActions } from '@react-navigation/native';
@@ -33,6 +37,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
     const [contact, setContact] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [showVerifyModal, setShowVerifyModal] = useState(false);
     const [verifyEmail, setVerifyEmail] = useState('');
     const [verifyLoading, setVerifyLoading] = useState(false);
@@ -40,15 +45,20 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
 
     const styles = useThemedStyles((theme) =>
         StyleSheet.create({
-            container: {
+            safeArea: {
                 flex: 1,
                 backgroundColor: theme.background,
             },
-            content: {
+            keyboardView: {
                 flex: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
-                paddingHorizontal: 20,
+            },
+            scrollView: {
+                flexGrow: 1,
+            },
+            container: {
+                flex: 1,
+                backgroundColor: theme.background,
+                minHeight: 800,
             },
             header: {
                 position: 'absolute',
@@ -60,62 +70,110 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                 borderBottomRightRadius: 75,
                 justifyContent: 'center',
                 alignItems: 'center',
+                zIndex: 10,
             },
             headerText: {
                 color: '#fff',
                 fontSize: 24,
                 fontWeight: 'bold',
             },
+            content: {
+                flex: 1,
+                justifyContent: 'center',
+                paddingHorizontal: 24,
+                paddingTop: 180,
+                paddingBottom: 40,
+            },
             logo: {
                 width: 100,
                 height: 100,
-                marginBottom: 20,
+                alignSelf: 'center',
+                marginBottom: 32,
                 resizeMode: 'contain',
             },
-            input: {
+            inputContainer: {
                 width: '100%',
-                height: 50,
+                marginBottom: 16,
+            },
+            inputWrapper: {
+                flexDirection: 'row',
+                alignItems: 'center',
                 borderWidth: 1,
                 borderColor: isDarkMode ? theme.border : '#007BFF',
                 backgroundColor: theme.surface,
+                borderRadius: 8,
+                height: 52,
+                paddingHorizontal: 16,
+            },
+            input: {
+                flex: 1,
                 color: theme.text,
-                borderRadius: 5,
-                marginBottom: 10,
-                paddingHorizontal: 10,
+                fontSize: 16,
+                paddingVertical: 0,
+                height: '100%',
             },
-            passwordContainer: {
-                width: '100%',
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: 10,
+            eyeButton: {
+                padding: 8,
+                marginLeft: 8,
             },
-            lockIcon: {
-                width: 20,
-                height: 20,
-                marginLeft: -25,
-                resizeMode: 'contain',
+            eyeIcon: {
+                width: 22,
+                height: 22,
+                tintColor: theme.iconTint,
             },
             button: {
                 backgroundColor: isDarkMode ? theme.primary : '#007BFF',
-                paddingVertical: 12,
-                paddingHorizontal: 20,
-                borderRadius: 5,
+                paddingVertical: 14,
+                borderRadius: 8,
                 width: '100%',
                 alignItems: 'center',
-                marginVertical: 10,
+                marginTop: 8,
+                marginBottom: 16,
+                height: 52,
+                justifyContent: 'center',
+            },
+            buttonDisabled: {
+                opacity: 0.6,
             },
             buttonText: {
                 color: '#fff',
                 fontSize: 16,
                 fontWeight: '600',
             },
+            dividerContainer: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                width: '100%',
+                marginVertical: 16,
+            },
+            dividerLine: {
+                flex: 1,
+                height: 1,
+                backgroundColor: theme.border,
+            },
+            orText: {
+                marginHorizontal: 16,
+                color: theme.textSecondary,
+                fontSize: 14,
+                fontWeight: '500',
+            },
+            googleButton: {
+                width: '100%',
+                height: 52,
+                marginBottom: 16,
+            },
+            linkContainer: {
+                alignItems: 'center',
+                paddingVertical: 12,
+            },
             link: {
                 color: isDarkMode ? theme.primary : '#007BFF',
-                marginTop: 10,
                 fontSize: 14,
+                fontWeight: '500',
             },
             verifyButton: {
-                marginTop: 5,
+                alignItems: 'center',
+                paddingVertical: 12,
             },
             verifyText: {
                 color: '#FF6B35',
@@ -124,45 +182,57 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
             },
             modalOverlay: {
                 flex: 1,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
                 justifyContent: 'center',
                 alignItems: 'center',
+                paddingHorizontal: 24,
             },
             modalContent: {
                 backgroundColor: theme.cardBackground,
-                borderRadius: 12,
-                padding: 20,
-                width: '85%',
+                borderRadius: 16,
+                padding: 24,
+                width: '100%',
                 maxWidth: 400,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 16,
+                elevation: 8,
             },
             modalTitle: {
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: 'bold',
                 color: theme.text,
-                marginBottom: 15,
+                marginBottom: 20,
                 textAlign: 'center',
             },
-            modalInput: {
-                width: '100%',
-                height: 50,
+            modalInputWrapper: {
                 borderWidth: 1,
                 borderColor: theme.border,
                 backgroundColor: theme.surface,
-                color: theme.text,
                 borderRadius: 8,
-                paddingHorizontal: 15,
-                marginBottom: 15,
+                height: 52,
+                paddingHorizontal: 16,
+                marginBottom: 20,
+                justifyContent: 'center',
+            },
+            modalInput: {
+                color: theme.text,
+                fontSize: 16,
+                paddingVertical: 0,
+                height: '100%',
             },
             modalButtons: {
                 flexDirection: 'row',
-                justifyContent: 'space-between',
-                gap: 10,
+                gap: 12,
             },
             modalButton: {
                 flex: 1,
-                paddingVertical: 12,
+                paddingVertical: 14,
                 borderRadius: 8,
                 alignItems: 'center',
+                height: 52,
+                justifyContent: 'center',
             },
             cancelButton: {
                 backgroundColor: theme.border,
@@ -170,20 +240,22 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
             confirmButton: {
                 backgroundColor: theme.primary,
             },
-            googleButton: {
-                width: '100%',
-                height: 48,
-                marginVertical: 10,
+            cancelButtonText: {
+                color: theme.text,
+                fontWeight: '600',
+                fontSize: 16,
             },
-            orText: {
-                marginVertical: 10,
-                color: theme.textSecondary,
-                fontSize: 14,
+            confirmButtonText: {
+                color: '#fff',
+                fontWeight: '600',
+                fontSize: 16,
             },
         })
     );
 
     const handleSignUp = async () => {
+        Keyboard.dismiss();
+
         if (!username || !email || !contact || !password) {
             Alert.alert('Error', 'All fields are required');
             return;
@@ -204,7 +276,6 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
         setGoogleLoading(true);
         try {
             await googleSignIn();
-            // Reset navigation stack to prevent going back to signup
             navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -212,7 +283,6 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                 })
             );
         } catch (error: any) {
-            console.log(error);
             Alert.alert('Google Sign Up Failed', error.message);
         } finally {
             setGoogleLoading(false);
@@ -239,93 +309,155 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <View style={styles.header}>
-                    <Text style={styles.headerText}>Sign Up</Text>
-                </View>
+        <SafeAreaView style={styles.safeArea}>
+            <KeyboardAvoidingView
+                style={styles.keyboardView}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={0}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <ScrollView
+                        contentContainerStyle={styles.scrollView}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={false}
+                        bounces={false}
+                    >
+                        <View style={styles.container}>
+                            <View style={styles.header}>
+                                <Text style={styles.headerText}>Sign Up</Text>
+                            </View>
 
-                <Image
-                    source={
-                        isDarkMode
-                            ? require('../assets/images/splash-dark.jpg')
-                            : require('../assets/images/splash.png')
-                    }
-                    style={styles.logo}
-                />
+                            <View style={styles.content}>
+                                <Image
+                                    source={
+                                        isDarkMode
+                                            ? require('../assets/images/splash-dark.jpg')
+                                            : require('../assets/images/splash.png')
+                                    }
+                                    style={styles.logo}
+                                />
 
-                <TextInput
-                    style={styles.input}
-                    placeholder="Full Name"
-                    placeholderTextColor={theme.textSecondary}
-                    value={username}
-                    onChangeText={setUsername}
-                />
-                <TextInput
-                    style={styles.input}
-                    placeholder="Email"
-                    placeholderTextColor={theme.textSecondary}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                />
-                <TextInput
-                    style={styles.input}
-                    placeholder="Contact Number"
-                    placeholderTextColor={theme.textSecondary}
-                    value={contact}
-                    onChangeText={setContact}
-                    keyboardType="phone-pad"
-                />
+                                <View style={styles.inputContainer}>
+                                    <View style={styles.inputWrapper}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Full Name"
+                                            placeholderTextColor={theme.textSecondary}
+                                            value={username}
+                                            onChangeText={setUsername}
+                                            autoCapitalize="words"
+                                            autoCorrect={false}
+                                        />
+                                    </View>
+                                </View>
 
-                <View style={styles.passwordContainer}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Password"
-                        placeholderTextColor={theme.textSecondary}
-                        secureTextEntry={true}
-                        value={password}
-                        onChangeText={setPassword}
-                    />
-                    <Image
-                        source={require('../assets/images/lock.png')}
-                        style={styles.lockIcon}
-                    />
-                </View>
+                                <View style={styles.inputContainer}>
+                                    <View style={styles.inputWrapper}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Email"
+                                            placeholderTextColor={theme.textSecondary}
+                                            value={email}
+                                            onChangeText={setEmail}
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                        />
+                                    </View>
+                                </View>
 
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={handleSignUp}
-                    disabled={loading || googleLoading}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.buttonText}>Sign Up</Text>
-                    )}
-                </TouchableOpacity>
+                                <View style={styles.inputContainer}>
+                                    <View style={styles.inputWrapper}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Contact Number"
+                                            placeholderTextColor={theme.textSecondary}
+                                            value={contact}
+                                            onChangeText={setContact}
+                                            keyboardType="phone-pad"
+                                            autoCorrect={false}
+                                        />
+                                    </View>
+                                </View>
 
-                <Text style={styles.orText}>Or</Text>
+                                <View style={styles.inputContainer}>
+                                    <View style={styles.inputWrapper}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Password"
+                                            placeholderTextColor={theme.textSecondary}
+                                            secureTextEntry={!showPassword}
+                                            value={password}
+                                            onChangeText={setPassword}
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                        />
+                                        <TouchableOpacity
+                                            style={styles.eyeButton}
+                                            onPress={() => setShowPassword(!showPassword)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Image
+                                                source={
+                                                    showPassword
+                                                        ? require('../assets/images/eye-open.png')
+                                                        : require('../assets/images/eye-closed.png')
+                                                }
+                                                style={styles.eyeIcon}
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
 
-                <GoogleSigninButton
-                    style={styles.googleButton}
-                    color={isDarkMode ? GoogleSigninButton.Color.Dark : GoogleSigninButton.Color.Light}
-                    onPress={handleGoogleSignUp}
-                    disabled={loading || googleLoading}
-                />
+                                <TouchableOpacity
+                                    style={[styles.button, (loading || googleLoading) && styles.buttonDisabled]}
+                                    onPress={handleSignUp}
+                                    disabled={loading || googleLoading}
+                                    activeOpacity={0.8}
+                                >
+                                    {loading ? (
+                                        <ActivityIndicator color="#fff" size="small" />
+                                    ) : (
+                                        <Text style={styles.buttonText}>Sign Up</Text>
+                                    )}
+                                </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                    <Text style={styles.link}>Already Registered? Log in here.</Text>
-                </TouchableOpacity>
+                                <View style={styles.dividerContainer}>
+                                    <View style={styles.dividerLine} />
+                                    <Text style={styles.orText}>Or</Text>
+                                    <View style={styles.dividerLine} />
+                                </View>
 
-                <TouchableOpacity
-                    style={styles.verifyButton}
-                    onPress={() => setShowVerifyModal(true)}
-                >
-                    <Text style={styles.verifyText}>Already registered? Verify Email</Text>
-                </TouchableOpacity>
-            </View>
+                                <GoogleSigninButton
+                                    style={styles.googleButton}
+                                    size={GoogleSigninButton.Size.Wide}
+                                    color={isDarkMode ? GoogleSigninButton.Color.Dark : GoogleSigninButton.Color.Light}
+                                    onPress={handleGoogleSignUp}
+                                    disabled={loading || googleLoading}
+                                />
+
+                                <View style={styles.linkContainer}>
+                                    <TouchableOpacity
+                                        onPress={() => navigation.navigate('Login')}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={styles.link}>Already Registered? Log in here</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View style={styles.verifyButton}>
+                                    <TouchableOpacity
+                                        onPress={() => setShowVerifyModal(true)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={styles.verifyText}>Already registered? Verify Email</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </ScrollView>
+                </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
 
             <Modal
                 visible={showVerifyModal}
@@ -333,42 +465,51 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                 animationType="fade"
                 onRequestClose={() => setShowVerifyModal(false)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Verify Email</Text>
-                        <TextInput
-                            style={styles.modalInput}
-                            placeholder="Enter your email"
-                            placeholderTextColor={theme.textSecondary}
-                            value={verifyEmail}
-                            onChangeText={setVerifyEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
-                        <View style={styles.modalButtons}>
-                            <TouchableOpacity
-                                style={[styles.modalButton, styles.cancelButton]}
-                                onPress={() => {
-                                    setShowVerifyModal(false);
-                                    setVerifyEmail('');
-                                }}
-                            >
-                                <Text style={{ color: theme.text, fontWeight: '600' }}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.modalButton, styles.confirmButton]}
-                                onPress={handleVerifyEmail}
-                                disabled={verifyLoading}
-                            >
-                                {verifyLoading ? (
-                                    <ActivityIndicator color="#fff" />
-                                ) : (
-                                    <Text style={{ color: '#fff', fontWeight: '600' }}>Verify</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
+                <TouchableWithoutFeedback onPress={() => setShowVerifyModal(false)}>
+                    <View style={styles.modalOverlay}>
+                        <TouchableWithoutFeedback>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>Verify Email</Text>
+                                <View style={styles.modalInputWrapper}>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        placeholder="Enter your email"
+                                        placeholderTextColor={theme.textSecondary}
+                                        value={verifyEmail}
+                                        onChangeText={setVerifyEmail}
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        autoCorrect={false}
+                                    />
+                                </View>
+                                <View style={styles.modalButtons}>
+                                    <TouchableOpacity
+                                        style={[styles.modalButton, styles.cancelButton]}
+                                        onPress={() => {
+                                            setShowVerifyModal(false);
+                                            setVerifyEmail('');
+                                        }}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.modalButton, styles.confirmButton]}
+                                        onPress={handleVerifyEmail}
+                                        disabled={verifyLoading}
+                                        activeOpacity={0.8}
+                                    >
+                                        {verifyLoading ? (
+                                            <ActivityIndicator color="#fff" size="small" />
+                                        ) : (
+                                            <Text style={styles.confirmButtonText}>Verify</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </TouchableWithoutFeedback>
                     </View>
-                </View>
+                </TouchableWithoutFeedback>
             </Modal>
         </SafeAreaView>
     );

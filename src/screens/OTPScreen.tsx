@@ -8,6 +8,11 @@ import {
     SafeAreaView,
     Alert,
     ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    TouchableWithoutFeedback,
+    Keyboard,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
@@ -50,15 +55,20 @@ const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
 
     const styles = useThemedStyles((theme) =>
         StyleSheet.create({
-            container: {
+            safeArea: {
                 flex: 1,
                 backgroundColor: theme.background,
             },
-            content: {
+            keyboardView: {
                 flex: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
-                paddingHorizontal: 20,
+            },
+            scrollView: {
+                flexGrow: 1,
+            },
+            container: {
+                flex: 1,
+                backgroundColor: theme.background,
+                minHeight: 700,
             },
             header: {
                 position: 'absolute',
@@ -70,23 +80,34 @@ const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
                 borderBottomRightRadius: 75,
                 justifyContent: 'center',
                 alignItems: 'center',
+                zIndex: 10,
             },
             headerText: {
                 color: '#fff',
                 fontSize: 24,
                 fontWeight: 'bold',
             },
+            content: {
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingHorizontal: 24,
+                paddingTop: 180,
+                paddingBottom: 40,
+            },
             title: {
-                fontSize: 24,
+                fontSize: 28,
                 fontWeight: 'bold',
                 color: theme.text,
-                marginBottom: 10,
+                marginBottom: 12,
             },
             subtitle: {
                 fontSize: 16,
                 color: theme.textSecondary,
                 textAlign: 'center',
-                marginBottom: 30,
+                marginBottom: 40,
+                lineHeight: 24,
+                paddingHorizontal: 20,
             },
             email: {
                 color: theme.primary,
@@ -96,31 +117,37 @@ const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 width: '100%',
-                marginBottom: 30,
+                marginBottom: 40,
+                paddingHorizontal: 10,
             },
             otpInput: {
                 width: 50,
-                height: 55,
+                height: 56,
                 borderWidth: 2,
                 borderColor: theme.border,
                 backgroundColor: theme.surface,
                 color: theme.text,
-                borderRadius: 8,
+                borderRadius: 12,
                 textAlign: 'center',
-                fontSize: 20,
+                fontSize: 24,
                 fontWeight: 'bold',
             },
             otpInputFocused: {
                 borderColor: theme.primary,
+                borderWidth: 2,
             },
             button: {
                 backgroundColor: isDarkMode ? theme.primary : '#007BFF',
-                paddingVertical: 12,
-                paddingHorizontal: 20,
-                borderRadius: 5,
+                paddingVertical: 14,
+                borderRadius: 8,
                 width: '100%',
                 alignItems: 'center',
-                marginVertical: 10,
+                marginBottom: 24,
+                height: 52,
+                justifyContent: 'center',
+            },
+            buttonDisabled: {
+                opacity: 0.6,
             },
             buttonText: {
                 color: '#fff',
@@ -128,26 +155,26 @@ const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
                 fontWeight: '600',
             },
             resendContainer: {
-                marginTop: 20,
                 alignItems: 'center',
             },
             resendText: {
                 fontSize: 14,
                 color: theme.textSecondary,
-                marginBottom: 5,
+                marginBottom: 12,
             },
             resendButton: {
-                padding: 10,
+                paddingVertical: 12,
+                paddingHorizontal: 24,
             },
             resendButtonText: {
-                color: canResend ? theme.primary : theme.textSecondary,
                 fontSize: 16,
                 fontWeight: '600',
             },
-            countdownText: {
+            resendButtonEnabled: {
+                color: theme.primary,
+            },
+            resendButtonDisabled: {
                 color: theme.textSecondary,
-                fontSize: 14,
-                marginTop: 5,
             },
         })
     );
@@ -173,6 +200,8 @@ const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
     };
 
     const handleVerify = async () => {
+        Keyboard.dismiss();
+
         const otpCode = otp.join('');
         if (otpCode.length !== 6) {
             Alert.alert('Error', 'Please enter complete OTP');
@@ -222,66 +251,90 @@ const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <View style={styles.header}>
-                    <Text style={styles.headerText}>Verify</Text>
-                </View>
-
-                <Text style={styles.title}>Enter OTP</Text>
-                <Text style={styles.subtitle}>
-                    We've sent a verification code to{'\n'}
-                    <Text style={styles.email}>{email}</Text>
-                </Text>
-
-                <View style={styles.otpContainer}>
-                    {otp.map((digit, index) => (
-                        <TextInput
-                            key={index}
-                            ref={(ref) => (inputRefs.current[index] = ref)}
-                            style={[
-                                styles.otpInput,
-                                digit ? styles.otpInputFocused : null,
-                            ]}
-                            value={digit}
-                            onChangeText={(text) => handleOtpChange(text, index)}
-                            onKeyPress={(e) => handleKeyPress(e, index)}
-                            keyboardType="number-pad"
-                            maxLength={1}
-                            selectTextOnFocus
-                        />
-                    ))}
-                </View>
-
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={handleVerify}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.buttonText}>Verify Email</Text>
-                    )}
-                </TouchableOpacity>
-
-                <View style={styles.resendContainer}>
-                    <Text style={styles.resendText}>Didn't receive the code?</Text>
-                    <TouchableOpacity
-                        style={styles.resendButton}
-                        onPress={handleResend}
-                        disabled={!canResend || resendLoading}
+        <SafeAreaView style={styles.safeArea}>
+            <KeyboardAvoidingView
+                style={styles.keyboardView}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={0}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <ScrollView
+                        contentContainerStyle={styles.scrollView}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={false}
+                        bounces={false}
                     >
-                        {resendLoading ? (
-                            <ActivityIndicator color={theme.primary} />
-                        ) : (
-                            <Text style={styles.resendButtonText}>
-                                {canResend ? 'Resend OTP' : `Resend in ${countdown}s`}
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-                </View>
-            </View>
+                        <View style={styles.container}>
+                            <View style={styles.header}>
+                                <Text style={styles.headerText}>Verify</Text>
+                            </View>
+
+                            <View style={styles.content}>
+                                <Text style={styles.title}>Enter OTP</Text>
+                                <Text style={styles.subtitle}>
+                                    We've sent a verification code to{'\n'}
+                                    <Text style={styles.email}>{email}</Text>
+                                </Text>
+
+                                <View style={styles.otpContainer}>
+                                    {otp.map((digit, index) => (
+                                        <TextInput
+                                            key={index}
+                                            ref={(ref) => (inputRefs.current[index] = ref)}
+                                            style={[
+                                                styles.otpInput,
+                                                digit ? styles.otpInputFocused : null,
+                                            ]}
+                                            value={digit}
+                                            onChangeText={(text) => handleOtpChange(text, index)}
+                                            onKeyPress={(e) => handleKeyPress(e, index)}
+                                            keyboardType="number-pad"
+                                            maxLength={1}
+                                            selectTextOnFocus
+                                        />
+                                    ))}
+                                </View>
+
+                                <TouchableOpacity
+                                    style={[styles.button, loading && styles.buttonDisabled]}
+                                    onPress={handleVerify}
+                                    disabled={loading}
+                                    activeOpacity={0.8}
+                                >
+                                    {loading ? (
+                                        <ActivityIndicator color="#fff" size="small" />
+                                    ) : (
+                                        <Text style={styles.buttonText}>Verify Email</Text>
+                                    )}
+                                </TouchableOpacity>
+
+                                <View style={styles.resendContainer}>
+                                    <Text style={styles.resendText}>Didn't receive the code?</Text>
+                                    <TouchableOpacity
+                                        style={styles.resendButton}
+                                        onPress={handleResend}
+                                        disabled={!canResend || resendLoading}
+                                        activeOpacity={0.7}
+                                    >
+                                        {resendLoading ? (
+                                            <ActivityIndicator color={theme.primary} size="small" />
+                                        ) : (
+                                            <Text
+                                                style={[
+                                                    styles.resendButtonText,
+                                                    canResend ? styles.resendButtonEnabled : styles.resendButtonDisabled,
+                                                ]}
+                                            >
+                                                {canResend ? 'Resend OTP' : `Resend in ${countdown}s`}
+                                            </Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </ScrollView>
+                </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };

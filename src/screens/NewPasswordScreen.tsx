@@ -9,6 +9,11 @@ import {
     SafeAreaView,
     Alert,
     ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    TouchableWithoutFeedback,
+    Keyboard,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
@@ -34,18 +39,24 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const styles = useThemedStyles((theme) =>
         StyleSheet.create({
-            container: {
+            safeArea: {
                 flex: 1,
                 backgroundColor: theme.background,
             },
-            content: {
+            keyboardView: {
                 flex: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
-                paddingHorizontal: 20,
+            },
+            scrollView: {
+                flexGrow: 1,
+            },
+            container: {
+                flex: 1,
+                backgroundColor: theme.background,
             },
             header: {
                 position: 'absolute',
@@ -58,6 +69,7 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                 justifyContent: 'center',
                 alignItems: 'center',
                 paddingLeft: 20,
+                zIndex: 10,
             },
             headerText: {
                 color: '#fff',
@@ -65,72 +77,101 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                 fontWeight: 'bold',
                 textAlign: 'center',
             },
+            content: {
+                paddingHorizontal: 24,
+                paddingTop: 200,
+                paddingBottom: 40,
+            },
             logo: {
                 width: 100,
                 height: 100,
-                marginBottom: 20,
+                alignSelf: 'center',
+                marginBottom: 32,
                 resizeMode: 'contain',
             },
             title: {
                 fontSize: 24,
                 fontWeight: 'bold',
                 color: theme.text,
-                marginBottom: 10,
+                marginBottom: 12,
+                textAlign: 'center',
             },
             subtitle: {
                 fontSize: 14,
                 color: theme.textSecondary,
                 textAlign: 'center',
-                marginBottom: 30,
-                paddingHorizontal: 20,
+                marginBottom: 40,
+                lineHeight: 22,
             },
-            passwordContainer: {
+            inputContainer: {
                 width: '100%',
+                marginBottom: 20,
+            },
+            label: {
+                fontSize: 14,
+                color: theme.text,
+                marginBottom: 8,
+                fontWeight: '500',
+            },
+            inputWrapper: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                marginBottom: 15,
-            },
-            input: {
-                width: '100%',
-                height: 50,
                 borderWidth: 1,
                 borderColor: isDarkMode ? theme.border : '#007BFF',
                 backgroundColor: theme.surface,
-                color: theme.text,
-                borderRadius: 5,
-                paddingHorizontal: 10,
+                borderRadius: 8,
+                height: 52,
+                paddingHorizontal: 16,
             },
-            lockIcon: {
-                width: 20,
-                height: 20,
-                marginLeft: -25,
-                resizeMode: 'contain',
+            input: {
+                flex: 1,
+                color: theme.text,
+                fontSize: 16,
+                height: 52,
+            },
+            eyeButton: {
+                padding: 8,
+                marginLeft: 8,
+                justifyContent: 'center',
+                alignItems: 'center',
+            },
+            eyeIcon: {
+                width: 22,
+                height: 22,
+                tintColor: theme.iconTint,
+            },
+            hint: {
+                fontSize: 12,
+                color: theme.textSecondary,
+                marginTop: 8,
+                textAlign: 'center',
+                lineHeight: 18,
+                paddingHorizontal: 10,
             },
             button: {
                 backgroundColor: isDarkMode ? theme.primary : '#007BFF',
-                paddingVertical: 12,
-                paddingHorizontal: 20,
-                borderRadius: 5,
+                paddingVertical: 14,
+                borderRadius: 8,
                 width: '100%',
                 alignItems: 'center',
-                marginTop: 20,
+                marginTop: 24,
+                height: 52,
+                justifyContent: 'center',
+            },
+            buttonDisabled: {
+                opacity: 0.6,
             },
             buttonText: {
                 color: '#fff',
                 fontSize: 16,
                 fontWeight: '600',
             },
-            hint: {
-                fontSize: 12,
-                color: theme.textSecondary,
-                marginTop: 10,
-                textAlign: 'center',
-                paddingHorizontal: 10,
-            },
         })
     );
 
     const handleResetPassword = async () => {
+        Keyboard.dismiss();
+
         if (!newPassword || !confirmPassword) {
             Alert.alert('Error', 'Please fill all fields');
             return;
@@ -138,6 +179,11 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
 
         if (newPassword !== confirmPassword) {
             Alert.alert('Error', 'Passwords do not match');
+            return;
+        }
+
+        if (newPassword.length < 8) {
+            Alert.alert('Error', 'Password must be at least 8 characters long');
             return;
         }
 
@@ -165,72 +211,122 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <View style={styles.header}>
-                    <Text style={styles.headerText}>New{'\n'}Password</Text>
-                </View>
+        <SafeAreaView style={styles.safeArea}>
+            <KeyboardAvoidingView
+                style={styles.keyboardView}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <ScrollView
+                        contentContainerStyle={styles.scrollView}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={false}
+                    >
+                        <View style={styles.container}>
+                            <View style={styles.header}>
+                                <Text style={styles.headerText}>New{'\n'}Password</Text>
+                            </View>
 
-                <Image
-                    source={
-                        isDarkMode
-                            ? require('../assets/images/splash-dark.jpg')
-                            : require('../assets/images/splash.png')
-                    }
-                    style={styles.logo}
-                />
+                            <View style={styles.content}>
+                                <Image
+                                    source={
+                                        isDarkMode
+                                            ? require('../assets/images/splash-dark.jpg')
+                                            : require('../assets/images/splash.png')
+                                    }
+                                    style={styles.logo}
+                                />
 
-                <Text style={styles.title}>Create New Password</Text>
-                <Text style={styles.subtitle}>
-                    Your new password must be different from previously used passwords
-                </Text>
+                                <Text style={styles.title}>Create New Password</Text>
+                                <Text style={styles.subtitle}>
+                                    Your new password must be different from previously used passwords
+                                </Text>
 
-                <View style={styles.passwordContainer}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="New Password"
-                        placeholderTextColor={theme.textSecondary}
-                        secureTextEntry={true}
-                        value={newPassword}
-                        onChangeText={setNewPassword}
-                    />
-                    <Image
-                        source={require('../assets/images/lock.png')}
-                        style={styles.lockIcon}
-                    />
-                </View>
+                                <View style={styles.inputContainer}>
+                                    <Text style={styles.label}>New Password</Text>
+                                    <View style={styles.inputWrapper}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Enter new password"
+                                            placeholderTextColor={theme.textSecondary}
+                                            secureTextEntry={!showNewPassword}
+                                            value={newPassword}
+                                            onChangeText={setNewPassword}
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                            returnKeyType="next"
+                                        />
+                                        <TouchableOpacity
+                                            style={styles.eyeButton}
+                                            onPress={() => setShowNewPassword(!showNewPassword)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Image
+                                                source={
+                                                    showNewPassword
+                                                        ? require('../assets/images/eye-open.png')
+                                                        : require('../assets/images/eye-closed.png')
+                                                }
+                                                style={styles.eyeIcon}
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
 
-                <View style={styles.passwordContainer}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Confirm Password"
-                        placeholderTextColor={theme.textSecondary}
-                        secureTextEntry={true}
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                    />
-                    <Image
-                        source={require('../assets/images/lock.png')}
-                        style={styles.lockIcon}
-                    />
-                </View>
+                                <View style={styles.inputContainer}>
+                                    <Text style={styles.label}>Confirm Password</Text>
+                                    <View style={styles.inputWrapper}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Re-enter new password"
+                                            placeholderTextColor={theme.textSecondary}
+                                            secureTextEntry={!showConfirmPassword}
+                                            value={confirmPassword}
+                                            onChangeText={setConfirmPassword}
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                            returnKeyType="done"
+                                            onSubmitEditing={handleResetPassword}
+                                        />
+                                        <TouchableOpacity
+                                            style={styles.eyeButton}
+                                            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Image
+                                                source={
+                                                    showConfirmPassword
+                                                        ? require('../assets/images/eye-open.png')
+                                                        : require('../assets/images/eye-closed.png')
+                                                }
+                                                style={styles.eyeIcon}
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
 
-                <Text style={styles.hint}>
-                    Password must be at least 8 characters long, include an uppercase letter, lowercase letter, number, and special character
-                </Text>
+                                <Text style={styles.hint}>
+                                    Password must be at least 8 characters long, include an uppercase letter, lowercase letter, number, and special character
+                                </Text>
 
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={handleResetPassword}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.buttonText}>Reset Password</Text>
-                    )}
-                </TouchableOpacity>
-            </View>
+                                <TouchableOpacity
+                                    style={[styles.button, loading && styles.buttonDisabled]}
+                                    onPress={handleResetPassword}
+                                    disabled={loading}
+                                    activeOpacity={0.8}
+                                >
+                                    {loading ? (
+                                        <ActivityIndicator color="#fff" size="small" />
+                                    ) : (
+                                        <Text style={styles.buttonText}>Reset Password</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </ScrollView>
+                </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };

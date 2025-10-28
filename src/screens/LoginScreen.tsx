@@ -1,4 +1,3 @@
-// Updated Frontend: LoginScreen
 import React, { useState } from 'react';
 import {
     View,
@@ -9,7 +8,12 @@ import {
     Image,
     SafeAreaView,
     Alert,
-    ActivityIndicator
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    TouchableWithoutFeedback,
+    Keyboard,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { CommonActions } from '@react-navigation/native';
@@ -30,17 +34,23 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const styles = useThemedStyles((theme) => StyleSheet.create({
-        container: {
+        safeArea: {
             flex: 1,
             backgroundColor: theme.background,
         },
-        content: {
+        keyboardView: {
             flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            paddingHorizontal: 20,
+        },
+        scrollView: {
+            flexGrow: 1,
+        },
+        container: {
+            flex: 1,
+            backgroundColor: theme.background,
+            minHeight: 700,
         },
         header: {
             position: 'absolute',
@@ -52,81 +62,121 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
             borderBottomRightRadius: 75,
             justifyContent: 'center',
             alignItems: 'center',
+            zIndex: 10,
         },
         headerText: {
             color: '#fff',
             fontSize: 24,
             fontWeight: 'bold',
         },
+        content: {
+            flex: 1,
+            justifyContent: 'center',
+            paddingHorizontal: 24,
+            paddingTop: 180,
+            paddingBottom: 40,
+        },
         logo: {
             width: 100,
             height: 100,
-            marginBottom: 20,
+            alignSelf: 'center',
+            marginBottom: 40,
             resizeMode: 'contain',
         },
-        input: {
+        inputContainer: {
             width: '100%',
-            height: 50,
+            marginBottom: 16,
+        },
+        inputWrapper: {
+            flexDirection: 'row',
+            alignItems: 'center',
             borderWidth: 1,
             borderColor: isDarkMode ? theme.border : '#007BFF',
             backgroundColor: theme.surface,
+            borderRadius: 8,
+            height: 52,
+            paddingHorizontal: 16,
+        },
+        input: {
+            flex: 1,
             color: theme.text,
-            borderRadius: 5,
-            marginBottom: 10,
-            paddingHorizontal: 10,
+            fontSize: 16,
+            paddingVertical: 0,
+            height: '100%',
         },
-        passwordContainer: {
-            width: '100%',
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: 10,
+        eyeButton: {
+            padding: 8,
+            marginLeft: 8,
         },
-        lockIcon: {
-            width: 20,
-            height: 20,
-            marginLeft: -25,
-            resizeMode: 'contain',
+        eyeIcon: {
+            width: 22,
+            height: 22,
+            tintColor: theme.iconTint,
+        },
+        forgotPasswordContainer: {
+            alignItems: 'flex-end',
+            marginBottom: 24,
+            marginTop: 8,
+        },
+        forgotPasswordText: {
+            color: isDarkMode ? theme.primary : '#007BFF',
+            fontSize: 14,
+            fontWeight: '500',
         },
         button: {
             backgroundColor: isDarkMode ? theme.primary : '#007BFF',
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            borderRadius: 5,
+            paddingVertical: 14,
+            borderRadius: 8,
             width: '100%',
             alignItems: 'center',
-            marginVertical: 10,
+            marginBottom: 20,
+            height: 52,
+            justifyContent: 'center',
+        },
+        buttonDisabled: {
+            opacity: 0.6,
         },
         buttonText: {
             color: '#fff',
             fontSize: 16,
             fontWeight: '600',
         },
-        link: {
-            color: isDarkMode ? theme.primary : '#007BFF',
-            marginTop: 10,
-            fontSize: 14,
+        dividerContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            width: '100%',
+            marginVertical: 20,
         },
-        forgotPassword: {
-            alignSelf: 'flex-end',
-            marginBottom: 10,
+        dividerLine: {
+            flex: 1,
+            height: 1,
+            backgroundColor: theme.border,
         },
-        forgotPasswordText: {
-            color: isDarkMode ? theme.primary : '#007BFF',
+        orText: {
+            marginHorizontal: 16,
+            color: theme.textSecondary,
             fontSize: 14,
+            fontWeight: '500',
         },
         googleButton: {
             width: '100%',
-            height: 48,
-            marginVertical: 10,
+            height: 52,
+            marginBottom: 20,
         },
-        orText: {
-            marginVertical: 10,
-            color: theme.textSecondary,
+        signUpContainer: {
+            alignItems: 'center',
+            paddingVertical: 16,
+        },
+        link: {
+            color: isDarkMode ? theme.primary : '#007BFF',
             fontSize: 14,
+            fontWeight: '500',
         },
     }));
 
     const handleLogin = async () => {
+        Keyboard.dismiss();
+
         if (!email || !password) {
             Alert.alert('Error', 'Email and password are required');
             return;
@@ -135,7 +185,6 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         setLoading(true);
         try {
             await login(email.toLowerCase(), password);
-            // Reset navigation stack to prevent going back to login
             navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -153,7 +202,6 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         setLoading(true);
         try {
             await googleSignIn();
-            // Reset navigation stack to prevent going back to login
             navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -168,78 +216,127 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <View style={styles.header}>
-                    <Text style={styles.headerText}>Login</Text>
-                </View>
+        <SafeAreaView style={styles.safeArea}>
+            <KeyboardAvoidingView
+                style={styles.keyboardView}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <ScrollView
+                        contentContainerStyle={styles.scrollView}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={false}
+                        bounces={false}
+                    >
+                        <View style={styles.container}>
+                            <View style={styles.header}>
+                                <Text style={styles.headerText}>Login</Text>
+                            </View>
 
-                <Image
-                    source={
-                        isDarkMode
-                            ? require('../assets/images/splash-dark.jpg')
-                            : require('../assets/images/splash.png')
-                    }
-                    style={styles.logo}
-                />
+                            <View style={styles.content}>
+                                <Image
+                                    source={
+                                        isDarkMode
+                                            ? require('../assets/images/splash-dark.jpg')
+                                            : require('../assets/images/splash.png')
+                                    }
+                                    style={styles.logo}
+                                />
 
-                <TextInput
-                    style={styles.input}
-                    placeholder="Email"
-                    placeholderTextColor={theme.textSecondary}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                />
+                                <View style={styles.inputContainer}>
+                                    <View style={styles.inputWrapper}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Email"
+                                            placeholderTextColor={theme.textSecondary}
+                                            value={email}
+                                            onChangeText={setEmail}
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                        />
+                                    </View>
+                                </View>
 
-                <View style={styles.passwordContainer}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Password"
-                        placeholderTextColor={theme.textSecondary}
-                        secureTextEntry={true}
-                        value={password}
-                        onChangeText={setPassword}
-                    />
-                    <Image
-                        source={require('../assets/images/lock.png')}
-                        style={styles.lockIcon}
-                    />
-                </View>
+                                <View style={styles.inputContainer}>
+                                    <View style={styles.inputWrapper}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Password"
+                                            placeholderTextColor={theme.textSecondary}
+                                            secureTextEntry={!showPassword}
+                                            value={password}
+                                            onChangeText={setPassword}
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                        />
+                                        <TouchableOpacity
+                                            style={styles.eyeButton}
+                                            onPress={() => setShowPassword(!showPassword)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Image
+                                                source={
+                                                    showPassword
+                                                        ? require('../assets/images/eye-open.png')
+                                                        : require('../assets/images/eye-closed.png')
+                                                }
+                                                style={styles.eyeIcon}
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
 
-                <TouchableOpacity
-                    style={styles.forgotPassword}
-                    onPress={() => navigation.navigate('ForgotPassword')}
-                >
-                    <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                </TouchableOpacity>
+                                <View style={styles.forgotPasswordContainer}>
+                                    <TouchableOpacity
+                                        onPress={() => navigation.navigate('ForgotPassword')}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                                    </TouchableOpacity>
+                                </View>
 
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={handleLogin}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.buttonText}>Login</Text>
-                    )}
-                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.button, loading && styles.buttonDisabled]}
+                                    onPress={handleLogin}
+                                    disabled={loading}
+                                    activeOpacity={0.8}
+                                >
+                                    {loading ? (
+                                        <ActivityIndicator color="#fff" size="small" />
+                                    ) : (
+                                        <Text style={styles.buttonText}>Login</Text>
+                                    )}
+                                </TouchableOpacity>
 
-                <Text style={styles.orText}>Or</Text>
+                                <View style={styles.dividerContainer}>
+                                    <View style={styles.dividerLine} />
+                                    <Text style={styles.orText}>Or</Text>
+                                    <View style={styles.dividerLine} />
+                                </View>
 
-                <GoogleSigninButton
-                    style={styles.googleButton}
-                    color={isDarkMode ? GoogleSigninButton.Color.Dark : GoogleSigninButton.Color.Light}
-                    onPress={handleGoogleSignIn}
-                    disabled={loading}
-                />
+                                <GoogleSigninButton
+                                    style={styles.googleButton}
+                                    size={GoogleSigninButton.Size.Wide}
+                                    color={isDarkMode ? GoogleSigninButton.Color.Dark : GoogleSigninButton.Color.Light}
+                                    onPress={handleGoogleSignIn}
+                                    disabled={loading}
+                                />
 
-                <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                    <Text style={styles.link}>Don't have an account? Sign up here</Text>
-                </TouchableOpacity>
-            </View>
+                                <View style={styles.signUpContainer}>
+                                    <TouchableOpacity
+                                        onPress={() => navigation.navigate('SignUp')}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={styles.link}>Don't have an account? Sign up here</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </ScrollView>
+                </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };
