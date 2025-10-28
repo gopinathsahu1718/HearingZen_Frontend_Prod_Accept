@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, Switch, ScrollView, Modal, FlatList, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import VersionInfo from 'react-native-version-info';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types/types';
 import { useTheme } from '../contexts/ThemeContext';
@@ -24,6 +25,8 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
     const [showLanguagePicker, setShowLanguagePicker] = React.useState(false);
     const [showTimePicker, setShowTimePicker] = React.useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
+
+    const version = VersionInfo.appVersion;
 
     const stepGoalOptions = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000];
     const languageOptions = [
@@ -588,21 +591,9 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                         </TouchableOpacity>
                     </View>
 
-                    {/* Danger Zone - Only show when authenticated */}
-                    {isAuthenticated && (
-                        <View style={styles.sectionGroup}>
-                            <TouchableOpacity style={[styles.section, styles.firstSection, styles.lastSection]}>
-                                <Image source={require('../assets/images/delete.png')} style={styles.icon} />
-                                <View style={styles.sectionContent}>
-                                    <Text style={[styles.sectionTitle, styles.deleteText]}>{t('Delete all data')}</Text>
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-
                     {/* Version Information */}
                     <View style={styles.versionContainer}>
-                        <Text style={styles.versionText}>{t('Version 1.0.0')}</Text>
+                        <Text style={styles.versionText}>{t('Version')} {version}</Text>
                     </View>
                 </View>
             </ScrollView>
