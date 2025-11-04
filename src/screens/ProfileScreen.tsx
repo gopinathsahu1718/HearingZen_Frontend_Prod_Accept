@@ -583,10 +583,16 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                                 <Text style={styles.sectionTitle}>{t('Help')}</Text>
                             </View>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.section, styles.lastSection]}>
+                        <TouchableOpacity style={[styles.section, styles.lastSection]} onPress={() => navigation.navigate('AboutUsScreen')}>
                             <Image source={require('../assets/images/info.png')} style={styles.icon} />
                             <View style={styles.sectionContent}>
                                 <Text style={styles.sectionTitle}>{t('About Us')}</Text>
+                            </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.section, styles.lastSection]} onPress={() => navigation.navigate('TermsAndConditionsScreen')}>
+                            <Image source={require('../assets/images/info.png')} style={styles.icon} />
+                            <View style={styles.sectionContent}>
+                                <Text style={styles.sectionTitle}>{t('Terms and Conditions')}</Text>
                             </View>
                         </TouchableOpacity>
                     </View>

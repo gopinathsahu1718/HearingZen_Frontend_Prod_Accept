@@ -1,18 +1,15 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import BMIGauge from './BMIGauge';
-import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '../../types/types'; // Adjust path
+// screens/BMIResultScreen.js
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import BMIGauge from "./BMIGauge"; // The gauge UI code from before
 
-type Props = StackScreenProps<RootStackParamList, 'BMIResult'>;
-
-export default function BMIResultScreen({ route }: Props) {
-    const { bmi } = route.params;
+export default function BMIResultScreen({ route }) {
+    const { bmi } = route.params; // Get BMI value from navigation
 
     return (
         <View style={styles.container}>
-            <BMIGauge bmi={parseFloat(bmi)} />
-            {/* You can display additional info like BMI status, recommendations, etc. */}
+            <BMIGauge bmi={bmi} />
+            {/* Add other BMI result info here if needed */}
         </View>
     );
 }
@@ -20,8 +17,8 @@ export default function BMIResultScreen({ route }: Props) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#161617ff',
-        justifyContent: 'center',
-        alignItems: 'center',
+        backgroundColor: "#161617ff",
+        justifyContent: "center",
+        alignItems: "center",
     },
 });

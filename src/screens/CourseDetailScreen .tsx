@@ -57,43 +57,9 @@ const CourseDetailScreen = () => {
     // Use lessons from course object if available, otherwise fetch
     if (course.lessons && course.lessons.length > 0) {
       setAllLessons(course.lessons as Lesson[]);
-    } else {
-      fetchLessons();
     }
   }, []);
 
-  const fetchLessons = async () => {
-    // Only fetch if not already in course object
-    if (course.lessons && course.lessons.length > 0) {
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${BASE_URL}/api/course/lessons/${course._id}`,
-        {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : '',
-          },
-        }
-      );
-
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        console.error('Lessons endpoint returned non-JSON response');
-        return;
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setAllLessons(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching lessons:', error);
-      // Fallback: lessons might be in course.lessons already
-    }
-  };
 
   const checkEnrollmentStatus = async () => {
     if (!token) {

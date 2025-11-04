@@ -40,6 +40,9 @@ import MyEnrollmentsScreen from '../screens/MyEnrollmentsScreen';
 import EnrolledCourseScreen from '../screens/EnrolledCourseScreen';
 import LessonPlayerScreen from '../screens/LessonPlayerScreen';
 
+import AboutApp from '../screens/ProfileScreenPages/AboutAppScreen';
+import TermsAndConditions from '../screens/ProfileScreenPages/TermsAndConditionsScreen';
+
 import type { RootStackParamList } from '../types/types';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -174,6 +177,10 @@ const AppNavigator = () => {
                     component={LessonPlayerScreen}
                     options={{ title: "Lesson" }}
                 />
+
+
+                <Stack.Screen name="AboutUsScreen" component={AboutApp} />
+                <Stack.Screen name="TermsAndConditionsScreen" component={TermsAndConditions} />
             </Stack.Navigator>
         </NavigationContainer>
     );

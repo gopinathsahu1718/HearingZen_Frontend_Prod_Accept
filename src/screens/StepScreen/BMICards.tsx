@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type RootStackParamList = {
     BMIResult: { bmi: string };
@@ -24,7 +25,8 @@ const screenWidth = Dimensions.get('window').width;
 
 export default function BMICards() {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-    const [bmi, setBmi] = useState(null);
+    const { theme, isDarkMode } = useTheme();
+    const [bmi, setBmi] = useState<string | null>(null);
     const [status, setStatus] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
     const [weight, setWeight] = useState('');
@@ -158,9 +160,12 @@ export default function BMICards() {
         const hasErrors = ageError || weightError || heightError;
 
         if (hasErrors) {
-            // Show alert with first error found
-            const firstError = ageError || weightError || heightError;
-            Alert.alert('Validation Error', firstError, [{ text: 'OK' }]);
+            // Show generic validation alert prompting the user to fill required fields
+            Alert.alert(
+                'Validation Error',
+                'Please fill out all the mandatory fields',
+                [{ text: 'OK' }],
+            );
             return;
         }
 
@@ -219,7 +224,7 @@ export default function BMICards() {
         <View style={styles.container}>
             {/* BMI Report Card */}
             <TouchableOpacity
-                style={styles.card}
+                style={[styles.card, { backgroundColor: theme.cardBackground }]}
                 onPress={() => setModalVisible(true)}
             >
                 <View style={styles.cardContent}>
@@ -228,51 +233,78 @@ export default function BMICards() {
                         style={styles.icon}
                     />
                     <View>
-                        <Text style={styles.title}>BMI</Text>
+                        <Text style={[styles.title, { color: theme.text }]}>BMI</Text>
                     </View>
                 </View>
                 <Image
                     source={require('../../assets/icons/arrow-right.png')}
-                    style={styles.arrow}
+                    style={[styles.arrow, { tintColor: theme.iconTint }]}
                 />
             </TouchableOpacity>
 
             {/* Balanced Nutrition Card */}
             <TouchableOpacity
                 onPress={() => navigation.navigate('Nutrition')}
-                style={styles.card}
+                style={[styles.card, { backgroundColor: theme.cardBackground }]}
             >
                 <View style={styles.cardContent}>
                     <Image
                         source={require('../../assets/icons/diet.png')}
                         style={styles.icon}
                     />
-                    <Text style={styles.title}>Nutrition</Text>
+                    <Text style={[styles.title, { color: theme.text }]}>Nutrition</Text>
                 </View>
                 <Image
                     source={require('../../assets/icons/arrow-right.png')}
-                    style={styles.arrow}
+                    style={[styles.arrow, { tintColor: theme.iconTint }]}
                 />
             </TouchableOpacity>
 
             {/* BMI Modal with Validation */}
             <Modal visible={modalVisible} transparent animationType="slide">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.metricBox}>
+                <View
+                    style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}
+                >
+                    <View
+                        style={[
+                            styles.metricBox,
+                            { backgroundColor: theme.surface, borderColor: theme.border },
+                        ]}
+                    >
                         <View style={styles.modalHeader}>
-                            <Text style={styles.metricTitle}>BMI Calculator</Text>
-                            <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-                                <Text style={styles.closeButtonText}>✕</Text>
+                            <Text style={[styles.metricTitle, { color: theme.text }]}>
+                                BMI Calculator
+                            </Text>
+                            <TouchableOpacity
+                                onPress={closeModal}
+                                style={[
+                                    styles.closeButton,
+                                    { backgroundColor: theme.deleteText },
+                                ]}
+                            >
+                                <Text
+                                    style={[styles.closeButtonText, { color: theme.surface }]}
+                                >
+                                    ✕
+                                </Text>
                             </TouchableOpacity>
                         </View>
 
                         {/* Age */}
                         <View style={styles.fieldRow}>
-                            <Text style={styles.label}>Age *</Text>
+                            <Text style={[styles.label, { color: theme.text }]}>Age *</Text>
                             <TextInput
-                                style={[styles.fieldInput, errors.age && styles.fieldError]}
+                                style={[
+                                    styles.fieldInput,
+                                    {
+                                        backgroundColor: theme.cardBackground,
+                                        color: theme.text,
+                                        borderColor: errors.age ? theme.deleteText : theme.border,
+                                    },
+                                    errors.age && styles.fieldError,
+                                ]}
                                 placeholder="25"
-                                placeholderTextColor="#888"
+                                placeholderTextColor={theme.textSecondary}
                                 keyboardType="numeric"
                                 value={age}
                                 onChangeText={handleAgeChange}
@@ -286,11 +318,15 @@ export default function BMICards() {
 
                         {/* Gender */}
                         <View style={styles.fieldRow}>
-                            <Text style={styles.label}>Gender</Text>
+                            <Text style={[styles.label, { color: theme.text }]}>Gender</Text>
                             <View style={styles.radioRow}>
                                 <TouchableOpacity
                                     style={[
                                         styles.radioButton,
+                                        {
+                                            backgroundColor: theme.cardBackground,
+                                            borderColor: theme.border,
+                                        },
                                         gender === 'male' && styles.radioSelected,
                                     ]}
                                     onPress={() => setGender('male')}
@@ -298,7 +334,9 @@ export default function BMICards() {
                                     <Text
                                         style={[
                                             styles.radioText,
+                                            { color: theme.text },
                                             gender === 'male' && styles.radioTextSelected,
+                                            gender === 'male' && { color: theme.surface },
                                         ]}
                                     >
                                         Male
@@ -307,6 +345,10 @@ export default function BMICards() {
                                 <TouchableOpacity
                                     style={[
                                         styles.radioButton,
+                                        {
+                                            backgroundColor: theme.cardBackground,
+                                            borderColor: theme.border,
+                                        },
                                         gender === 'female' && styles.radioSelected,
                                     ]}
                                     onPress={() => setGender('female')}
@@ -314,7 +356,9 @@ export default function BMICards() {
                                     <Text
                                         style={[
                                             styles.radioText,
+                                            { color: theme.text },
                                             gender === 'female' && styles.radioTextSelected,
+                                            gender === 'female' && { color: theme.surface },
                                         ]}
                                     >
                                         Female
@@ -325,11 +369,23 @@ export default function BMICards() {
 
                         {/* Height */}
                         <View style={styles.fieldRow}>
-                            <Text style={styles.label}>Height *</Text>
+                            <Text style={[styles.label, { color: theme.text }]}>
+                                Height *
+                            </Text>
                             <TextInput
-                                style={[styles.fieldInput, errors.height && styles.fieldError]}
+                                style={[
+                                    styles.fieldInput,
+                                    {
+                                        backgroundColor: theme.cardBackground,
+                                        color: theme.text,
+                                        borderColor: errors.height
+                                            ? theme.deleteText
+                                            : theme.border,
+                                    },
+                                    errors.height && styles.fieldError,
+                                ]}
                                 placeholder="180.5"
-                                placeholderTextColor="#888"
+                                placeholderTextColor={theme.textSecondary}
                                 keyboardType="decimal-pad"
                                 value={height}
                                 onChangeText={handleHeightChange}
@@ -343,11 +399,23 @@ export default function BMICards() {
 
                         {/* Weight */}
                         <View style={styles.fieldRow}>
-                            <Text style={styles.label}>Weight *</Text>
+                            <Text style={[styles.label, { color: theme.text }]}>
+                                Weight *
+                            </Text>
                             <TextInput
-                                style={[styles.fieldInput, errors.weight && styles.fieldError]}
+                                style={[
+                                    styles.fieldInput,
+                                    {
+                                        backgroundColor: theme.cardBackground,
+                                        color: theme.text,
+                                        borderColor: errors.weight
+                                            ? theme.deleteText
+                                            : theme.border,
+                                    },
+                                    errors.weight && styles.fieldError,
+                                ]}
                                 placeholder="65.2"
-                                placeholderTextColor="#888"
+                                placeholderTextColor={theme.textSecondary}
                                 keyboardType="decimal-pad"
                                 value={weight}
                                 onChangeText={handleWeightChange}
@@ -360,17 +428,32 @@ export default function BMICards() {
                         ) : null}
 
                         {/* Helper Text */}
-                        <Text style={styles.helperText}>
+                        <Text style={[styles.helperText, { color: theme.textSecondary }]}>
                             * Required fields. BMI = Weight (kg) / Height² (m)
                         </Text>
 
                         {/* Buttons */}
                         <View style={styles.btnRow}>
-                            <TouchableOpacity style={styles.calcBtn} onPress={calculateBMI}>
-                                <Text style={styles.btnText}>Calculate BMI</Text>
+                            <TouchableOpacity
+                                style={[styles.calcBtn, { backgroundColor: theme.primary }]}
+                                onPress={calculateBMI}
+                            >
+                                <Text style={[styles.btnText, { color: theme.surface }]}>
+                                    Calculate BMI
+                                </Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.clearBtn} onPress={clearForm}>
-                                <Text style={styles.clearText}>Clear All</Text>
+                            <TouchableOpacity
+                                style={[
+                                    styles.clearBtn,
+                                    {
+                                        backgroundColor: isDarkMode ? '#444' : theme.cardBackground,
+                                    },
+                                ]}
+                                onPress={clearForm}
+                            >
+                                <Text style={[styles.clearText, { color: theme.text }]}>
+                                    Clear All
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -386,7 +469,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 15,
-        marginTop: 20,
+        marginTop: 10,
         flexWrap: 'nowrap', // ensure buttons stay side by side
         width: '100%',
         maxWidth: screenWidth,
