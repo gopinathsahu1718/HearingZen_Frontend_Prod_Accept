@@ -1,4 +1,4 @@
-// navigation/AppNavigator.tsx - Complete File
+// navigation/AppNavigator.tsx - Updated
 
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
@@ -8,6 +8,11 @@ import { Image, Text, ActivityIndicator, View } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+
+// Import new screens
+import VideoSplashScreen from '../screens/VideoSplashScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
+import OnboardingCheckScreen from '../screens/OnboardingCheckScreen';
 
 import SplashScreen from '../screens/SplashScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -116,12 +121,30 @@ const AppNavigator = () => {
     return (
         <NavigationContainer>
             <Stack.Navigator
-                initialRouteName="Splash"
+                initialRouteName="VideoSplash"
                 screenOptions={{
                     headerShown: false,
                     cardStyle: { backgroundColor: theme.background },
                 }}
             >
+                {/* New Screens */}
+                <Stack.Screen
+                    name="VideoSplash"
+                    component={VideoSplashScreen}
+                    options={{ gestureEnabled: false }}
+                />
+                <Stack.Screen
+                    name="OnboardingCheck"
+                    component={OnboardingCheckScreen}
+                    options={{ gestureEnabled: false }}
+                />
+                <Stack.Screen
+                    name="Onboarding"
+                    component={OnboardingScreen}
+                    options={{ gestureEnabled: false }}
+                />
+
+                {/* Existing Screens */}
                 <Stack.Screen name="Splash" component={SplashScreen} />
                 <Stack.Screen
                     name="HomeTabs"

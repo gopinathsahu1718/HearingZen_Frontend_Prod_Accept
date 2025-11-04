@@ -73,6 +73,9 @@ export type RootStackParamList = {
     LessonsPage: undefined;
     AboutUsScreen: undefined;
     TermsAndConditionsScreen: undefined;
+    VideoSplash: undefined;
+    OnboardingCheck: undefined;
+    Onboarding: undefined;
 
 
     CourseCategories: undefined;
