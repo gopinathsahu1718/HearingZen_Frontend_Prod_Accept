@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     GoogleSignin,
@@ -6,6 +6,10 @@ import {
     isErrorWithCode,
     statusCodes,
 } from '@react-native-google-signin/google-signin';
+import { Alert } from 'react-native';
+
+// Type for React Native timer
+type TimerHandle = ReturnType<typeof setInterval>;
 
 const API_BASE_URL = 'http://13.200.222.176/api/user';
 
@@ -47,22 +51,86 @@ const TOKEN_KEY = '@auth_token';
 const USER_KEY = '@user_data';
 const TOKEN_TIMESTAMP_KEY = '@token_timestamp';
 const TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const TOKEN_REFRESH_THRESHOLD = 24 * 60 * 60 * 1000; // Refresh if less than 1 day remaining
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        loadStoredAuth();
-    }, []);
+    const tokenCheckInterval = useRef<TimerHandle | null>(null);
 
     useEffect(() => {
         GoogleSignin.configure({
             webClientId: "1000081878315-tlp813267usjpdq7bi0qvs31kslfivo7.apps.googleusercontent.com",
             iosClientId: "1000081878315-g6pkql3f870j3531mnhnc82v221nh8h9.apps.googleusercontent.com",
         });
+
+        loadStoredAuth();
+
+        // Setup periodic token validation
+        setupTokenValidation();
+
+        return () => {
+            if (tokenCheckInterval.current) {
+                clearInterval(tokenCheckInterval.current);
+            }
+        };
     }, []);
+
+    const setupTokenValidation = () => {
+        // Check token validity every 30 minutes
+        tokenCheckInterval.current = setInterval(() => {
+            checkTokenValidity();
+        }, 30 * 60 * 1000);
+    };
+
+    const checkTokenValidity = async () => {
+        try {
+            const [storedToken, storedTimestamp] = await AsyncStorage.multiGet([
+                TOKEN_KEY,
+                TOKEN_TIMESTAMP_KEY,
+            ]);
+
+            const token = storedToken[1];
+            const timestamp = storedTimestamp[1];
+
+            if (token && timestamp) {
+                const savedAt = parseInt(timestamp, 10);
+                const now = Date.now();
+                const timeElapsed = now - savedAt;
+                const timeRemaining = TOKEN_EXPIRY_MS - timeElapsed;
+
+                // If token expired, logout
+                if (timeRemaining <= 0) {
+                    console.log('Token expired, logging out...');
+                    await handleTokenExpiration();
+                    return;
+                }
+
+                // If token is close to expiry (less than 1 day), try to refresh profile
+                if (timeRemaining < TOKEN_REFRESH_THRESHOLD) {
+                    console.log('Token expiring soon, refreshing profile...');
+                    try {
+                        await getUserProfileInternal(token);
+                    } catch (error) {
+                        console.error('Failed to refresh profile:', error);
+                        await handleTokenExpiration();
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error checking token validity:', error);
+        }
+    };
+
+    const handleTokenExpiration = async () => {
+        await clearAuth();
+        Alert.alert(
+            'Session Expired',
+            'Your session has expired. Please login again.',
+            [{ text: 'OK' }]
+        );
+    };
 
     const loadStoredAuth = async () => {
         try {
@@ -79,12 +147,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (token && user && timestamp) {
                 const savedAt = parseInt(timestamp, 10);
                 const now = Date.now();
+                const timeElapsed = now - savedAt;
 
-                if (now - savedAt < TOKEN_EXPIRY_MS) {
+                if (timeElapsed < TOKEN_EXPIRY_MS) {
                     const parsedUser = JSON.parse(user);
                     setToken(token);
                     setUser(parsedUser);
-                    await getUserProfileInternal(token); // Refresh profile
+
+                    // Try to refresh profile on app start
+                    try {
+                        await getUserProfileInternal(token);
+                    } catch (error) {
+                        console.error('Failed to refresh profile on startup:', error);
+                        // If refresh fails and token is old, clear auth
+                        if (timeElapsed > TOKEN_REFRESH_THRESHOLD) {
+                            await clearAuth();
+                        }
+                    }
                 } else {
                     console.log('Token expired, clearing auth');
                     await clearAuth();
@@ -123,6 +202,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
+    const handleApiError = async (error: any, retryCallback?: () => Promise<any>) => {
+        const errorMessage = error.message || 'Network error';
+
+        // Check for token expiration errors
+        if (errorMessage.includes('Invalid token') ||
+            errorMessage.includes('expired') ||
+            errorMessage.includes('authorization denied') ||
+            errorMessage.includes('User account not found')) {
+            await handleTokenExpiration();
+            throw new Error('Session expired. Please login again.');
+        }
+
+        throw error;
+    };
+
     const getUserProfileInternal = async (overrideToken?: string): Promise<any> => {
         const authToken = overrideToken || token;
         if (!authToken) throw new Error('Not authenticated');
@@ -138,6 +232,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const data = await response.json();
 
             if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error('Invalid token');
+                }
                 throw new Error(data.message || 'Failed to fetch profile');
             }
 
@@ -145,7 +242,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.data));
             return data.data;
         } catch (error: any) {
-            throw new Error(error.message || 'Network error');
+            await handleApiError(error);
+            throw error;
         }
     };
 
@@ -253,7 +351,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const googleSignIn = async (): Promise<void> => {
         try {
             await GoogleSignin.hasPlayServices();
-            await GoogleSignin.signOut(); // Force account selection
+            await GoogleSignin.signOut();
             const response = await GoogleSignin.signIn();
             if (isSuccessResponse(response)) {
                 const { idToken } = response.data;
@@ -319,6 +417,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
                 if (!backendResponse.ok) {
                     await GoogleSignin.signOut();
+                    if (backendResponse.status === 401) {
+                        throw new Error('Invalid token');
+                    }
                     throw new Error(data.message || 'Link failed');
                 }
 
@@ -336,18 +437,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 console.log('Google sign out on error ignored:', e);
             }
 
-            if (isErrorWithCode(error)) {
-                switch (error.code) {
-                    case statusCodes.IN_PROGRESS:
-                        throw new Error('Sign in is in progress');
-                    case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-                        throw new Error('Play services not available');
-                    default:
-                        throw new Error('Google link failed');
-                }
-            } else {
-                throw new Error(error.message || 'Google link failed');
-            }
+            await handleApiError(error);
         }
     };
 
@@ -365,12 +455,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const data = await response.json();
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    throw new Error('Invalid token');
+                }
                 throw new Error(data.message || 'Unlink failed');
             }
 
             await getUserProfileInternal();
         } catch (error: any) {
-            throw new Error(error.message || 'Network error');
+            await handleApiError(error);
         }
     };
 
@@ -448,10 +541,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const data = await response.json();
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    throw new Error('Invalid token');
+                }
                 throw new Error(data.message || 'Password change failed');
             }
         } catch (error: any) {
-            throw new Error(error.message || 'Network error');
+            await handleApiError(error);
         }
     };
 
@@ -471,13 +567,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const data = await response.json();
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    throw new Error('Invalid token');
+                }
                 throw new Error(data.message || 'Profile update failed');
             }
 
             setUser(data.data);
             await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.data));
         } catch (error: any) {
-            throw new Error(error.message || 'Network error');
+            await handleApiError(error);
         }
     };
 
