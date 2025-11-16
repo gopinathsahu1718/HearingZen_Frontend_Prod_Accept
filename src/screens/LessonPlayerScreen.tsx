@@ -1,6 +1,7 @@
-// LessonPlayerScreen.tsx - Enhanced with Navigation and Sidebar
+// LessonPlayerScreen.tsx - Fixed with react-native-youtube-iframe
+// First install: npm install react-native-youtube-iframe
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -12,9 +13,8 @@ import {
     Alert,
     Dimensions,
     Modal,
-    Platform,
 } from 'react-native';
-import { WebView } from 'react-native-webview';
+import YoutubePlayer from 'react-native-youtube-iframe';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -56,7 +56,7 @@ interface ProgressData {
 }
 
 const { width } = Dimensions.get('window');
-const BASE_URL = 'https://api.hearingzen.in';
+const BASE_URL = 'http://13.200.222.176';
 
 const LessonPlayerScreen = () => {
     const { theme } = useTheme();
@@ -69,14 +69,16 @@ const LessonPlayerScreen = () => {
     const [progressData, setProgressData] = useState<ProgressData | null>(null);
     const [showLessonNav, setShowLessonNav] = useState(false);
     const [loadingProgress, setLoadingProgress] = useState(true);
-    const [isVideoLoading, setIsVideoLoading] = useState(true);
+    const [playing, setPlaying] = useState(false);
     const [currentLesson, setCurrentLesson] = useState<LessonWithProgress>(lesson);
+    const [videoError, setVideoError] = useState<string | null>(null);
 
     useEffect(() => {
         setCurrentLesson(lesson);
+        setVideoError(null);
+        setPlaying(false);
         fetchLessonDetails();
         fetchProgress();
-        setIsVideoLoading(true); // Ensure loading starts fresh for each lesson
     }, [lesson._id]);
 
     const fetchLessonDetails = async () => {
@@ -97,7 +99,6 @@ const LessonPlayerScreen = () => {
             }
         } catch (error) {
             console.error('Error fetching lesson details:', error);
-            // Fallback to passed lesson if fetch fails
         }
     };
 
@@ -161,8 +162,8 @@ const LessonPlayerScreen = () => {
             const data = await response.json();
             if (data.success) {
                 Alert.alert('Success', 'Lesson marked as complete!');
-                fetchLessonDetails(); // Refresh current lesson progress
-                fetchProgress(); // Refresh overall progress
+                fetchLessonDetails();
+                fetchProgress();
             } else {
                 throw new Error(data.message || 'Failed to mark lesson as complete');
             }
@@ -201,7 +202,6 @@ const LessonPlayerScreen = () => {
 
     const handleLessonSelect = (selectedLesson: Lesson, index: number) => {
         setShowLessonNav(false);
-        setIsVideoLoading(true); // Reset loading state when switching lessons
         if (selectedLesson._id !== lesson._id) {
             navigation.replace('LessonPlayer', {
                 lesson: selectedLesson,
@@ -213,164 +213,117 @@ const LessonPlayerScreen = () => {
         }
     };
 
-    const getYouTubeVideoId = (url: string) => {
-        if (!url) {
-            console.log('No URL provided');
-            return null;
+    const getYouTubeVideoId = (url: string): string | null => {
+        if (!url) return null;
+
+        console.log('Extracting video ID from:', url);
+
+        // Method 1: youtu.be format
+        const youtubeShortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+        if (youtubeShortMatch) {
+            console.log('Extracted from youtu.be:', youtubeShortMatch[1]);
+            return youtubeShortMatch[1];
         }
 
-        console.log('Original URL:', url);
-
-        // Try multiple extraction methods
-
-        // Method 1: Extract from youtu.be/ format
-        if (url.includes('youtu.be/')) {
-            const match = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
-            if (match && match[1]) {
-                console.log('Extracted from youtu.be:', match[1]);
-                return match[1];
-            }
+        // Method 2: youtube.com/watch?v= format
+        const youtubeWatchMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+        if (youtubeWatchMatch) {
+            console.log('Extracted from watch?v=:', youtubeWatchMatch[1]);
+            return youtubeWatchMatch[1];
         }
 
-        // Method 2: Extract from youtube.com/watch?v= format
-        if (url.includes('youtube.com/watch')) {
-            const match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-            if (match && match[1]) {
-                console.log('Extracted from watch?v=:', match[1]);
-                return match[1];
-            }
+        // Method 3: youtube.com/embed/ format
+        const youtubeEmbedMatch = url.match(/embed\/([a-zA-Z0-9_-]{11})/);
+        if (youtubeEmbedMatch) {
+            console.log('Extracted from embed:', youtubeEmbedMatch[1]);
+            return youtubeEmbedMatch[1];
         }
 
-        // Method 3: Extract from youtube.com/embed/ format
-        if (url.includes('youtube.com/embed/')) {
-            const match = url.match(/embed\/([a-zA-Z0-9_-]{11})/);
-            if (match && match[1]) {
-                console.log('Extracted from embed:', match[1]);
-                return match[1];
-            }
-        }
-
-        // Method 4: Check if it's already just the video ID (11 chars)
+        // Method 4: Just the video ID (11 characters)
         const directMatch = url.match(/^([a-zA-Z0-9_-]{11})$/);
-        if (directMatch && directMatch[1]) {
+        if (directMatch) {
             console.log('Direct video ID:', directMatch[1]);
             return directMatch[1];
         }
 
-        console.log('Could not extract video ID from URL');
+        console.log('Could not extract video ID');
         return null;
     };
 
     const videoId = getYouTubeVideoId(currentLesson.video_url);
 
-    const renderVideoPlayer = () => {
-        console.log('Lesson video_url:', currentLesson.video_url);
+    const onStateChange = useCallback((state: string) => {
+        console.log('YouTube player state:', state);
+        if (state === 'ended') {
+            setPlaying(false);
+        }
+    }, []);
 
+    const onError = useCallback((error: string) => {
+        console.error('YouTube player error:', error);
+        setVideoError(`Video playback error: ${error}`);
+    }, []);
+
+    const renderVideoPlayer = () => {
         if (!videoId) {
             return (
                 <View style={[styles.videoContainer, styles.errorContainer]}>
-                    <Text style={styles.errorText}>Invalid video URL</Text>
-                    <Text style={styles.videoUrl}>URL: {currentLesson.video_url}</Text>
-                    <Text style={styles.videoUrl}>
-                        Expected format: https://youtu.be/VIDEO_ID or https://www.youtube.com/watch?v=VIDEO_ID
+                    <Text style={styles.errorText}>❌ Invalid video URL</Text>
+                    <Text style={styles.errorSubtext}>URL: {currentLesson.video_url}</Text>
+                    <Text style={styles.errorHelp}>
+                        Expected format:{'\n'}
+                        https://youtu.be/VIDEO_ID{'\n'}
+                        or{'\n'}
+                        https://www.youtube.com/watch?v=VIDEO_ID
                     </Text>
                 </View>
             );
         }
 
-        console.log('Embedding video ID:', videoId);
-
-        const youtubeHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            html, body { height: 100%; margin: 0; padding: 0; background-color: #000; }
-            #player { width: 100%; height: 100%; }
-          </style>
-        </head>
-        <body>
-          <div id="player"></div>
-          <script>
-            var tag = document.createElement('script');
-            tag.src = "https://www.youtube.com/iframe_api";
-            var firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-            var player;
-            function onYouTubeIframeAPIReady() {
-              player = new YT.Player('player', {
-                height: '100%',
-                width: '100%',
-                videoId: '${videoId}',
-                playerVars: {
-                  'playsinline': 1,
-                  'rel': 0,
-                  'modestbranding': 1
-                },
-                events: {
-                  'onReady': onPlayerReady,
-                  'onStateChange': onPlayerStateChange
-                }
-              });
-            }
-
-            function onPlayerReady(event) {
-              console.log('YouTube player ready');
-              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'playerReady' }));
-            }
-
-            function onPlayerStateChange(event) {
-              console.log('Player state changed:', event.data);
-            }
-          </script>
-        </body>
-      </html>
-    `;
+        if (videoError) {
+            return (
+                <View style={[styles.videoContainer, styles.errorContainer]}>
+                    <Text style={styles.errorText}>❌ {videoError}</Text>
+                    <TouchableOpacity
+                        style={styles.retryButton}
+                        onPress={() => {
+                            setVideoError(null);
+                            setPlaying(true);
+                        }}
+                    >
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
 
         return (
             <View style={styles.videoContainer}>
-                {isVideoLoading && (
-                    <View style={styles.loaderOverlay}>
-                        <ActivityIndicator size="large" color="#FFFFFF" />
-                        <Text style={styles.loadingText}>Loading video...</Text>
-                    </View>
-                )}
-                <WebView
-                    source={{ html: youtubeHTML }}
-                    style={styles.webView}
-                    allowsFullscreenVideo
-                    allowsInlineMediaPlayback={true}
-                    mediaPlaybackRequiresUserAction={false}
-                    javaScriptEnabled={true}
-                    domStorageEnabled={true}
-                    thirdPartyCookiesEnabled={true}
-                    sharedCookiesEnabled={true}
-                    onError={(syntheticEvent) => {
-                        const { nativeEvent } = syntheticEvent;
-                        console.warn('WebView error: ', nativeEvent);
-                        setIsVideoLoading(false);
+                <YoutubePlayer
+                    height={width * (9 / 16)} // 16:9 aspect ratio
+                    play={playing}
+                    videoId={videoId}
+                    onChangeState={onStateChange}
+                    onError={onError}
+                    webViewStyle={styles.youtubeWebView}
+                    webViewProps={{
+                        androidLayerType: 'hardware',
+                        injectedJavaScript: `
+                            (function() {
+                                var style = document.createElement('style');
+                                style.innerHTML = '.ytp-watermark, .ytp-youtube-button, .ytp-title-link, .ytp-chrome-top, .ytp-show-cards-title { display: none !important; }';
+                                document.head.appendChild(style);
+                            })();
+                        `,
                     }}
-                    onHttpError={(syntheticEvent) => {
-                        const { nativeEvent } = syntheticEvent;
-                        console.warn('WebView HTTP error: ', nativeEvent);
-                        setIsVideoLoading(false);
-                    }}
-                    onLoadEnd={(syntheticEvent) => {
-                        const { nativeEvent } = syntheticEvent;
-                        console.log('WebView load end:', nativeEvent.url, nativeEvent.loading);
-                    }}
-                    onMessage={(event) => {
-                        try {
-                            const data = JSON.parse(event.nativeEvent.data);
-                            if (data.type === 'playerReady') {
-                                setIsVideoLoading(false);
-                            }
-                        } catch (e) {
-                            console.log('Message parse error:', e);
-                        }
-                        console.log('WebView message:', event.nativeEvent.data);
+                    initialPlayerParams={{
+                        controls: true,
+                        modestbranding: 1,
+                        rel: 0,
+                        showinfo: 0,
+                        iv_load_policy: 3,
+                        fs: 1,
+                        disablekb: 0,
                     }}
                 />
             </View>
@@ -476,6 +429,20 @@ const LessonPlayerScreen = () => {
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Video Player */}
                 {renderVideoPlayer()}
+
+                {/* Play/Pause Button */}
+                {videoId && !videoError && (
+                    <View style={styles.playControlContainer}>
+                        <TouchableOpacity
+                            style={[styles.playButton, { backgroundColor: theme.primary }]}
+                            onPress={() => setPlaying(!playing)}
+                        >
+                            <Text style={styles.playButtonText}>
+                                {playing ? '⏸ Pause' : '▶ Play'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 {/* Navigation Buttons */}
                 <View style={styles.navigationContainer}>
@@ -625,24 +592,8 @@ const styles = StyleSheet.create({
         aspectRatio: 16 / 9,
         backgroundColor: '#000000',
     },
-    webView: {
-        flex: 1,
+    youtubeWebView: {
         backgroundColor: '#000000',
-    },
-    loaderOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    },
-    loadingText: {
-        color: '#FFFFFF',
-        marginTop: 10,
-        fontSize: 16,
     },
     errorContainer: {
         justifyContent: 'center',
@@ -650,16 +601,49 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     errorText: {
-        color: '#FFFFFF',
-        fontSize: 16,
+        color: '#FF6B6B',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    errorSubtext: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 14,
         marginBottom: 8,
         textAlign: 'center',
     },
-    videoUrl: {
-        color: 'rgba(255,255,255,0.6)',
+    errorHelp: {
+        color: 'rgba(255,255,255,0.5)',
         fontSize: 12,
         textAlign: 'center',
-        lineHeight: 16,
+        lineHeight: 18,
+    },
+    retryButton: {
+        backgroundColor: '#3B82F6',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+        marginTop: 16,
+    },
+    retryButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    playControlContainer: {
+        paddingHorizontal: 20,
+        paddingTop: 16,
+    },
+    playButton: {
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    playButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
     },
     navigationContainer: {
         flexDirection: 'row',
