@@ -65,7 +65,7 @@ interface EnrollmentStatus {
   progress?: ProgressData;
 }
 
-const BASE_URL = 'http://13.200.222.176';
+const BASE_URL = 'https://api.hearingzen.in';
 
 const CourseListScreen = () => {
   const { theme } = useTheme();

@@ -54,7 +54,7 @@ interface RecentCourse {
     isNew?: boolean;
 }
 
-const BASE_URL = 'http://13.200.222.176';
+const BASE_URL = 'https://api.hearingzen.in';
 const API_URL = `${BASE_URL}/api/course/public-categories`;
 
 // Dummy data for Performance section

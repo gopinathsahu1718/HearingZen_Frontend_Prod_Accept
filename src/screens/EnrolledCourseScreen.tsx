@@ -64,7 +64,7 @@ interface ProgressData {
     progresses: Progress[];
 }
 
-const BASE_URL = 'http://13.200.222.176';
+const BASE_URL = 'https://api.hearingzen.in';
 
 const EnrolledCourseScreen = () => {
     const { theme } = useTheme();

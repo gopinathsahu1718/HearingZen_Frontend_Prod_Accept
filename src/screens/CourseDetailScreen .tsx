@@ -1,4 +1,4 @@
-// CourseDetailScreen.tsx - Navigate to lesson only if enrolled
+// Final CourseDetailScreen.tsx - Fixed auto-navigation issue
 
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -11,12 +11,14 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  AppState,
 } from 'react-native';
 import Video from 'react-native-video';
 import RazorpayCheckout from "react-native-razorpay";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/types';
@@ -32,8 +34,18 @@ interface Lesson {
   order: number;
 }
 
+interface PendingPayment {
+  orderId: string;
+  courseId: string;
+  timestamp: number;
+  retryCount: number;
+}
+
 const { width, height } = Dimensions.get('window');
-const BASE_URL = 'http://13.200.222.176';
+const BASE_URL = 'https://api.hearingzen.in';
+const PENDING_PAYMENT_KEY = '@pending_payments';
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_INTERVAL = 5000; // 5 seconds
 
 const CourseDetailScreen = () => {
   const { theme } = useTheme();
@@ -49,17 +61,194 @@ const CourseDetailScreen = () => {
   const [checkingEnrollment, setCheckingEnrollment] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [allLessons, setAllLessons] = useState<Lesson[]>([]);
+  const [checkingPendingPayment, setCheckingPendingPayment] = useState(false);
+  const [hasShownEnrollmentAlert, setHasShownEnrollmentAlert] = useState(false);
+  const hasCheckedPendingRef = useRef(false);
 
   const videoUrl = `${BASE_URL}${course.preview_video_url}`;
 
+  // Check for pending payments on mount and when app comes to foreground
   useEffect(() => {
     checkEnrollmentStatus();
-    // Use lessons from course object if available, otherwise fetch
     if (course.lessons && course.lessons.length > 0) {
       setAllLessons(course.lessons as Lesson[]);
     }
+
+    // Check for pending payments for THIS course only - ONLY ONCE on mount
+    if (!hasCheckedPendingRef.current) {
+      checkPendingPaymentsForCourse();
+      hasCheckedPendingRef.current = true;
+    }
+
+    // Listen for app state changes
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
+  // Also check when screen comes into focus - BUT NOT for pending payments
+  useFocusEffect(
+    React.useCallback(() => {
+      // Only check enrollment status, NOT pending payments
+      checkEnrollmentStatus();
+    }, [])
+  );
+
+  const handleAppStateChange = (nextAppState: string) => {
+    if (nextAppState === 'active') {
+      // App came to foreground - only check if we haven't checked before
+      if (!hasCheckedPendingRef.current) {
+        checkPendingPaymentsForCourse();
+        hasCheckedPendingRef.current = true;
+      }
+      checkEnrollmentStatus();
+    }
+  };
+
+  const savePendingPayment = async (orderId: string, courseId: string) => {
+    try {
+      const existingPayments = await AsyncStorage.getItem(PENDING_PAYMENT_KEY);
+      const payments: PendingPayment[] = existingPayments ? JSON.parse(existingPayments) : [];
+
+      // Check if this payment already exists
+      const existingIndex = payments.findIndex(p => p.orderId === orderId);
+      if (existingIndex >= 0) {
+        // Update existing
+        payments[existingIndex] = {
+          orderId,
+          courseId,
+          timestamp: Date.now(),
+          retryCount: 0,
+        };
+      } else {
+        // Add new pending payment
+        payments.push({
+          orderId,
+          courseId,
+          timestamp: Date.now(),
+          retryCount: 0,
+        });
+      }
+
+      await AsyncStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(payments));
+      console.log('Saved pending payment:', orderId);
+    } catch (error) {
+      console.error('Error saving pending payment:', error);
+    }
+  };
+
+  const removePendingPayment = async (orderId: string) => {
+    try {
+      const existingPayments = await AsyncStorage.getItem(PENDING_PAYMENT_KEY);
+      if (existingPayments) {
+        const payments: PendingPayment[] = JSON.parse(existingPayments);
+        const filtered = payments.filter(p => p.orderId !== orderId);
+        await AsyncStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(filtered));
+        console.log('Removed pending payment:', orderId);
+      }
+    } catch (error) {
+      console.error('Error removing pending payment:', error);
+    }
+  };
+
+  const checkPaymentStatus = async (orderId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(
+        `${BASE_URL}/api/webhook/payment-status/${orderId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success && data.status === 'active') {
+        console.log('Payment verified, enrollment active');
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      return false;
+    }
+  };
+
+  const checkPendingPaymentsForCourse = async () => {
+    if (!token) return;
+
+    // Prevent multiple checks
+    if (hasShownEnrollmentAlert) {
+      console.log('Already showed alert, skipping pending payment check');
+      return;
+    }
+
+    try {
+      setCheckingPendingPayment(true);
+      const existingPayments = await AsyncStorage.getItem(PENDING_PAYMENT_KEY);
+
+      if (!existingPayments) {
+        setCheckingPendingPayment(false);
+        return;
+      }
+
+      const payments: PendingPayment[] = JSON.parse(existingPayments);
+      const now = Date.now();
+
+      // Filter out payments older than 24 hours
+      const recentPayments = payments.filter(
+        p => now - p.timestamp < 24 * 60 * 60 * 1000
+      );
+
+      // Check pending payments ONLY for THIS course
+      const coursePayments = recentPayments.filter(p => p.courseId === course._id);
+
+      if (coursePayments.length > 0) {
+        console.log(`Found ${coursePayments.length} pending payments for this course`);
+
+        for (const payment of coursePayments) {
+          const isVerified = await checkPaymentStatus(payment.orderId);
+
+          if (isVerified) {
+            // Payment verified, remove from pending
+            await removePendingPayment(payment.orderId);
+            setIsEnrolled(true);
+            setHasShownEnrollmentAlert(true);
+
+            // Show alert only once
+            Alert.alert(
+              'Enrollment Successful! 🎉',
+              'Your payment has been verified and enrollment is complete!',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    // Just dismiss - user stays on screen
+                  },
+                },
+              ]
+            );
+            break; // Stop checking after first verified payment
+          } else if (payment.retryCount < MAX_RETRY_ATTEMPTS) {
+            // Retry verification silently in background
+            payment.retryCount++;
+            await AsyncStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(recentPayments));
+          }
+        }
+      }
+
+      // Update storage with filtered payments
+      await AsyncStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(recentPayments));
+    } catch (error) {
+      console.error('Error checking pending payments:', error);
+    } finally {
+      setCheckingPendingPayment(false);
+    }
+  };
 
   const checkEnrollmentStatus = async () => {
     if (!token) {
@@ -122,6 +311,7 @@ const CourseDetailScreen = () => {
         throw new Error(orderData.message || 'Failed to create order');
       }
 
+      // Handle free courses
       if (orderData.enrollment_id) {
         Alert.alert('Success', 'You have been enrolled in this course!', [
           {
@@ -135,6 +325,9 @@ const CourseDetailScreen = () => {
         setEnrolling(false);
         return;
       }
+
+      // Save pending payment before opening Razorpay
+      await savePendingPayment(orderData.order.id, course._id);
 
       const options = {
         description: course.title,
@@ -154,10 +347,24 @@ const CourseDetailScreen = () => {
       RazorpayCheckout.open(options)
         .then((response: any) => handlePaymentSuccess(response, orderData.order.id))
         .catch((error: any) => {
-          console.log('Payment cancelled or failed:', error);
+          console.log('Payment error:', error);
           setEnrolling(false);
-          if (error.code !== RazorpayCheckout.PAYMENT_CANCELLED) {
-            Alert.alert('Payment Failed', 'Please try again');
+
+          if (error.code === RazorpayCheckout.PAYMENT_CANCELLED) {
+            // User cancelled, remove pending payment
+            removePendingPayment(orderData.order.id);
+          } else {
+            // Payment might have succeeded but verification failed
+            Alert.alert(
+              'Payment Processing',
+              'We are verifying your payment. Please check back in a few moments.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => checkPendingPaymentsForCourse(),
+                },
+              ]
+            );
           }
         });
     } catch (error: any) {
@@ -188,12 +395,18 @@ const CourseDetailScreen = () => {
       const verifyData = await verifyResponse.json();
 
       if (verifyData.success) {
-        Alert.alert('Success', 'Enrollment successful!', [
+        // Remove from pending payments
+        await removePendingPayment(orderId);
+
+        // Set enrolled state and flag
+        setIsEnrolled(true);
+        setHasShownEnrollmentAlert(true);
+
+        Alert.alert('Success! 🎉', 'Enrollment successful!', [
           {
             text: 'OK',
             onPress: () => {
-              setIsEnrolled(true);
-              navigation.navigate('MyEnrollments');
+              // User stays on screen to view details
             },
           },
         ]);
@@ -201,7 +414,22 @@ const CourseDetailScreen = () => {
         throw new Error(verifyData.message || 'Payment verification failed');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Payment verification failed');
+      console.error('Payment verification error:', error);
+
+      // Don't remove pending payment - let webhook handle it
+      Alert.alert(
+        'Verification Pending',
+        'We are processing your payment. You will be notified once enrollment is confirmed.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Schedule a check after a few seconds
+              setTimeout(() => checkPendingPaymentsForCourse(), 3000);
+            },
+          },
+        ]
+      );
     } finally {
       setEnrolling(false);
     }
@@ -227,7 +455,6 @@ const CourseDetailScreen = () => {
       return;
     }
 
-    // Navigate to lesson player if enrolled
     navigation.navigate('LessonPlayer', {
       lesson,
       courseId: course._id,
@@ -238,10 +465,13 @@ const CourseDetailScreen = () => {
   };
 
   const renderEnrollButton = () => {
-    if (checkingEnrollment) {
+    if (checkingEnrollment || checkingPendingPayment) {
       return (
         <View style={[styles.subscribeContainer, { backgroundColor: theme.primary }]}>
           <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={[styles.subscribeLabel, { marginTop: 10 }]}>
+            {checkingPendingPayment ? 'CHECKING PAYMENT...' : 'CHECKING STATUS...'}
+          </Text>
         </View>
       );
     }
@@ -260,9 +490,12 @@ const CourseDetailScreen = () => {
     if (isEnrolled) {
       return (
         <View style={[styles.subscribeContainer, { backgroundColor: '#10B981' }]}>
-          <Text style={styles.subscribeLabel}>ENROLLED</Text>
+          <Text style={styles.subscribeLabel}>✓ ENROLLED</Text>
+          <Text style={styles.enrolledMessage}>
+            You are enrolled in this course
+          </Text>
           <TouchableOpacity style={styles.enrollButton} onPress={handleGoToCourse}>
-            <Text style={styles.enrollButtonText}>Go To Course</Text>
+            <Text style={styles.enrollButtonText}>Go to Course</Text>
           </TouchableOpacity>
         </View>
       );
@@ -319,6 +552,11 @@ const CourseDetailScreen = () => {
           <Text style={[styles.courseTitle, { color: theme.text }]}>
             {course.title}
           </Text>
+          {isEnrolled && (
+            <View style={styles.enrolledBadge}>
+              <Text style={styles.enrolledBadgeText}>✓ Enrolled</Text>
+            </View>
+          )}
         </View>
 
         {/* Course Description */}
@@ -453,6 +691,19 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     lineHeight: 36,
+  },
+  enrolledBadge: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  enrolledBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   section: {
     paddingHorizontal: 20,
@@ -602,6 +853,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 2,
     marginBottom: 8,
+  },
+  enrolledMessage: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   priceText: {
     color: '#FFFFFF',
