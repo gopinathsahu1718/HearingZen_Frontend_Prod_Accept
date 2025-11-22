@@ -1,10 +1,5 @@
-import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
+// screens/StepsScreen.tsx - COMPLETE VERSION
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -12,100 +7,233 @@ import {
     SafeAreaView,
     TouchableOpacity,
     Image,
-    Modal,
     ScrollView,
-    Animated,
-    Platform,
     Dimensions,
     Share,
+    ActivityIndicator,
+    Linking,
+    Alert,
+    Modal,
+    AppState,
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
-import { useThemedStyles } from '../hooks/useThemedStyles';
-import Svg, {
-    Path,
-    Defs,
-    LinearGradient,
-    Stop,
-    Text as SvgText,
-    Line,
-    Rect,
-    Circle,
-    G,
-} from 'react-native-svg';
+import { useFitness } from '../contexts/FitnessContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import Svg, { Circle } from 'react-native-svg';
 import BMICards from './StepScreen/BMICards';
 
 const { width } = Dimensions.get('window');
 const BOX_SIZE = width * 0.22;
-const BASE_SIZE = 200;
 const SIZE = width * 0.5;
 const STROKE_WIDTH = SIZE * 0.06;
 const RADIUS = (SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-type Period = 'Month' | 'Week' | 'Day';
-type Point = { x: number; y: number; value?: number };
-type SelectedPoint = {
-    index: number;
-    x: number;
-    y: number;
-    label: string;
-    value: number;
+// ============ GOOGLE FIT LINKING SCREEN ============
+const GoogleFitLinkingScreen: React.FC<{ onLink: () => void }> = ({ onLink }) => {
+    const { theme } = useTheme();
+    const { linkGoogle } = useFitness();
+    const [isLinking, setIsLinking] = useState(false);
+    const [isLinkingInProgress, setIsLinkingInProgress] = useState(false);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active' && isLinkingInProgress) {
+                setIsLinkingInProgress(false);
+                onLink();
+            }
+        });
+
+        return () => {
+            subscription?.remove();
+        };
+    }, [isLinkingInProgress, onLink]);
+
+    const handleLinkGoogleFit = async () => {
+        setIsLinking(true);
+        try {
+            const linkUrl = await linkGoogle();
+            if (linkUrl) {
+                const canOpen = await Linking.canOpenURL(linkUrl);
+                if (canOpen) {
+                    await Linking.openURL(linkUrl);
+                    setIsLinkingInProgress(true);
+                    Alert.alert(
+                        'Link Google Fit',
+                        'Please complete the linking process in your browser. The app will automatically refresh when you return.',
+                        [
+                            {
+                                text: 'OK',
+                                style: 'default',
+                            },
+                        ]
+                    );
+                } else {
+                    Alert.alert('Error', 'Cannot open linking URL');
+                }
+            }
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Failed to link Google Fit');
+        } finally {
+            setIsLinking(false);
+        }
+    };
+
+    if (isLinkingInProgress) {
+        return (
+            <View style={[styles.linkingContainer, { backgroundColor: theme.background }]}>
+                <Image
+                    source={require('../assets/stepIcons/footprint.png')}
+                    style={[styles.linkingIcon, { tintColor: theme.primary }]}
+                />
+                <Text style={[styles.linkingTitle, { color: theme.text }]}>
+                    Linking in Progress
+                </Text>
+                <Text style={[styles.linkingDescription, { color: theme.textSecondary }]}>
+                    Complete the process in your browser and return to the app. It will automatically check the connection.
+                </Text>
+                <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 20 }} />
+                <TouchableOpacity
+                    style={[styles.linkButton, { backgroundColor: theme.primary, marginTop: 20 }]}
+                    onPress={() => {
+                        setIsLinkingInProgress(false);
+                        onLink();
+                    }}
+                >
+                    <Text style={styles.linkButtonText}>Check Connection Now</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    return (
+        <View style={[styles.linkingContainer, { backgroundColor: theme.background }]}>
+            <Image
+                source={require('../assets/stepIcons/footprint.png')}
+                style={[styles.linkingIcon, { tintColor: theme.primary }]}
+            />
+            <Text style={[styles.linkingTitle, { color: theme.text }]}>
+                Connect Google Fit
+            </Text>
+            <Text style={[styles.linkingDescription, { color: theme.textSecondary }]}>
+                Link your Google Fit account to track your daily steps, calories, and activity data.
+            </Text>
+
+            <View style={[styles.infoBox, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
+                <Text style={[styles.infoTitle, { color: theme.text }]}>📱 What You'll Get:</Text>
+                <Text style={[styles.infoItem, { color: theme.textSecondary }]}>• Daily step count</Text>
+                <Text style={[styles.infoItem, { color: theme.textSecondary }]}>• Distance traveled</Text>
+                <Text style={[styles.infoItem, { color: theme.textSecondary }]}>• Calories burned</Text>
+                <Text style={[styles.infoItem, { color: theme.textSecondary }]}>• Active time tracking</Text>
+                <Text style={[styles.infoItem, { color: theme.textSecondary }]}>• Weekly & monthly reports</Text>
+            </View>
+
+            <TouchableOpacity
+                style={[styles.linkButton, { backgroundColor: theme.primary }]}
+                onPress={handleLinkGoogleFit}
+                disabled={isLinking}
+            >
+                {isLinking ? (
+                    <ActivityIndicator color="#fff" />
+                ) : (
+                    <>
+                        <Image
+                            source={require('../assets/icons/google.png')}
+                            style={styles.googleIcon}
+                        />
+                        <Text style={styles.linkButtonText}>Link Google Fit</Text>
+                    </>
+                )}
+            </TouchableOpacity>
+
+            <Text style={[styles.privacyNote, { color: theme.textSecondary }]}>
+                🔒 Your data is secure and private
+            </Text>
+        </View>
+    );
 };
 
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-
 // ============ HEADER COMPONENT ============
-const Header: React.FC<{ onRefresh?: () => void }> = ({ onRefresh }) => {
+const Header: React.FC<{
+    onRefresh?: () => void;
+    isRefreshing?: boolean;
+    onSettings?: () => void;
+}> = ({ onRefresh, isRefreshing = false, onSettings }) => {
     const { theme } = useTheme();
+    const { quickData } = useFitness();
 
     const handleShare = async () => {
         try {
+            const steps = quickData?.steps || 0;
             await Share.share({
-                message: 'I walked 9,592 steps today! 💪 #StepCounter',
+                message: `I walked ${steps.toLocaleString()} steps today! 💪 #StepCounter #HearingZen`,
             });
         } catch (error) {
             console.error('Share Error:', error);
         }
     };
 
-    const handleRefresh = () => {
-        if (onRefresh) return onRefresh();
-        console.log('Refresh requested from Header');
-    };
-
     return (
-        <View
-            style={[
-                styles.headerWrapper,
-                { backgroundColor: theme.background, justifyContent: 'space-between' },
-            ]}
-        >
-            <TouchableOpacity onPress={handleRefresh} style={styles.leftButton}>
-                <Image
-                    source={require('../assets/images/refresh.png')}
-                    style={[styles.headerIcon, { tintColor: theme.iconTint }]}
-                    resizeMode="contain"
-                />
+        <View style={[styles.headerWrapper, { backgroundColor: theme.background }]}>
+            <TouchableOpacity
+                onPress={onRefresh}
+                style={styles.leftButton}
+                disabled={isRefreshing}
+            >
+                {isRefreshing ? (
+                    <ActivityIndicator size="small" color={theme.iconTint} />
+                ) : (
+                    <Image
+                        source={require('../assets/images/refresh.png')}
+                        style={[styles.headerIcon, { tintColor: theme.iconTint }]}
+                        resizeMode="contain"
+                    />
+                )}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
-                <Image
-                    source={require('../assets/stepIcons/share.png')}
-                    style={[styles.headerIcon, { tintColor: theme.iconTint }]}
-                    resizeMode="contain"
-                />
-            </TouchableOpacity>
+            <View style={styles.headerRight}>
+                <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
+                    <Image
+                        source={require('../assets/stepIcons/share.png')}
+                        style={[styles.headerIcon, { tintColor: theme.iconTint }]}
+                        resizeMode="contain"
+                    />
+                </TouchableOpacity>
+
+                {onSettings && (
+                    <TouchableOpacity onPress={onSettings} style={styles.headerButton}>
+                        <Image
+                            source={require('../assets/icons/settings.png')}
+                            style={[styles.headerIcon, { tintColor: theme.iconTint }]}
+                            resizeMode="contain"
+                        />
+                    </TouchableOpacity>
+                )}
+            </View>
         </View>
     );
 };
 
 // ============ STEP CIRCLE COMPONENT ============
-const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
-    steps = 7000,
-    goal = 10000
-}) => {
+const StepCircle: React.FC = () => {
     const { theme } = useTheme();
-    const progress = steps / goal;
+    const { quickData, isLoadingQuick } = useFitness();
+
+    if (isLoadingQuick && !quickData) {
+        return (
+            <View style={styles.circleContainer}>
+                <ActivityIndicator size="large" color={theme.primary} />
+                <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+                    Loading steps...
+                </Text>
+            </View>
+        );
+    }
+
+    const steps = quickData?.steps || 0;
+    const goal = quickData?.goal || 10000;
+    const progress = Math.min(steps / goal, 1);
     const strokeDashoffset = CIRCUMFERENCE - CIRCUMFERENCE * progress;
     const progressColor = steps >= goal ? '#00FF7F' : '#00BFFF';
 
@@ -156,34 +284,49 @@ const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
                     style={[styles.footprintIcon, { width: SIZE * 0.25, height: SIZE * 0.25 }]}
                 />
                 <Text style={[styles.steps, { fontSize: SIZE * 0.14, color: theme.text }]}>
-                    {steps}
+                    {steps.toLocaleString()}
                 </Text>
                 <Text style={[styles.goal, { fontSize: SIZE * 0.07, color: theme.textSecondary }]}>
-                    Goal: {goal}
+                    Goal: {goal.toLocaleString()}
                 </Text>
+                {steps >= goal && (
+                    <Text style={[styles.goalAchieved, { fontSize: SIZE * 0.06, color: '#00FF7F' }]}>
+                        🎉 Goal Achieved!
+                    </Text>
+                )}
             </View>
         </View>
     );
 };
 
 // ============ STATS PANEL COMPONENT ============
-const StatsPanel: React.FC<{
-    distance?: number;
-    calories?: number;
-    activeMins?: number;
-    steps?: number;
-}> = ({ distance = 5.2, calories = 320, activeMins = 45, steps = 50 }) => {
+const StatsPanel: React.FC = () => {
     const { theme, isDarkMode } = useTheme();
+    const { statsData, quickData, isLoadingStats } = useFitness();
+
+    if (isLoadingStats && !statsData) {
+        return (
+            <View style={styles.statsContainer}>
+                <ActivityIndicator size="small" color={theme.primary} />
+            </View>
+        );
+    }
+
+    const distance = statsData?.distance.value || 0;
+    const calories = statsData?.calories.value || 0;
+    const activeMins = statsData?.activeTime.value || 0;
+    const percentage = quickData?.percentage || 0;
+
     const stats = [
         {
             label: 'Distance',
-            value: `${distance} km`,
+            value: `${distance.toFixed(1)} km`,
             icon: require('../assets/stepIcons/distance.png'),
             bg: theme.cardBackground,
         },
         {
             label: 'Calories',
-            value: `${calories}`,
+            value: `${Math.round(calories)}`,
             icon: require('../assets/stepIcons/calories.png'),
             bg: theme.cardBackground,
         },
@@ -194,8 +337,8 @@ const StatsPanel: React.FC<{
             bg: theme.cardBackground,
         },
         {
-            label: 'Percentage',
-            value: `${steps} %`,
+            label: 'Progress',
+            value: `${percentage}%`,
             icon: require('../assets/stepIcons/footprint.png'),
             bg: theme.cardBackground,
         },
@@ -229,455 +372,112 @@ const StatsPanel: React.FC<{
 
 // ============ STEPS CHART COMPONENT ============
 const StepsChart: React.FC = () => {
-    const { theme, isDarkMode } = useTheme();
-    const [selectedPeriod, setSelectedPeriod] = useState<Period>('Week');
+    const { theme } = useTheme();
+    const { chartData, isLoadingChart, selectedPeriod, setSelectedPeriod } = useFitness();
     const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [dropdownPos, setDropdownPos] = useState<{ left: number; top: number } | null>(null);
-    const [selectedPoint, setSelectedPoint] = useState<SelectedPoint | null>(null);
-    const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
 
-    const animProgress = useRef(new Animated.Value(0)).current;
-    const pointScale = useRef(new Animated.Value(0)).current;
+    const periodOptions: ('day' | 'week' | 'month')[] = ['day', 'week', 'month'];
 
-    useEffect(() => {
-        const listener = ({ window }: { window: { width: number } }) =>
-            setScreenWidth(window.width);
-        const sub = Dimensions.addEventListener
-            ? Dimensions.addEventListener('change', listener)
-            : undefined;
-        return () => sub?.remove?.();
-    }, []);
-
-    useEffect(() => {
-        animProgress.setValue(0);
-        pointScale.setValue(0);
-        Animated.parallel([
-            Animated.timing(animProgress, {
-                toValue: 1,
-                duration: 650,
-                useNativeDriver: true,
-            }),
-            Animated.spring(pointScale, {
-                toValue: 1,
-                friction: 8,
-                tension: 80,
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, [selectedPeriod, animProgress, pointScale]);
-
-    const isSmall = screenWidth < 360;
-    const isMedium = screenWidth >= 360 && screenWidth < 420;
-    const totalChartWidth = Math.max(screenWidth * 1.2, 540);
-    const visibleChartWidth = Math.min(screenWidth - 32, 480);
-    const chartHeight = isSmall ? 120 : isMedium ? 140 : 160;
-    const labelPadding = isSmall ? 14 : 20;
-    const sidePadding = labelPadding;
-
-    const periodOptions: Period[] = ['Month', 'Week', 'Day'];
-    const periodBtnRef = useRef<any>(null);
-    const DROPDOWN_WIDTH = 140;
-
-    const openDropdown = () => {
-        const ref = periodBtnRef.current as any;
-        if (ref && typeof ref.measureInWindow === 'function') {
-            ref.measureInWindow((x: number, y: number, w: number, h: number) => {
-                const left = Math.max(
-                    8,
-                    Math.min(x + w - DROPDOWN_WIDTH, screenWidth - DROPDOWN_WIDTH - 8),
-                );
-                const top = y + h + 6;
-                setDropdownPos({ left, top });
-                setDropdownOpen(true);
-            });
-        } else {
-            setDropdownPos({
-                left: Math.max(8, screenWidth - DROPDOWN_WIDTH - 12),
-                top: isSmall ? 36 : 44,
-            });
-            setDropdownOpen(true);
-        }
+    const formatPeriodDisplay = (period: string) => {
+        return period.charAt(0).toUpperCase() + period.slice(1);
     };
 
-    const yToValue = (y: number) => {
-        const clamped = Math.max(0, Math.min(chartHeight, y));
-        const v = Math.round(((chartHeight - clamped) / chartHeight) * 100);
-        return v;
-    };
-
-    const getData = useCallback(
-        (period: Period): { points: Point[]; labels: string[] } => {
-            const hm = isSmall ? 0.65 : isMedium ? 0.72 : 0.78;
-            if (period === 'Month') {
-                const w = totalChartWidth;
-                return {
-                    points: [
-                        { x: 0, y: 72 * hm, value: 4200 },
-                        { x: w * 0.18, y: 60 * hm, value: 5300 },
-                        { x: w * 0.36, y: 88 * hm, value: 6100 },
-                        { x: w * 0.62, y: 50 * hm, value: 3600 },
-                        { x: w * 0.78, y: 95 * hm, value: 7200 },
-                        { x: w * 1.0, y: 70 * hm, value: 4800 },
-                    ],
-                    labels: isSmall ? ['W1', 'W2', 'W3', 'W4'] : ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                };
-            } else if (period === 'Day') {
-                const w = totalChartWidth;
-                return {
-                    points: [
-                        { x: 0, y: 28 * hm, value: 300 },
-                        { x: w * 0.12, y: 38 * hm, value: 900 },
-                        { x: w * 0.24, y: 60 * hm, value: 2200 },
-                        { x: w * 0.38, y: 94 * hm, value: 5600 },
-                        { x: w * 0.52, y: 75 * hm, value: 4100 },
-                        { x: w * 0.66, y: 88 * hm, value: 5200 },
-                        { x: w * 0.8, y: 68 * hm, value: 3500 },
-                        { x: w * 1.0, y: 52 * hm, value: 2700 },
-                    ],
-                    labels: isSmall ? ['6AM', '9AM', '12PM', '3PM', '6PM', '9PM'] : ['6AM', '9AM', '12PM', '3PM', '6PM', '9PM'],
-                };
-            } else {
-                const w = totalChartWidth;
-                return {
-                    points: [
-                        { x: 0, y: 78 * hm, value: 4200 },
-                        { x: w * 0.15, y: 46 * hm, value: 3100 },
-                        { x: w * 0.3, y: 98 * hm, value: 7200 },
-                        { x: w * 0.48, y: 64 * hm, value: 3800 },
-                        { x: w * 0.66, y: 88 * hm, value: 5400 },
-                        { x: w * 0.82, y: 120 * hm, value: 9000 },
-                        { x: w * 1.0, y: 72 * hm, value: 4600 },
-                    ],
-                    labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-                };
-            }
-        },
-        [isSmall, isMedium, totalChartWidth],
-    );
-
-    const current = useMemo(() => getData(selectedPeriod), [getData, selectedPeriod]);
-    const dataPoints = current.points;
-    const labels = current.labels;
-
-    const insetPoints = useMemo(() => {
-        if (!dataPoints || dataPoints.length === 0) return dataPoints;
-        const scaleWidth = Math.max(0, totalChartWidth - sidePadding * 2);
-        return dataPoints.map(pt => ({
-            ...pt,
-            x: sidePadding + (pt.x / totalChartWidth) * scaleWidth,
-        }));
-    }, [dataPoints, sidePadding, totalChartWidth]);
-
-    const generateSmoothPath = (pts: Point[]) => {
-        if (!pts || pts.length === 0) return '';
-        if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
-
-        const tension = 0.5;
-        let d = `M ${pts[0].x} ${pts[0].y}`;
-
-        for (let i = 0; i < pts.length - 1; i++) {
-            const p0 = pts[i - 1] || pts[i];
-            const p1 = pts[i];
-            const p2 = pts[i + 1];
-            const p3 = pts[i + 2] || p2;
-
-            const cp1x = p1.x + ((p2.x - p0.x) / 6) * tension;
-            const cp1y = p1.y + ((p2.y - p0.y) / 6) * tension;
-            const cp2x = p2.x - ((p3.x - p1.x) / 6) * tension;
-            const cp2y = p2.y - ((p3.y - p1.y) / 6) * tension;
-
-            d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
-        }
-        return d;
-    };
-
-    const generateFillPath = (pts: Point[]) => {
-        const line = generateSmoothPath(pts);
-        if (!line) return '';
-        const lastX = pts[pts.length - 1].x;
-        return `${line} L ${lastX} ${chartHeight} L ${pts[0].x} ${chartHeight} Z`;
-    };
-
-    const mainPath = useMemo(() => generateSmoothPath(insetPoints), [insetPoints]);
-    const fillPath = useMemo(() => generateFillPath(insetPoints), [insetPoints]);
-
-    const refLines = [chartHeight * 0.25, chartHeight * 0.5, chartHeight * 0.75];
-
-    const labelIndexFor = (i: number) =>
-        Math.round((i / Math.max(labels.length - 1, 1)) * (insetPoints.length - 1));
-
-    const tooltipWidth = isSmall ? 76 : 96;
-    const tooltipHeight = isSmall ? 36 : 42;
-    const tooltipPadding = 8;
-    const tooltipYOffset = 12;
-
-    const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-
-    const calcTooltip = (p: Point) => {
-        const minX = sidePadding + tooltipWidth / 2;
-        const maxX = totalChartWidth - sidePadding - tooltipWidth / 2;
-        const anchoredX = clamp(p.x, minX, maxX);
-        const anchoredY = p.y - tooltipYOffset;
-        const rectY = Math.max(6, anchoredY - tooltipHeight - 4);
-        const rectX = anchoredX - tooltipWidth / 2;
-        return { rectX, rectY, pointerX: anchoredX, pointerY: p.y - 4 };
-    };
-
-    const onPressPoint = (pt: Point, idx: number) => {
-        const approxLabelIdx = Math.round(
-            (idx / Math.max(insetPoints.length - 1, 1)) * (labels.length - 1),
+    if (isLoadingChart && !chartData) {
+        return (
+            <View style={[styles.chartCard, { backgroundColor: theme.cardBackground, padding: 20 }]}>
+                <ActivityIndicator size="large" color={theme.primary} />
+                <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+                    Loading chart...
+                </Text>
+            </View>
         );
-        const label = labels[clamp(approxLabelIdx, 0, labels.length - 1)] ?? '';
-        const v = typeof pt.value === 'number' ? pt.value : yToValue(pt.y);
-        setSelectedPoint({ index: idx, x: pt.x, y: pt.y, label, value: v });
-    };
-
-    useEffect(() => setSelectedPoint(null), [selectedPeriod]);
+    }
 
     return (
-        <View style={[styles.chartCard, { padding: isSmall ? 10 : 14, backgroundColor: theme.cardBackground }]}>
+        <View style={[styles.chartCard, { backgroundColor: theme.cardBackground }]}>
             <View style={styles.chartHeaderRow}>
-                <Text style={[styles.chartTitle, { fontSize: isSmall ? 15 : 17, color: theme.text }]}>
-                    Report
-                </Text>
-
+                <Text style={[styles.chartTitle, { color: theme.text }]}>Activity Report</Text>
                 <TouchableOpacity
-                    ref={periodBtnRef}
-                    activeOpacity={0.85}
-                    style={[
-                        styles.periodBtn,
-                        {
-                            paddingHorizontal: isSmall ? 8 : 12,
-                            backgroundColor: theme.surface,
-                            borderColor: theme.border,
-                        },
-                    ]}
-                    onPress={openDropdown}
+                    style={[styles.periodBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                    onPress={() => setDropdownOpen(!dropdownOpen)}
                 >
-                    <Text style={[styles.periodText, { color: theme.text }]}>{selectedPeriod}</Text>
+                    <Text style={[styles.periodText, { color: theme.text }]}>
+                        {formatPeriodDisplay(selectedPeriod)}
+                    </Text>
                     <Text style={[styles.periodArrow, { color: theme.textSecondary }]}>▾</Text>
                 </TouchableOpacity>
             </View>
 
-            {selectedPoint && (
-                <View style={styles.dropdownOverlay} pointerEvents="box-none">
-                    <TouchableOpacity
-                        style={styles.dropdownOverlayBackdrop}
-                        activeOpacity={1}
-                        onPress={() => setSelectedPoint(null)}
-                    />
-                </View>
-            )}
-
             {dropdownOpen && (
-                <Modal visible transparent animationType="fade" onRequestClose={() => setDropdownOpen(false)}>
-                    <View style={{ flex: 1 }}>
-                        <TouchableOpacity
-                            style={styles.dropdownOverlayBackdrop}
-                            activeOpacity={1}
-                            onPress={() => setDropdownOpen(false)}
-                        />
-
-                        <View
-                            style={[
-                                styles.dropdownCardInline,
-                                {
-                                    position: 'absolute',
-                                    left: dropdownPos?.left ?? Math.max(8, screenWidth - DROPDOWN_WIDTH - 12),
-                                    top: dropdownPos?.top ?? (isSmall ? 36 : 44),
-                                    width: DROPDOWN_WIDTH,
-                                    backgroundColor: theme.cardBackground,
-                                    borderColor: theme.border,
-                                },
-                            ]}
-                        >
-                            {periodOptions.map(item => (
+                <Modal transparent visible={dropdownOpen} onRequestClose={() => setDropdownOpen(false)}>
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setDropdownOpen(false)}
+                    >
+                        <View style={[styles.dropdownCard, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
+                            {periodOptions.map((option) => (
                                 <TouchableOpacity
-                                    key={item}
+                                    key={option}
+                                    style={[
+                                        styles.dropdownItem,
+                                        selectedPeriod === option && { backgroundColor: theme.surface }
+                                    ]}
                                     onPress={() => {
-                                        setSelectedPeriod(item);
+                                        setSelectedPeriod(option);
                                         setDropdownOpen(false);
                                     }}
-                                    style={styles.dropdownItem}
                                 >
-                                    <Text style={[styles.dropdownItemText, { color: theme.text }]}>{item}</Text>
+                                    <Text style={[styles.dropdownItemText, { color: theme.text }]}>
+                                        {formatPeriodDisplay(option)}
+                                    </Text>
+                                    {selectedPeriod === option && (
+                                        <Text style={{ color: theme.primary }}>✓</Text>
+                                    )}
                                 </TouchableOpacity>
                             ))}
                         </View>
-                    </View>
+                    </TouchableOpacity>
                 </Modal>
             )}
 
-            <View style={[styles.chartWrap, { width: visibleChartWidth }]}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 0 }}>
-                    <Svg width={totalChartWidth} height={chartHeight + 34}>
-                        <Defs>
-                            <LinearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <Stop offset="0%" stopColor={theme.primary} stopOpacity="1" />
-                                <Stop offset="100%" stopColor={theme.secondary} stopOpacity="1" />
-                            </LinearGradient>
-                            <LinearGradient id="fillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <Stop offset="0%" stopColor={theme.primary} stopOpacity={0.2} />
-                                <Stop offset="60%" stopColor={theme.secondary} stopOpacity={0.1} />
-                                <Stop offset="100%" stopColor={theme.secondary} stopOpacity={0.02} />
-                            </LinearGradient>
-                        </Defs>
-
-                        {refLines.map((y, i) => (
-                            <Line
-                                key={i}
-                                x1={0}
-                                x2={totalChartWidth}
-                                y1={y}
-                                y2={y}
-                                stroke={`${theme.text}22`}
-                                strokeWidth={1}
-                                strokeDasharray="4,6"
-                            />
-                        ))}
-
-                        <G>
-                            <Path d={fillPath} fill="url(#fillGrad)" />
-                        </G>
-
-                        <G>
-                            <AnimatedPath
-                                d={mainPath}
-                                fill="none"
-                                stroke="url(#lineGrad)"
-                                strokeWidth={3}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                        </G>
-
-                        {insetPoints.map((pt, i) => {
-                            const isHighlighted = selectedPoint?.index === i;
-                            const cx = pt.x;
-                            const cy = pt.y;
-                            const hitR = isSmall ? 14 : 18;
+            {!isLoadingChart && chartData && chartData.length > 0 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.chartContent}>
+                        {chartData.map((point, index) => {
+                            const maxSteps = Math.max(...chartData.map(p => p.steps));
+                            const barHeight = maxSteps > 0 ? Math.max(20, (point.steps / maxSteps) * 150) : 20;
+                            const label = point.dayShort || point.label || point.date?.substring(5) || `${index + 1}`;
 
                             return (
-                                <React.Fragment key={i}>
-                                    <Circle
-                                        cx={cx}
-                                        cy={cy}
-                                        r={hitR}
-                                        fill="rgba(0,0,0,0.001)"
-                                        onPress={() => onPressPoint(pt, i)}
-                                        onPressIn={() => onPressPoint(pt, i)}
+                                <View key={index} style={styles.chartBar}>
+                                    <View
+                                        style={[
+                                            styles.bar,
+                                            {
+                                                height: barHeight,
+                                                backgroundColor: point.goalAchieved ? '#00FF7F' : theme.primary,
+                                            },
+                                        ]}
                                     />
-                                    <Circle
-                                        cx={cx}
-                                        cy={cy}
-                                        r={(isHighlighted ? (isSmall ? 5.8 : 7.2) : isSmall ? 3.8 : 5) + 2}
-                                        fill="none"
-                                        stroke={`${theme.text}22`}
-                                        strokeWidth={1}
-                                        pointerEvents="none"
-                                    />
-                                    <Circle
-                                        cx={cx}
-                                        cy={cy}
-                                        r={isHighlighted ? (isSmall ? 5.8 : 7.2) : isSmall ? 3.8 : 5}
-                                        fill={theme.text}
-                                        stroke="url(#lineGrad)"
-                                        strokeWidth={isHighlighted ? 2 : 1.6}
-                                        onPress={() => onPressPoint(pt, i)}
-                                        onPressIn={() => onPressPoint(pt, i)}
-                                    />
-                                    {isHighlighted && (
-                                        <Circle
-                                            cx={cx}
-                                            cy={cy}
-                                            r={isSmall ? 12 : 14}
-                                            fill="none"
-                                            stroke={theme.primary}
-                                            strokeOpacity={0.22}
-                                            strokeWidth={2}
-                                        />
-                                    )}
-                                </React.Fragment>
+                                    <Text style={[styles.barLabel, { color: theme.textSecondary }]}>
+                                        {label}
+                                    </Text>
+                                    <Text style={[styles.barValue, { color: theme.text }]}>
+                                        {point.steps > 999 ? `${(point.steps / 1000).toFixed(1)}k` : point.steps}
+                                    </Text>
+                                </View>
                             );
                         })}
-
-                        {labels.map((lab, idx) => {
-                            let rawX: number;
-                            if (selectedPeriod === 'Day') {
-                                const steps = Math.max(labels.length - 1, 1);
-                                const usableWidth = totalChartWidth - sidePadding * 2;
-                                rawX = sidePadding + (idx / steps) * usableWidth;
-                            } else {
-                                const dataIdx = labelIndexFor(idx);
-                                rawX = insetPoints[clamp(dataIdx, 0, insetPoints.length - 1)].x;
-                            }
-                            const x = clamp(rawX, sidePadding, totalChartWidth - sidePadding);
-                            return (
-                                <SvgText
-                                    key={idx}
-                                    x={x}
-                                    y={chartHeight + (isSmall ? 16 : 20)}
-                                    fontSize={isSmall ? 10 : 12}
-                                    fill={theme.textSecondary}
-                                    textAnchor="middle"
-                                    fontFamily="System"
-                                >
-                                    {lab}
-                                </SvgText>
-                            );
-                        })}
-
-                        {selectedPoint &&
-                            (() => {
-                                const p = { x: selectedPoint.x, y: selectedPoint.y };
-                                const { rectX, rectY, pointerX, pointerY } = calcTooltip(p);
-
-                                return (
-                                    <G key="tooltip">
-                                        <Line
-                                            x1={pointerX}
-                                            y1={pointerY - 2}
-                                            x2={pointerX}
-                                            y2={rectY + tooltipHeight}
-                                            stroke={theme.primary}
-                                            strokeWidth={1}
-                                            strokeOpacity={0.9}
-                                        />
-                                        <Rect
-                                            x={rectX}
-                                            y={rectY}
-                                            rx={8}
-                                            width={tooltipWidth}
-                                            height={tooltipHeight}
-                                            fill={theme.surface}
-                                            stroke={theme.primary}
-                                            strokeWidth={0.8}
-                                            opacity={0.98}
-                                            onPress={() => setSelectedPoint(null)}
-                                        />
-                                        <SvgText
-                                            x={rectX + tooltipPadding}
-                                            y={rectY + (isSmall ? 14 : 16)}
-                                            fontSize={isSmall ? 10 : 11}
-                                            fill={theme.textSecondary}
-                                        >
-                                            {selectedPoint.label}
-                                        </SvgText>
-                                        <SvgText
-                                            x={rectX + tooltipPadding}
-                                            y={rectY + (isSmall ? 30 : 32)}
-                                            fontSize={isSmall ? 12 : 14}
-                                            fill={theme.text}
-                                            fontWeight="600"
-                                        >
-                                            {Number(selectedPoint.value).toLocaleString()}
-                                        </SvgText>
-                                    </G>
-                                );
-                            })()}
-                    </Svg>
+                    </View>
                 </ScrollView>
-            </View>
+            ) : (
+                <View style={styles.noDataContainer}>
+                    <Text style={[styles.noDataText, { color: theme.textSecondary }]}>
+                        No chart data available
+                    </Text>
+                </View>
+            )}
         </View>
     );
 };
@@ -685,18 +485,100 @@ const StepsChart: React.FC = () => {
 // ============ MAIN STEPS SCREEN ============
 const StepsScreen = () => {
     const { theme } = useTheme();
+    const { isAuthenticated } = useAuth();
+    const navigation = useNavigation();
+    const {
+        isConnected,
+        isLoadingConnection,
+        checkConnectionStatus,
+        fetchQuickData,
+        fetchStatsData,
+        fetchChartData,
+        selectedPeriod,
+    } = useFitness();
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const styles = useThemedStyles((theme) => StyleSheet.create({
-        container: {
-            flex: 1,
-            backgroundColor: theme.background,
-        },
-    }));
+    useEffect(() => {
+        if (isAuthenticated) {
+            checkConnectionStatus();
+        }
+    }, [isAuthenticated]);
+
+    const handleRefresh = async () => {
+        if (isRefreshing) return;
+
+        setIsRefreshing(true);
+        try {
+            if (isConnected) {
+                await Promise.all([
+                    fetchQuickData(),
+                    fetchStatsData(),
+                    fetchChartData(selectedPeriod),
+                ]);
+                Alert.alert('✅ Success', 'Data refreshed successfully');
+            }
+        } catch (error: any) {
+            Alert.alert('❌ Error', error.message || 'Failed to refresh data');
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
+    const handleSettings = () => {
+        navigation.navigate('GoogleFitSettings' as never);
+    };
+
+    if (!isAuthenticated) {
+        return (
+            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+                <View style={styles.centerContainer}>
+                    <Image
+                        source={require('../assets/stepIcons/footprint.png')}
+                        style={[styles.messageIcon, { tintColor: theme.textSecondary }]}
+                    />
+                    <Text style={[styles.messageText, { color: theme.text }]}>
+                        Please login to view step tracking
+                    </Text>
+                    <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: theme.primary }]}
+                        onPress={() => (navigation as any).navigate('Login')}
+                    >
+                        <Text style={styles.actionButtonText}>Go to Login</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (isLoadingConnection) {
+        return (
+            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+                <View style={styles.centerContainer}>
+                    <ActivityIndicator size="large" color={theme.primary} />
+                    <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+                        Checking connection status...
+                    </Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (!isConnected) {
+        return (
+            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+                <GoogleFitLinkingScreen onLink={checkConnectionStatus} />
+            </SafeAreaView>
+        );
+    }
 
     return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView>
-                <Header />
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <Header
+                    onRefresh={handleRefresh}
+                    isRefreshing={isRefreshing}
+                    onSettings={handleSettings}
+                />
                 <StepCircle />
                 <StatsPanel />
                 <StepsChart />
@@ -708,32 +590,137 @@ const StepsScreen = () => {
 
 // ============ STYLES ============
 const styles = StyleSheet.create({
-    // Header Styles
+    container: {
+        flex: 1,
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 30,
+    },
+    messageIcon: {
+        width: 80,
+        height: 80,
+        marginBottom: 20,
+    },
+    messageText: {
+        fontSize: 18,
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    actionButton: {
+        paddingHorizontal: 30,
+        paddingVertical: 12,
+        borderRadius: 10,
+    },
+    actionButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 14,
+    },
+    linkingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 30,
+    },
+    linkingIcon: {
+        width: 100,
+        height: 100,
+        marginBottom: 20,
+    },
+    linkingTitle: {
+        fontSize: 26,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    linkingDescription: {
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: 20,
+        lineHeight: 24,
+    },
+    infoBox: {
+        width: '100%',
+        padding: 20,
+        borderRadius: 12,
+        borderWidth: 1,
+        marginBottom: 25,
+    },
+    infoTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 12,
+    },
+    infoItem: {
+        fontSize: 14,
+        marginVertical: 4,
+        lineHeight: 20,
+    },
+    linkButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 30,
+        paddingVertical: 15,
+        borderRadius: 12,
+        minWidth: 200,
+        justifyContent: 'center',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    googleIcon: {
+        width: 24,
+        height: 24,
+        marginRight: 10,
+    },
+    linkButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    privacyNote: {
+        marginTop: 15,
+        fontSize: 13,
+        textAlign: 'center',
+    },
     headerWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-end',
-        marginTop: 25,
-        marginHorizontal: 10,
+        justifyContent: 'space-between',
+        marginTop: 10,
+        marginHorizontal: 16,
+        marginBottom: 10,
     },
     leftButton: {
-        padding: 6,
+        padding: 8,
     },
-    shareButton: {
-        padding: 6,
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    headerButton: {
+        padding: 8,
+        marginLeft: 8,
     },
     headerIcon: {
-        width: 22,
-        height: 22,
-        tintColor: '#fff',
+        width: 24,
+        height: 24,
     },
-
-    // Step Circle Styles
     circleContainer: {
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
-        marginTop: -30,
+        marginVertical: 20,
+        height: SIZE + 50,
     },
     shadowWrapper: {
         position: 'absolute',
@@ -742,7 +729,6 @@ const styles = StyleSheet.create({
     },
     shadowCircle: {
         backgroundColor: 'transparent',
-        shadowColor: '#00BFFF',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.6,
         shadowRadius: 15,
@@ -753,130 +739,146 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     footprintIcon: {
-        marginTop: -20,
+        marginBottom: 10,
         resizeMode: 'contain',
     },
     steps: {
         fontWeight: 'bold',
-        color: '#fff',
+        marginVertical: 5,
     },
     goal: {
-        color: '#bbb',
+        marginTop: 5,
     },
-
-    // Stats Panel Styles
+    goalAchieved: {
+        marginTop: 8,
+        fontWeight: '600',
+    },
     statsContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        marginTop: 30,
+        marginTop: 10,
     },
     statBox: {
         alignItems: 'center',
         justifyContent: 'center',
         flexBasis: BOX_SIZE,
-        paddingVertical: width * 0.02,
+        paddingVertical: 12,
         borderRadius: 12,
+        marginBottom: 10,
     },
     iconWrapper: {
-        backgroundColor: '#101012ff',
         borderRadius: 50,
-        padding: width * 0.015,
-        marginBottom: 6,
+        padding: 10,
+        marginBottom: 8,
     },
     statIcon: {
-        width: width * 0.06,
-        height: width * 0.06,
+        width: 24,
+        height: 24,
     },
     statValue: {
-        fontSize: width * 0.04,
+        fontSize: 16,
         fontWeight: 'bold',
-        color: '#fff',
+        marginBottom: 4,
     },
     statLabel: {
-        fontSize: width * 0.03,
-        color: '#bbb',
-        marginTop: 2,
+        fontSize: 12,
     },
-
-    // Chart Styles
     chartCard: {
-        backgroundColor: '#0b0f12',
         borderRadius: 14,
-        marginTop: 10,
-
+        marginTop: 20,
+        marginHorizontal: 16,
+        padding: 16,
     },
     chartHeaderRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 10,
+        marginBottom: 15,
     },
     chartTitle: {
-        color: '#fff',
+        fontSize: 18,
         fontWeight: '700',
     },
     periodBtn: {
-        backgroundColor: '#0f1720',
         borderRadius: 10,
-        paddingVertical: 6,
+        paddingVertical: 8,
+        paddingHorizontal: 14,
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#19232a',
     },
     periodText: {
-        color: '#d7eef0',
         paddingRight: 6,
         fontWeight: '600',
+        fontSize: 14,
     },
     periodArrow: {
-        color: '#98cfcf',
         fontSize: 12,
-        paddingRight: 8,
     },
-    dropdownOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 999,
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-start',
+        alignItems: 'flex-end',
+        paddingTop: 120,
+        paddingRight: 16,
     },
-    dropdownOverlayBackdrop: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'transparent',
-    },
-    dropdownCardInline: {
-        position: 'absolute',
-        alignSelf: 'flex-end',
-        width: 140,
-        backgroundColor: '#0f1720',
+    dropdownCard: {
+        width: 160,
         borderRadius: 10,
-        paddingVertical: 6,
+        paddingVertical: 8,
         borderWidth: 1,
-        borderColor: '#202a2f',
-        zIndex: 30,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
     },
     dropdownItem: {
-        paddingVertical: 8,
-        paddingHorizontal: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
     },
     dropdownItemText: {
-        color: '#e4f7f8',
-        textAlign: 'center',
+        fontSize: 14,
         fontWeight: '600',
     },
-    chartWrap: {
+    chartContent: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        paddingVertical: 20,
+        paddingHorizontal: 10,
+    },
+    chartBar: {
         alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        marginTop: 6,
+        marginHorizontal: 6,
+        minWidth: 45,
+    },
+    bar: {
+        width: 36,
+        borderRadius: 8,
+        minHeight: 20,
+    },
+    barLabel: {
+        marginTop: 8,
+        fontSize: 11,
+        fontWeight: '500',
+    },
+    barValue: {
+        marginTop: 4,
+        fontSize: 10,
+        fontWeight: '600',
+    },
+    noDataContainer: {
+        padding: 40,
+        alignItems: 'center',
+    },
+    noDataText: {
+        fontSize: 14,
     },
 });
 

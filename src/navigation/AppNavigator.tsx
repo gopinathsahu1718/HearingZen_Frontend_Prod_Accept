@@ -48,6 +48,8 @@ import LessonPlayerScreen from '../screens/LessonPlayerScreen';
 import AboutApp from '../screens/ProfileScreenPages/AboutAppScreen';
 import TermsAndConditions from '../screens/ProfileScreenPages/TermsAndConditionsScreen';
 
+import GoogleFitSettingsScreen from '../screens/GoogleFitSettingsScreen';
+
 import type { RootStackParamList } from '../types/types';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -204,6 +206,7 @@ const AppNavigator = () => {
 
                 <Stack.Screen name="AboutUsScreen" component={AboutApp} />
                 <Stack.Screen name="TermsAndConditionsScreen" component={TermsAndConditions} />
+                <Stack.Screen name="GoogleFitSettings" component={GoogleFitSettingsScreen} options={{ title: "Google Fit Settings" }} />
             </Stack.Navigator>
         </NavigationContainer>
     );
