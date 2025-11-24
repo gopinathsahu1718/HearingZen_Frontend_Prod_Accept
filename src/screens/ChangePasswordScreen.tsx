@@ -21,7 +21,10 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
 
-type ChangePasswordScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ChangePassword'>;
+type ChangePasswordScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'ChangePassword'
+>;
 
 const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreenNavigationProp }) => {
   const { theme, isDarkMode } = useTheme();
@@ -31,6 +34,11 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // NEW — show error only after submit
+  const [submitted, setSubmitted] = useState(false);
+
+  // Show/Hide password states
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -111,6 +119,11 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
         marginBottom: 8,
         fontWeight: '500',
       },
+      requiredStar: {
+        color: 'red',
+        fontSize: 16,
+        fontWeight: 'bold',
+      },
       inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -120,6 +133,9 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
         borderRadius: 8,
         height: 52,
         paddingHorizontal: 16,
+      },
+      errorBorder: {
+        borderColor: 'red',
       },
       input: {
         flex: 1,
@@ -166,19 +182,20 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
 
   const handleChangePassword = async () => {
     Keyboard.dismiss();
+    setSubmitted(true); // show validation UI only after submit
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Error', 'Please fill all fields');
+      Alert.alert('Error', 'Please fill out all the mandatory fields');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'New password and confirm password do not match');
+      Alert.alert('Error', 'New password and confirm password do not match.');
       return;
     }
 
     if (currentPassword === newPassword) {
-      Alert.alert('Error', 'New password must be different from current password');
+      Alert.alert('Error', 'New password must be different from current password.');
       return;
     }
 
@@ -194,6 +211,7 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setSubmitted(false);
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
@@ -201,12 +219,13 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
     }
   };
 
+  const isEmpty = (value: string) => submitted && value.trim() === '';
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView
@@ -216,6 +235,7 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
             bounces={false}
           >
             <View style={styles.container}>
+
               <View style={styles.header}>
                 <Text style={styles.headerText}>Change{'\n'}Password</Text>
               </View>
@@ -237,9 +257,21 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                   Enter your current password and choose a new secure password
                 </Text>
 
+                {/* CURRENT PASSWORD */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Current Password</Text>
-                  <View style={styles.inputWrapper}>
+                  <Text style={styles.label}>
+                    Current Password
+                    {isEmpty(currentPassword) && (
+                      <Text style={styles.requiredStar}> *</Text>
+                    )}
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      isEmpty(currentPassword) && styles.errorBorder,
+                    ]}
+                  >
                     <TextInput
                       style={styles.input}
                       placeholder="Enter current password"
@@ -247,13 +279,10 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                       secureTextEntry={!showCurrentPassword}
                       value={currentPassword}
                       onChangeText={setCurrentPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
                     />
                     <TouchableOpacity
                       style={styles.eyeButton}
                       onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-                      activeOpacity={0.7}
                     >
                       <Image
                         source={
@@ -267,9 +296,21 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                   </View>
                 </View>
 
+                {/* NEW PASSWORD */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>New Password</Text>
-                  <View style={styles.inputWrapper}>
+                  <Text style={styles.label}>
+                    New Password
+                    {isEmpty(newPassword) && (
+                      <Text style={styles.requiredStar}> *</Text>
+                    )}
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      isEmpty(newPassword) && styles.errorBorder,
+                    ]}
+                  >
                     <TextInput
                       style={styles.input}
                       placeholder="Enter new password"
@@ -277,13 +318,10 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                       secureTextEntry={!showNewPassword}
                       value={newPassword}
                       onChangeText={setNewPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
                     />
                     <TouchableOpacity
                       style={styles.eyeButton}
                       onPress={() => setShowNewPassword(!showNewPassword)}
-                      activeOpacity={0.7}
                     >
                       <Image
                         source={
@@ -297,9 +335,21 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                   </View>
                 </View>
 
+                {/* CONFIRM PASSWORD */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Confirm New Password</Text>
-                  <View style={styles.inputWrapper}>
+                  <Text style={styles.label}>
+                    Confirm New Password
+                    {isEmpty(confirmPassword) && (
+                      <Text style={styles.requiredStar}> *</Text>
+                    )}
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      isEmpty(confirmPassword) && styles.errorBorder,
+                    ]}
+                  >
                     <TextInput
                       style={styles.input}
                       placeholder="Re-enter new password"
@@ -307,13 +357,10 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                       secureTextEntry={!showConfirmPassword}
                       value={confirmPassword}
                       onChangeText={setConfirmPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
                     />
                     <TouchableOpacity
                       style={styles.eyeButton}
                       onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                      activeOpacity={0.7}
                     >
                       <Image
                         source={
@@ -325,16 +372,18 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                       />
                     </TouchableOpacity>
                   </View>
+
                   <Text style={styles.hint}>
-                    Password must be at least 8 characters long, include an uppercase letter, lowercase letter, number, and special character.
+                    Password must be at least 8 characters long, include an uppercase
+                    letter, lowercase letter, number, and special character.
                   </Text>
                 </View>
 
+                {/* BUTTON */}
                 <TouchableOpacity
                   style={[styles.button, loading && styles.buttonDisabled]}
                   onPress={handleChangePassword}
                   disabled={loading}
-                  activeOpacity={0.8}
                 >
                   {loading ? (
                     <ActivityIndicator color="#fff" size="small" />
@@ -342,6 +391,7 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                     <Text style={styles.buttonText}>Change Password</Text>
                   )}
                 </TouchableOpacity>
+
               </View>
             </View>
           </ScrollView>

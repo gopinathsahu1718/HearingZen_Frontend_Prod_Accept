@@ -1,4 +1,4 @@
-// screens/StepsScreen.tsx - COMPLETE VERSION
+// screens/StepsScreen.tsx - RESPONSIVE VERSION
 import React, { useEffect, useState } from 'react';
 import {
     View,
@@ -15,6 +15,7 @@ import {
     Alert,
     Modal,
     AppState,
+    Platform,
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useFitness } from '../contexts/FitnessContext';
@@ -23,22 +24,49 @@ import { useNavigation } from '@react-navigation/native';
 import Svg, { Circle } from 'react-native-svg';
 import BMICards from './StepScreen/BMICards';
 
-const { width } = Dimensions.get('window');
-const BOX_SIZE = width * 0.22;
-const SIZE = width * 0.5;
+// Responsive dimension utilities
+const getResponsiveDimensions = () => {
+    const { width, height } = Dimensions.get('window');
+    const isSmallDevice = width < 375;
+    const isMediumDevice = width >= 375 && width < 414;
+    const isLargeDevice = width >= 414;
+    const isTablet = width >= 768;
+
+    return {
+        width,
+        height,
+        isSmallDevice,
+        isMediumDevice,
+        isLargeDevice,
+        isTablet,
+        // Responsive sizes
+        BOX_SIZE: isTablet ? width * 0.18 : width * 0.22,
+        SIZE: isTablet ? width * 0.35 : isSmallDevice ? width * 0.55 : width * 0.5,
+        PADDING: isTablet ? 24 : 16,
+        ICON_SIZE: isSmallDevice ? 20 : isTablet ? 28 : 24,
+        FONT_LARGE: isSmallDevice ? 24 : isTablet ? 32 : 26,
+        FONT_MEDIUM: isSmallDevice ? 14 : isTablet ? 20 : 16,
+        FONT_SMALL: isSmallDevice ? 11 : isTablet ? 15 : 13,
+    };
+};
+
+const dims = getResponsiveDimensions();
+const { BOX_SIZE, SIZE } = dims;
 const STROKE_WIDTH = SIZE * 0.06;
 const RADIUS = (SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 // ============ GOOGLE FIT LINKING SCREEN ============
-const GoogleFitLinkingScreen: React.FC<{ onLink: () => void }> = ({ onLink }) => {
+const GoogleFitLinkingScreen: React.FC<{ onLink: () => void }> = ({
+    onLink,
+}) => {
     const { theme } = useTheme();
     const { linkGoogle } = useFitness();
     const [isLinking, setIsLinking] = useState(false);
     const [isLinkingInProgress, setIsLinkingInProgress] = useState(false);
 
     useEffect(() => {
-        const subscription = AppState.addEventListener('change', (nextAppState) => {
+        const subscription = AppState.addEventListener('change', nextAppState => {
             if (nextAppState === 'active' && isLinkingInProgress) {
                 setIsLinkingInProgress(false);
                 onLink();
@@ -67,7 +95,7 @@ const GoogleFitLinkingScreen: React.FC<{ onLink: () => void }> = ({ onLink }) =>
                                 text: 'OK',
                                 style: 'default',
                             },
-                        ]
+                        ],
                     );
                 } else {
                     Alert.alert('Error', 'Cannot open linking URL');
@@ -80,53 +108,143 @@ const GoogleFitLinkingScreen: React.FC<{ onLink: () => void }> = ({ onLink }) =>
         }
     };
 
+    const iconSize = dims.isTablet ? 120 : dims.isSmallDevice ? 80 : 100;
+
     if (isLinkingInProgress) {
         return (
-            <View style={[styles.linkingContainer, { backgroundColor: theme.background }]}>
+            <View
+                style={[styles.linkingContainer, { backgroundColor: theme.background }]}
+            >
                 <Image
                     source={require('../assets/stepIcons/footprint.png')}
-                    style={[styles.linkingIcon, { tintColor: theme.primary }]}
+                    style={[
+                        styles.linkingIcon,
+                        { tintColor: theme.primary, width: iconSize, height: iconSize },
+                    ]}
                 />
-                <Text style={[styles.linkingTitle, { color: theme.text }]}>
+                <Text
+                    style={[
+                        styles.linkingTitle,
+                        { color: theme.text, fontSize: dims.FONT_LARGE },
+                    ]}
+                >
                     Linking in Progress
                 </Text>
-                <Text style={[styles.linkingDescription, { color: theme.textSecondary }]}>
-                    Complete the process in your browser and return to the app. It will automatically check the connection.
+                <Text
+                    style={[
+                        styles.linkingDescription,
+                        { color: theme.textSecondary, fontSize: dims.FONT_MEDIUM },
+                    ]}
+                >
+                    Complete the process in your browser and return to the app. It will
+                    automatically check the connection.
                 </Text>
-                <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 20 }} />
+                <ActivityIndicator
+                    size="large"
+                    color={theme.primary}
+                    style={{ marginTop: 20 }}
+                />
                 <TouchableOpacity
-                    style={[styles.linkButton, { backgroundColor: theme.primary, marginTop: 20 }]}
+                    style={[
+                        styles.linkButton,
+                        { backgroundColor: theme.primary, marginTop: 20 },
+                    ]}
                     onPress={() => {
                         setIsLinkingInProgress(false);
                         onLink();
                     }}
                 >
-                    <Text style={styles.linkButtonText}>Check Connection Now</Text>
+                    <Text style={[styles.linkButtonText, { fontSize: dims.FONT_MEDIUM }]}>
+                        Check Connection Now
+                    </Text>
                 </TouchableOpacity>
             </View>
         );
     }
 
     return (
-        <View style={[styles.linkingContainer, { backgroundColor: theme.background }]}>
+        <View
+            style={[styles.linkingContainer, { backgroundColor: theme.background }]}
+        >
             <Image
                 source={require('../assets/stepIcons/footprint.png')}
-                style={[styles.linkingIcon, { tintColor: theme.primary }]}
+                style={[
+                    styles.linkingIcon,
+                    { tintColor: theme.primary, width: iconSize, height: iconSize },
+                ]}
             />
-            <Text style={[styles.linkingTitle, { color: theme.text }]}>
+            <Text
+                style={[
+                    styles.linkingTitle,
+                    { color: theme.text, fontSize: dims.FONT_LARGE },
+                ]}
+            >
                 Connect Google Fit
             </Text>
-            <Text style={[styles.linkingDescription, { color: theme.textSecondary }]}>
-                Link your Google Fit account to track your daily steps, calories, and activity data.
+            <Text
+                style={[
+                    styles.linkingDescription,
+                    { color: theme.textSecondary, fontSize: dims.FONT_MEDIUM },
+                ]}
+            >
+                Link your Google Fit account to track your daily steps, calories, and
+                activity data.
             </Text>
 
-            <View style={[styles.infoBox, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
-                <Text style={[styles.infoTitle, { color: theme.text }]}>📱 What You'll Get:</Text>
-                <Text style={[styles.infoItem, { color: theme.textSecondary }]}>• Daily step count</Text>
-                <Text style={[styles.infoItem, { color: theme.textSecondary }]}>• Distance traveled</Text>
-                <Text style={[styles.infoItem, { color: theme.textSecondary }]}>• Calories burned</Text>
-                <Text style={[styles.infoItem, { color: theme.textSecondary }]}>• Active time tracking</Text>
-                <Text style={[styles.infoItem, { color: theme.textSecondary }]}>• Weekly & monthly reports</Text>
+            <View
+                style={[
+                    styles.infoBox,
+                    { backgroundColor: theme.cardBackground, borderColor: theme.border },
+                ]}
+            >
+                <Text
+                    style={[
+                        styles.infoTitle,
+                        { color: theme.text, fontSize: dims.FONT_MEDIUM },
+                    ]}
+                >
+                    📱 What You'll Get:
+                </Text>
+                <Text
+                    style={[
+                        styles.infoItem,
+                        { color: theme.textSecondary, fontSize: dims.FONT_SMALL },
+                    ]}
+                >
+                    • Daily step count
+                </Text>
+                <Text
+                    style={[
+                        styles.infoItem,
+                        { color: theme.textSecondary, fontSize: dims.FONT_SMALL },
+                    ]}
+                >
+                    • Distance traveled
+                </Text>
+                <Text
+                    style={[
+                        styles.infoItem,
+                        { color: theme.textSecondary, fontSize: dims.FONT_SMALL },
+                    ]}
+                >
+                    • Calories burned
+                </Text>
+                <Text
+                    style={[
+                        styles.infoItem,
+                        { color: theme.textSecondary, fontSize: dims.FONT_SMALL },
+                    ]}
+                >
+                    • Active time tracking
+                </Text>
+                <Text
+                    style={[
+                        styles.infoItem,
+                        { color: theme.textSecondary, fontSize: dims.FONT_SMALL },
+                    ]}
+                >
+                    • Weekly & monthly reports
+                </Text>
             </View>
 
             <TouchableOpacity
@@ -140,14 +258,26 @@ const GoogleFitLinkingScreen: React.FC<{ onLink: () => void }> = ({ onLink }) =>
                     <>
                         <Image
                             source={require('../assets/icons/google.png')}
-                            style={styles.googleIcon}
+                            style={[
+                                styles.googleIcon,
+                                { width: dims.ICON_SIZE, height: dims.ICON_SIZE },
+                            ]}
                         />
-                        <Text style={styles.linkButtonText}>Link Google Fit</Text>
+                        <Text
+                            style={[styles.linkButtonText, { fontSize: dims.FONT_MEDIUM }]}
+                        >
+                            Link Google Fit
+                        </Text>
                     </>
                 )}
             </TouchableOpacity>
 
-            <Text style={[styles.privacyNote, { color: theme.textSecondary }]}>
+            <Text
+                style={[
+                    styles.privacyNote,
+                    { color: theme.textSecondary, fontSize: dims.FONT_SMALL },
+                ]}
+            >
                 🔒 Your data is secure and private
             </Text>
         </View>
@@ -175,7 +305,12 @@ const Header: React.FC<{
     };
 
     return (
-        <View style={[styles.headerWrapper, { backgroundColor: theme.background }]}>
+        <View
+            style={[
+                styles.headerWrapper,
+                { backgroundColor: theme.background, paddingHorizontal: dims.PADDING },
+            ]}
+        >
             <TouchableOpacity
                 onPress={onRefresh}
                 style={styles.leftButton}
@@ -186,7 +321,14 @@ const Header: React.FC<{
                 ) : (
                     <Image
                         source={require('../assets/images/refresh.png')}
-                        style={[styles.headerIcon, { tintColor: theme.iconTint }]}
+                        style={[
+                            styles.headerIcon,
+                            {
+                                tintColor: theme.iconTint,
+                                width: dims.ICON_SIZE,
+                                height: dims.ICON_SIZE,
+                            },
+                        ]}
                         resizeMode="contain"
                     />
                 )}
@@ -196,7 +338,14 @@ const Header: React.FC<{
                 <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
                     <Image
                         source={require('../assets/stepIcons/share.png')}
-                        style={[styles.headerIcon, { tintColor: theme.iconTint }]}
+                        style={[
+                            styles.headerIcon,
+                            {
+                                tintColor: theme.iconTint,
+                                width: dims.ICON_SIZE,
+                                height: dims.ICON_SIZE,
+                            },
+                        ]}
                         resizeMode="contain"
                     />
                 </TouchableOpacity>
@@ -205,7 +354,14 @@ const Header: React.FC<{
                     <TouchableOpacity onPress={onSettings} style={styles.headerButton}>
                         <Image
                             source={require('../assets/icons/settings.png')}
-                            style={[styles.headerIcon, { tintColor: theme.iconTint }]}
+                            style={[
+                                styles.headerIcon,
+                                {
+                                    tintColor: theme.iconTint,
+                                    width: dims.ICON_SIZE,
+                                    height: dims.ICON_SIZE,
+                                },
+                            ]}
                             resizeMode="contain"
                         />
                     </TouchableOpacity>
@@ -224,7 +380,12 @@ const StepCircle: React.FC = () => {
         return (
             <View style={styles.circleContainer}>
                 <ActivityIndicator size="large" color={theme.primary} />
-                <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+                <Text
+                    style={[
+                        styles.loadingText,
+                        { color: theme.textSecondary, fontSize: dims.FONT_SMALL },
+                    ]}
+                >
                     Loading steps...
                 </Text>
             </View>
@@ -272,25 +433,38 @@ const StepCircle: React.FC = () => {
                     strokeDasharray={CIRCUMFERENCE}
                     strokeDashoffset={strokeDashoffset}
                     strokeLinecap="round"
-                    rotation="-90"
-                    originX={SIZE / 2}
-                    originY={SIZE / 2}
+                    transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
                 />
             </Svg>
 
             <View style={styles.centerContent}>
                 <Image
                     source={require('../assets/stepIcons/footprint.png')}
-                    style={[styles.footprintIcon, { width: SIZE * 0.25, height: SIZE * 0.25 }]}
+                    style={[
+                        styles.footprintIcon,
+                        { width: SIZE * 0.25, height: SIZE * 0.25 },
+                    ]}
                 />
-                <Text style={[styles.steps, { fontSize: SIZE * 0.14, color: theme.text }]}>
+                <Text
+                    style={[styles.steps, { fontSize: SIZE * 0.14, color: theme.text }]}
+                >
                     {steps.toLocaleString()}
                 </Text>
-                <Text style={[styles.goal, { fontSize: SIZE * 0.07, color: theme.textSecondary }]}>
+                <Text
+                    style={[
+                        styles.goal,
+                        { fontSize: SIZE * 0.07, color: theme.textSecondary },
+                    ]}
+                >
                     Goal: {goal.toLocaleString()}
                 </Text>
                 {steps >= goal && (
-                    <Text style={[styles.goalAchieved, { fontSize: SIZE * 0.06, color: '#00FF7F' }]}>
+                    <Text
+                        style={[
+                            styles.goalAchieved,
+                            { fontSize: SIZE * 0.06, color: '#00FF7F' },
+                        ]}
+                    >
                         🎉 Goal Achieved!
                     </Text>
                 )}
@@ -306,7 +480,9 @@ const StatsPanel: React.FC = () => {
 
     if (isLoadingStats && !statsData) {
         return (
-            <View style={styles.statsContainer}>
+            <View
+                style={[styles.statsContainer, { paddingHorizontal: dims.PADDING }]}
+            >
                 <ActivityIndicator size="small" color={theme.primary} />
             </View>
         );
@@ -344,10 +520,18 @@ const StatsPanel: React.FC = () => {
         },
     ];
 
+    const statIconSize = dims.isTablet ? 28 : dims.isSmallDevice ? 20 : 24;
+
     return (
-        <View style={styles.statsContainer}>
+        <View style={[styles.statsContainer, { paddingHorizontal: dims.PADDING }]}>
             {stats.map((stat, index) => (
-                <View key={index} style={[styles.statBox, { backgroundColor: stat.bg }]}>
+                <View
+                    key={index}
+                    style={[
+                        styles.statBox,
+                        { backgroundColor: stat.bg, flexBasis: BOX_SIZE },
+                    ]}
+                >
                     <View
                         style={[
                             styles.iconWrapper,
@@ -356,12 +540,31 @@ const StatsPanel: React.FC = () => {
                     >
                         <Image
                             source={stat.icon}
-                            style={[styles.statIcon, { tintColor: '#00BFFF' }]}
+                            style={[
+                                styles.statIcon,
+                                {
+                                    tintColor: '#00BFFF',
+                                    width: statIconSize,
+                                    height: statIconSize,
+                                },
+                            ]}
                             resizeMode="contain"
                         />
                     </View>
-                    <Text style={[styles.statValue, { color: theme.text }]}>{stat.value}</Text>
-                    <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+                    <Text
+                        style={[
+                            styles.statValue,
+                            { color: theme.text, fontSize: dims.FONT_MEDIUM },
+                        ]}
+                    >
+                        {stat.value}
+                    </Text>
+                    <Text
+                        style={[
+                            styles.statLabel,
+                            { color: theme.textSecondary, fontSize: dims.FONT_SMALL },
+                        ]}
+                    >
                         {stat.label}
                     </Text>
                 </View>
@@ -373,7 +576,8 @@ const StatsPanel: React.FC = () => {
 // ============ STEPS CHART COMPONENT ============
 const StepsChart: React.FC = () => {
     const { theme } = useTheme();
-    const { chartData, isLoadingChart, selectedPeriod, setSelectedPeriod } = useFitness();
+    const { chartData, isLoadingChart, selectedPeriod, setSelectedPeriod } =
+        useFitness();
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
     const periodOptions: ('day' | 'week' | 'month')[] = ['day', 'week', 'month'];
@@ -384,9 +588,23 @@ const StepsChart: React.FC = () => {
 
     if (isLoadingChart && !chartData) {
         return (
-            <View style={[styles.chartCard, { backgroundColor: theme.cardBackground, padding: 20 }]}>
+            <View
+                style={[
+                    styles.chartCard,
+                    {
+                        backgroundColor: theme.cardBackground,
+                        padding: dims.PADDING,
+                        marginHorizontal: dims.PADDING,
+                    },
+                ]}
+            >
                 <ActivityIndicator size="large" color={theme.primary} />
-                <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+                <Text
+                    style={[
+                        styles.loadingText,
+                        { color: theme.textSecondary, fontSize: dims.FONT_SMALL },
+                    ]}
+                >
                     Loading chart...
                 </Text>
             </View>
@@ -394,41 +612,91 @@ const StepsChart: React.FC = () => {
     }
 
     return (
-        <View style={[styles.chartCard, { backgroundColor: theme.cardBackground }]}>
+        <View
+            style={[
+                styles.chartCard,
+                {
+                    backgroundColor: theme.cardBackground,
+                    marginHorizontal: dims.PADDING,
+                    padding: dims.PADDING,
+                },
+            ]}
+        >
             <View style={styles.chartHeaderRow}>
-                <Text style={[styles.chartTitle, { color: theme.text }]}>Activity Report</Text>
+                <Text
+                    style={[
+                        styles.chartTitle,
+                        { color: theme.text, fontSize: dims.isTablet ? 22 : 18 },
+                    ]}
+                >
+                    Activity Report
+                </Text>
                 <TouchableOpacity
-                    style={[styles.periodBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                    style={[
+                        styles.periodBtn,
+                        { backgroundColor: theme.surface, borderColor: theme.border },
+                    ]}
                     onPress={() => setDropdownOpen(!dropdownOpen)}
                 >
-                    <Text style={[styles.periodText, { color: theme.text }]}>
+                    <Text
+                        style={[
+                            styles.periodText,
+                            { color: theme.text, fontSize: dims.FONT_SMALL },
+                        ]}
+                    >
                         {formatPeriodDisplay(selectedPeriod)}
                     </Text>
-                    <Text style={[styles.periodArrow, { color: theme.textSecondary }]}>▾</Text>
+                    <Text
+                        style={[
+                            styles.periodArrow,
+                            { color: theme.textSecondary, fontSize: dims.FONT_SMALL },
+                        ]}
+                    >
+                        ▾
+                    </Text>
                 </TouchableOpacity>
             </View>
 
             {dropdownOpen && (
-                <Modal transparent visible={dropdownOpen} onRequestClose={() => setDropdownOpen(false)}>
+                <Modal
+                    transparent
+                    visible={dropdownOpen}
+                    onRequestClose={() => setDropdownOpen(false)}
+                >
                     <TouchableOpacity
                         style={styles.modalOverlay}
                         activeOpacity={1}
                         onPress={() => setDropdownOpen(false)}
                     >
-                        <View style={[styles.dropdownCard, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
-                            {periodOptions.map((option) => (
+                        <View
+                            style={[
+                                styles.dropdownCard,
+                                {
+                                    backgroundColor: theme.cardBackground,
+                                    borderColor: theme.border,
+                                },
+                            ]}
+                        >
+                            {periodOptions.map(option => (
                                 <TouchableOpacity
                                     key={option}
                                     style={[
                                         styles.dropdownItem,
-                                        selectedPeriod === option && { backgroundColor: theme.surface }
+                                        selectedPeriod === option && {
+                                            backgroundColor: theme.surface,
+                                        },
                                     ]}
                                     onPress={() => {
                                         setSelectedPeriod(option);
                                         setDropdownOpen(false);
                                     }}
                                 >
-                                    <Text style={[styles.dropdownItemText, { color: theme.text }]}>
+                                    <Text
+                                        style={[
+                                            styles.dropdownItemText,
+                                            { color: theme.text, fontSize: dims.FONT_SMALL },
+                                        ]}
+                                    >
                                         {formatPeriodDisplay(option)}
                                     </Text>
                                     {selectedPeriod === option && (
@@ -446,25 +714,64 @@ const StepsChart: React.FC = () => {
                     <View style={styles.chartContent}>
                         {chartData.map((point, index) => {
                             const maxSteps = Math.max(...chartData.map(p => p.steps));
-                            const barHeight = maxSteps > 0 ? Math.max(20, (point.steps / maxSteps) * 150) : 20;
-                            const label = point.dayShort || point.label || point.date?.substring(5) || `${index + 1}`;
+                            const barHeight =
+                                maxSteps > 0
+                                    ? Math.max(
+                                        20,
+                                        (point.steps / maxSteps) * (dims.isTablet ? 200 : 150),
+                                    )
+                                    : 20;
+                            const label =
+                                point.dayShort ||
+                                point.label ||
+                                point.date?.substring(5) ||
+                                `${index + 1}`;
+                            const barWidth = dims.isTablet
+                                ? 48
+                                : dims.isSmallDevice
+                                    ? 30
+                                    : 36;
 
                             return (
-                                <View key={index} style={styles.chartBar}>
+                                <View
+                                    key={index}
+                                    style={[
+                                        styles.chartBar,
+                                        { minWidth: dims.isTablet ? 60 : 45 },
+                                    ]}
+                                >
                                     <View
                                         style={[
                                             styles.bar,
                                             {
                                                 height: barHeight,
-                                                backgroundColor: point.goalAchieved ? '#00FF7F' : theme.primary,
+                                                width: barWidth,
+                                                backgroundColor: point.goalAchieved
+                                                    ? '#00FF7F'
+                                                    : theme.primary,
                                             },
                                         ]}
                                     />
-                                    <Text style={[styles.barLabel, { color: theme.textSecondary }]}>
+                                    <Text
+                                        style={[
+                                            styles.barLabel,
+                                            {
+                                                color: theme.textSecondary,
+                                                fontSize: dims.isTablet ? 13 : 11,
+                                            },
+                                        ]}
+                                    >
                                         {label}
                                     </Text>
-                                    <Text style={[styles.barValue, { color: theme.text }]}>
-                                        {point.steps > 999 ? `${(point.steps / 1000).toFixed(1)}k` : point.steps}
+                                    <Text
+                                        style={[
+                                            styles.barValue,
+                                            { color: theme.text, fontSize: dims.isTablet ? 12 : 10 },
+                                        ]}
+                                    >
+                                        {point.steps > 999
+                                            ? `${(point.steps / 1000).toFixed(1)}k`
+                                            : point.steps}
                                     </Text>
                                 </View>
                             );
@@ -473,7 +780,12 @@ const StepsChart: React.FC = () => {
                 </ScrollView>
             ) : (
                 <View style={styles.noDataContainer}>
-                    <Text style={[styles.noDataText, { color: theme.textSecondary }]}>
+                    <Text
+                        style={[
+                            styles.noDataText,
+                            { color: theme.textSecondary, fontSize: dims.FONT_SMALL },
+                        ]}
+                    >
                         No chart data available
                     </Text>
                 </View>
@@ -530,20 +842,38 @@ const StepsScreen = () => {
 
     if (!isAuthenticated) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+            <SafeAreaView
+                style={[styles.container, { backgroundColor: theme.background }]}
+            >
                 <View style={styles.centerContainer}>
                     <Image
                         source={require('../assets/stepIcons/footprint.png')}
-                        style={[styles.messageIcon, { tintColor: theme.textSecondary }]}
+                        style={[
+                            styles.messageIcon,
+                            {
+                                tintColor: theme.textSecondary,
+                                width: dims.isTablet ? 100 : 80,
+                                height: dims.isTablet ? 100 : 80,
+                            },
+                        ]}
                     />
-                    <Text style={[styles.messageText, { color: theme.text }]}>
+                    <Text
+                        style={[
+                            styles.messageText,
+                            { color: theme.text, fontSize: dims.isTablet ? 22 : 18 },
+                        ]}
+                    >
                         Please login to view step tracking
                     </Text>
                     <TouchableOpacity
                         style={[styles.actionButton, { backgroundColor: theme.primary }]}
                         onPress={() => (navigation as any).navigate('Login')}
                     >
-                        <Text style={styles.actionButtonText}>Go to Login</Text>
+                        <Text
+                            style={[styles.actionButtonText, { fontSize: dims.FONT_MEDIUM }]}
+                        >
+                            Go to Login
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -552,10 +882,17 @@ const StepsScreen = () => {
 
     if (isLoadingConnection) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+            <SafeAreaView
+                style={[styles.container, { backgroundColor: theme.background }]}
+            >
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color={theme.primary} />
-                    <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+                    <Text
+                        style={[
+                            styles.loadingText,
+                            { color: theme.textSecondary, fontSize: dims.FONT_SMALL },
+                        ]}
+                    >
                         Checking connection status...
                     </Text>
                 </View>
@@ -565,14 +902,18 @@ const StepsScreen = () => {
 
     if (!isConnected) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+            <SafeAreaView
+                style={[styles.container, { backgroundColor: theme.background }]}
+            >
                 <GoogleFitLinkingScreen onLink={checkConnectionStatus} />
             </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <SafeAreaView
+            style={[styles.container, { backgroundColor: theme.background }]}
+        >
             <ScrollView showsVerticalScrollIndicator={false}>
                 <Header
                     onRefresh={handleRefresh}
@@ -597,15 +938,12 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 30,
+        padding: dims.PADDING + 14,
     },
     messageIcon: {
-        width: 80,
-        height: 80,
         marginBottom: 20,
     },
     messageText: {
-        fontSize: 18,
         textAlign: 'center',
         marginBottom: 20,
     },
@@ -616,50 +954,42 @@ const styles = StyleSheet.create({
     },
     actionButtonText: {
         color: '#fff',
-        fontSize: 16,
         fontWeight: '600',
     },
     loadingText: {
         marginTop: 10,
-        fontSize: 14,
     },
     linkingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 30,
+        padding: dims.PADDING + 14,
     },
     linkingIcon: {
-        width: 100,
-        height: 100,
         marginBottom: 20,
     },
     linkingTitle: {
-        fontSize: 26,
         fontWeight: 'bold',
         marginBottom: 10,
         textAlign: 'center',
     },
     linkingDescription: {
-        fontSize: 16,
         textAlign: 'center',
         marginBottom: 20,
         lineHeight: 24,
     },
     infoBox: {
         width: '100%',
-        padding: 20,
+        padding: dims.PADDING + 4,
         borderRadius: 12,
         borderWidth: 1,
         marginBottom: 25,
     },
     infoTitle: {
-        fontSize: 16,
         fontWeight: '600',
         marginBottom: 12,
     },
     infoItem: {
-        fontSize: 14,
         marginVertical: 4,
         lineHeight: 20,
     },
@@ -678,18 +1008,14 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
     },
     googleIcon: {
-        width: 24,
-        height: 24,
         marginRight: 10,
     },
     linkButtonText: {
         color: '#fff',
-        fontSize: 16,
         fontWeight: '600',
     },
     privacyNote: {
         marginTop: 15,
-        fontSize: 13,
         textAlign: 'center',
     },
     headerWrapper: {
@@ -697,8 +1023,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         marginTop: 10,
-        marginHorizontal: 16,
-        marginBottom: 10,
+        marginBottom: -5,
     },
     leftButton: {
         padding: 8,
@@ -711,15 +1036,11 @@ const styles = StyleSheet.create({
         padding: 8,
         marginLeft: 8,
     },
-    headerIcon: {
-        width: 24,
-        height: 24,
-    },
+    headerIcon: {},
     circleContainer: {
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
-        marginVertical: 20,
         height: SIZE + 50,
     },
     shadowWrapper: {
@@ -757,13 +1078,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        marginTop: 10,
+        marginTop: 0,
     },
     statBox: {
         alignItems: 'center',
         justifyContent: 'center',
-        flexBasis: BOX_SIZE,
         paddingVertical: 12,
         borderRadius: 12,
         marginBottom: 10,
@@ -773,23 +1092,15 @@ const styles = StyleSheet.create({
         padding: 10,
         marginBottom: 8,
     },
-    statIcon: {
-        width: 24,
-        height: 24,
-    },
+    statIcon: {},
     statValue: {
-        fontSize: 16,
         fontWeight: 'bold',
         marginBottom: 4,
     },
-    statLabel: {
-        fontSize: 12,
-    },
+    statLabel: {},
     chartCard: {
         borderRadius: 14,
-        marginTop: 20,
-        marginHorizontal: 16,
-        padding: 16,
+        marginTop: 0,
     },
     chartHeaderRow: {
         flexDirection: 'row',
@@ -798,7 +1109,6 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     chartTitle: {
-        fontSize: 18,
         fontWeight: '700',
     },
     periodBtn: {
@@ -812,21 +1122,18 @@ const styles = StyleSheet.create({
     periodText: {
         paddingRight: 6,
         fontWeight: '600',
-        fontSize: 14,
     },
-    periodArrow: {
-        fontSize: 12,
-    },
+    periodArrow: {},
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'flex-start',
         alignItems: 'flex-end',
         paddingTop: 120,
-        paddingRight: 16,
+        paddingRight: dims.PADDING,
     },
     dropdownCard: {
-        width: 160,
+        width: dims.isTablet ? 180 : 160,
         borderRadius: 10,
         paddingVertical: 8,
         borderWidth: 1,
@@ -844,7 +1151,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     dropdownItemText: {
-        fontSize: 14,
         fontWeight: '600',
     },
     chartContent: {
@@ -855,31 +1161,25 @@ const styles = StyleSheet.create({
     },
     chartBar: {
         alignItems: 'center',
-        marginHorizontal: 6,
-        minWidth: 45,
+        marginHorizontal: dims.isSmallDevice ? 4 : 6,
     },
     bar: {
-        width: 36,
         borderRadius: 8,
         minHeight: 20,
     },
     barLabel: {
         marginTop: 8,
-        fontSize: 11,
         fontWeight: '500',
     },
     barValue: {
         marginTop: 4,
-        fontSize: 10,
         fontWeight: '600',
     },
     noDataContainer: {
         padding: 40,
         alignItems: 'center',
     },
-    noDataText: {
-        fontSize: 14,
-    },
+    noDataText: {},
 });
 
 export default StepsScreen;

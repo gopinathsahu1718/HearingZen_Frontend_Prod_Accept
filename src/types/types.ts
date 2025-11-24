@@ -72,6 +72,10 @@ export type RootStackParamList = {
     TopicDetailScreen: undefined;
     LessonsPage: undefined;
     AboutUsScreen: undefined;
+    Instructions: undefined;
+    Feedback: undefined;
+    PrivacyPolicy: undefined;
+    Help: undefined;
     TermsAndConditionsScreen: undefined;
     VideoSplash: undefined;
     OnboardingCheck: undefined;

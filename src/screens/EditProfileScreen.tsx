@@ -27,6 +27,7 @@ export default function EditProfileScreen() {
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [gender, setGender] = useState('');
+  const [genderOther, setGenderOther] = useState('');
   const [age, setAge] = useState('');
   const [deafnessLevel, setDeafnessLevel] = useState('');
   const [disabilityPercentage, setDisabilityPercentage] = useState('');
@@ -55,6 +56,11 @@ export default function EditProfileScreen() {
       setHeight(data.height?.toString() || '');
       setWeight(data.weight?.toString() || '');
       setGender(data.gender || '');
+      // If stored gender is a custom value (not Male/Female/Other), treat it as 'Other' and populate genderOther
+      if (data.gender && !['male', 'female', 'other'].includes(data.gender)) {
+        setGender('other');
+        setGenderOther(data.gender);
+      }
       setAge(data.age?.toString() || '');
       setDeafnessLevel(data.deafnessLevel || '');
       setDisabilityPercentage(data.disabilityPercentage?.toString() || '');
@@ -80,10 +86,17 @@ export default function EditProfileScreen() {
       // Only include health fields if they have values
       if (height) profileData.height = parseFloat(height);
       if (weight) profileData.weight = parseFloat(weight);
-      if (gender) profileData.gender = gender;
+      if (gender) {
+        if (gender === 'Other') {
+          profileData.gender = genderOther || 'Other';
+        } else {
+          profileData.gender = gender;
+        }
+      }
       if (age) profileData.age = parseInt(age);
       if (deafnessLevel) profileData.deafnessLevel = deafnessLevel;
-      if (disabilityPercentage) profileData.disabilityPercentage = parseFloat(disabilityPercentage);
+      if (disabilityPercentage)
+        profileData.disabilityPercentage = parseFloat(disabilityPercentage);
 
       await updateProfile(profileData);
 
@@ -109,8 +122,14 @@ export default function EditProfileScreen() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Image source={require('../assets/icons/arrow.png')} style={styles.backIcon} />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <Image
+            source={require('../assets/icons/arrow.png')}
+            style={styles.backIcon}
+          />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
       </View>
@@ -118,31 +137,49 @@ export default function EditProfileScreen() {
       {/* Profile Picture */}
       <View style={styles.topProfilePicContainer}>
         <View style={{ position: 'relative' }}>
-          <Image source={require('../assets/images/default_dp.png')} style={styles.topProfilePic} />
-          <TouchableOpacity style={styles.cameraWrapper}>
-            <Image source={require('../assets/icons/camera.png')} style={styles.cameraIcon} />
-          </TouchableOpacity>
+          <Image
+            source={require('../assets/images/default_dp.png')}
+            style={styles.topProfilePic}
+          />
         </View>
         <Text style={styles.profileName}>{username || 'Your Name'}</Text>
-        <Text style={styles.profileSubText}>@{username?.toLowerCase().replace(/\s+/g, '') || 'username'}</Text>
+        <Text style={styles.profileSubText}>
+          @{username?.toLowerCase().replace(/\s+/g, '') || 'username'}
+        </Text>
       </View>
 
       {/* Tabs */}
       <View style={styles.verticalButtonContainer}>
         <TouchableOpacity
-          style={[styles.verticalButton, selectedTab === 'info' && styles.activeButton]}
+          style={[
+            styles.verticalButton,
+            selectedTab === 'info' && styles.activeButton,
+          ]}
           onPress={() => setSelectedTab('info')}
         >
-          <Text style={[styles.buttonText, selectedTab === 'info' && styles.activeButtonText]}>
+          <Text
+            style={[
+              styles.buttonText,
+              selectedTab === 'info' && styles.activeButtonText,
+            ]}
+          >
             contact details
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.verticalButton, selectedTab === 'health' && styles.activeButton]}
+          style={[
+            styles.verticalButton,
+            selectedTab === 'health' && styles.activeButton,
+          ]}
           onPress={() => setSelectedTab('health')}
         >
-          <Text style={[styles.buttonText, selectedTab === 'health' && styles.activeButtonText]}>
+          <Text
+            style={[
+              styles.buttonText,
+              selectedTab === 'health' && styles.activeButtonText,
+            ]}
+          >
             Health card
           </Text>
         </TouchableOpacity>
@@ -152,10 +189,28 @@ export default function EditProfileScreen() {
       <View style={styles.card}>
         {selectedTab === 'info' ? (
           <>
-            <InputField label="Full Name" value={username} onChangeText={setUsername} />
-            <InputField label="Phone" value={contact} onChangeText={setContact} keyboardType="phone-pad" />
-            <InputField label="Email" value={email} onChangeText={setEmail} editable={false} />
-            <InputField label="Location" value={currentLocation} onChangeText={setCurrentLocation} />
+            <InputField
+              label="Full Name"
+              value={username}
+              onChangeText={setUsername}
+            />
+            <InputField
+              label="Phone"
+              value={contact}
+              onChangeText={setContact}
+              keyboardType="phone-pad"
+            />
+            <InputField
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              editable={false}
+            />
+            <InputField
+              label="Location"
+              value={currentLocation}
+              onChangeText={setCurrentLocation}
+            />
           </>
         ) : (
           <>
@@ -173,12 +228,55 @@ export default function EditProfileScreen() {
               keyboardType="numeric"
               placeholder="e.g., 70"
             />
-            <InputField
-              label="Gender"
-              value={gender}
-              onChangeText={setGender}
-              placeholder="e.g., Male, Female, Other"
-            />
+            <View style={styles.radioGroup}>
+              <Text style={styles.label}>Gender</Text>
+              <View style={styles.radioOptions}>
+                <TouchableOpacity
+                  style={styles.radioOption}
+                  onPress={() => {
+                    setGender('male');
+                    setGenderOther('');
+                  }}
+                >
+                  <View style={styles.radioOuter}>
+                    {gender === 'male' && <View style={styles.radioInner} />}
+                  </View>
+                  <Text style={styles.radioLabel}>Male</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.radioOption}
+                  onPress={() => {
+                    setGender('female');
+                    setGenderOther('');
+                  }}
+                >
+                  <View style={styles.radioOuter}>
+                    {gender === 'female' && <View style={styles.radioInner} />}
+                  </View>
+                  <Text style={styles.radioLabel}>Female</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.radioOption}
+                  onPress={() => setGender('other')}
+                >
+                  <View style={styles.radioOuter}>
+                    {gender === 'other' && <View style={styles.radioInner} />}
+                  </View>
+                  <Text style={styles.radioLabel}>Other</Text>
+                </TouchableOpacity>
+              </View>
+
+              {gender === 'Other' && (
+                <InputField
+                  label="Please specify"
+                  value={genderOther}
+                  onChangeText={setGenderOther}
+                  placeholder="e.g., Non-binary"
+                />
+              )}
+            </View>
             <InputField
               label="Age"
               value={age}
@@ -236,7 +334,7 @@ const InputField: React.FC<InputProps> = ({
   onChangeText,
   editable = true,
   keyboardType = 'default',
-  placeholder
+  placeholder,
 }) => (
   <View style={styles.inputField}>
     <Text style={styles.label}>{label}</Text>
@@ -258,7 +356,7 @@ const styles = StyleSheet.create({
 
   header: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   backButton: { padding: 5, marginRight: 10 },
-  backIcon: { width: 20, height: 20, tintColor: '#000' },
+  backIcon: { width: 20, height: 20, tintColor: '#2196F3' },
   headerTitle: { fontSize: 22, fontWeight: '700', color: '#000' },
 
   topProfilePicContainer: { alignItems: 'center', marginTop: 10 },
@@ -273,12 +371,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#000',
+    backgroundColor: '#2196F3',
     borderRadius: 20,
     padding: 6,
   },
   cameraIcon: { width: 18, height: 18, tintColor: '#fff' },
-  profileName: { fontSize: 20, fontWeight: '700', marginTop: 10, color: '#000' },
+  profileName: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 10,
+    color: '#000',
+  },
   profileSubText: { fontSize: 14, color: '#666', marginBottom: 20 },
 
   verticalButtonContainer: { marginTop: 10, alignItems: 'center' },
@@ -287,14 +390,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#e0e0e0',
     marginBottom: 10,
     alignItems: 'center',
     backgroundColor: '#fff',
     elevation: 1,
   },
-  buttonText: { fontSize: 14, fontWeight: '500', color: '#333' },
-  activeButton: { backgroundColor: '#000', borderColor: '#000' },
+  buttonText: { fontSize: 14, fontWeight: '500', color: '#000' },
+  activeButton: { backgroundColor: '#2196F3', borderColor: '#2196F3' },
   activeButtonText: { color: '#fff', fontWeight: '700' },
 
   card: {
@@ -326,7 +429,7 @@ const styles = StyleSheet.create({
 
   saveContainer: { alignItems: 'center', marginTop: 20, marginBottom: 30 },
   saveButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#2196F3',
     paddingHorizontal: 30,
     paddingVertical: 12,
     borderRadius: 8,
@@ -337,4 +440,28 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveButtonText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+  radioGroup: { marginBottom: 12 },
+  radioOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  radioOption: { flexDirection: 'row', alignItems: 'center' },
+  radioOuter: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#2196F3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  radioInner: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: '#2196F3',
+  },
+  radioLabel: { fontSize: 14, color: '#000', marginRight: 12 },
 });

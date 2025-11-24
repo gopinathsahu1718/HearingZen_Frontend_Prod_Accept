@@ -42,139 +42,167 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const styles = useThemedStyles((theme) =>
-        StyleSheet.create({
-            safeArea: {
-                flex: 1,
-                backgroundColor: theme.background,
-            },
-            keyboardView: {
-                flex: 1,
-            },
-            scrollView: {
-                flexGrow: 1,
-            },
-            container: {
-                flex: 1,
-                backgroundColor: theme.background,
-            },
-            header: {
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: 180,
-                height: 180,
-                backgroundColor: isDarkMode ? theme.primary : '#007BFF',
-                borderBottomRightRadius: 90,
-                justifyContent: 'center',
-                alignItems: 'center',
-                paddingLeft: 20,
-                zIndex: 10,
-            },
-            headerText: {
-                color: '#fff',
-                fontSize: 20,
-                fontWeight: 'bold',
-                textAlign: 'center',
-            },
-            content: {
-                paddingHorizontal: 24,
-                paddingTop: 200,
-                paddingBottom: 40,
-            },
-            logo: {
-                width: 100,
-                height: 100,
-                alignSelf: 'center',
-                marginBottom: 32,
-                resizeMode: 'contain',
-            },
-            title: {
-                fontSize: 24,
-                fontWeight: 'bold',
-                color: theme.text,
-                marginBottom: 12,
-                textAlign: 'center',
-            },
-            subtitle: {
-                fontSize: 14,
-                color: theme.textSecondary,
-                textAlign: 'center',
-                marginBottom: 40,
-                lineHeight: 22,
-            },
-            inputContainer: {
-                width: '100%',
-                marginBottom: 20,
-            },
-            label: {
-                fontSize: 14,
-                color: theme.text,
-                marginBottom: 8,
-                fontWeight: '500',
-            },
-            inputWrapper: {
-                flexDirection: 'row',
-                alignItems: 'center',
-                borderWidth: 1,
-                borderColor: isDarkMode ? theme.border : '#007BFF',
-                backgroundColor: theme.surface,
-                borderRadius: 8,
-                height: 52,
-                paddingHorizontal: 16,
-            },
-            input: {
-                flex: 1,
-                color: theme.text,
-                fontSize: 16,
-                height: 52,
-            },
-            eyeButton: {
-                padding: 8,
-                marginLeft: 8,
-                justifyContent: 'center',
-                alignItems: 'center',
-            },
-            eyeIcon: {
-                width: 22,
-                height: 22,
-                tintColor: theme.iconTint,
-            },
-            hint: {
-                fontSize: 12,
-                color: theme.textSecondary,
-                marginTop: 8,
-                textAlign: 'center',
-                lineHeight: 18,
-                paddingHorizontal: 10,
-            },
-            button: {
-                backgroundColor: isDarkMode ? theme.primary : '#007BFF',
-                paddingVertical: 14,
-                borderRadius: 8,
-                width: '100%',
-                alignItems: 'center',
-                marginTop: 24,
-                height: 52,
-                justifyContent: 'center',
-            },
-            buttonDisabled: {
-                opacity: 0.6,
-            },
-            buttonText: {
-                color: '#fff',
-                fontSize: 16,
-                fontWeight: '600',
-            },
-        })
+    // ⭐ NEW: Track if user tried submitting
+    const [submitted, setSubmitted] = useState(false);
+
+    const styles = useThemedStyles(
+        (theme) =>
+            StyleSheet.create({
+                safeArea: {
+                    flex: 1,
+                    backgroundColor: theme.background,
+                },
+                keyboardView: {
+                    flex: 1,
+                },
+                scrollView: {
+                    flexGrow: 1,
+                },
+                container: {
+                    flex: 1,
+                    backgroundColor: theme.background,
+                },
+                header: {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: 180,
+                    height: 180,
+                    backgroundColor: isDarkMode ? theme.primary : '#007BFF',
+                    borderBottomRightRadius: 90,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    paddingLeft: 20,
+                    zIndex: 10,
+                },
+                headerText: {
+                    color: '#fff',
+                    fontSize: 20,
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                },
+                content: {
+                    paddingHorizontal: 24,
+                    paddingTop: 200,
+                    paddingBottom: 40,
+                },
+                logo: {
+                    width: 100,
+                    height: 100,
+                    alignSelf: 'center',
+                    marginBottom: 32,
+                    resizeMode: 'contain',
+                },
+                title: {
+                    fontSize: 24,
+                    fontWeight: 'bold',
+                    color: theme.text,
+                    marginBottom: 12,
+                    textAlign: 'center',
+                },
+                subtitle: {
+                    fontSize: 14,
+                    color: theme.textSecondary,
+                    textAlign: 'center',
+                    marginBottom: 40,
+                    lineHeight: 22,
+                },
+
+                // ⭐ Label row for star
+                labelRow: {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginBottom: 8,
+                },
+                label: {
+                    fontSize: 14,
+                    color: theme.text,
+                    fontWeight: '500',
+                },
+                star: {
+                    color: 'red',
+                    fontSize: 16,
+                    marginLeft: 4,
+                    opacity: submitted ? 1 : 0, // ⭐ show only after clicking button
+                },
+
+                inputContainer: {
+                    width: '100%',
+                    marginBottom: 20,
+                },
+
+                // ⭐ Red border based on validation
+                inputWrapper: {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor:
+                        submitted &&
+                            (!newPassword || !confirmPassword) &&
+                            (newPassword.length === 0 || confirmPassword.length === 0)
+                            ? 'red'
+                            : isDarkMode
+                                ? theme.border
+                                : '#007BFF',
+                    backgroundColor: theme.surface,
+                    borderRadius: 8,
+                    height: 52,
+                    paddingHorizontal: 16,
+                },
+                input: {
+                    flex: 1,
+                    color: theme.text,
+                    fontSize: 16,
+                    height: 52,
+                },
+                eyeButton: {
+                    padding: 8,
+                    marginLeft: 8,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                },
+                eyeIcon: {
+                    width: 22,
+                    height: 22,
+                    tintColor: theme.iconTint,
+                },
+                hint: {
+                    fontSize: 12,
+                    color: theme.textSecondary,
+                    marginTop: 8,
+                    textAlign: 'center',
+                    lineHeight: 18,
+                    paddingHorizontal: 10,
+                },
+                button: {
+                    backgroundColor: isDarkMode ? theme.primary : '#007BFF',
+                    paddingVertical: 14,
+                    borderRadius: 8,
+                    width: '100%',
+                    alignItems: 'center',
+                    marginTop: 24,
+                    height: 52,
+                    justifyContent: 'center',
+                },
+                buttonDisabled: {
+                    opacity: 0.6,
+                },
+                buttonText: {
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: '600',
+                },
+            }),
+        [submitted, newPassword, confirmPassword]
     );
 
     const handleResetPassword = async () => {
         Keyboard.dismiss();
 
+        setSubmitted(true); // ⭐ show red star + borders
+
         if (!newPassword || !confirmPassword) {
-            Alert.alert('Error', 'Please fill all fields');
-            return;
+            return; // Stop here, show red borders & stars
         }
 
         if (newPassword !== confirmPassword) {
@@ -243,8 +271,13 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                                     Your new password must be different from previously used passwords
                                 </Text>
 
+                                {/* ⭐ New Password */}
                                 <View style={styles.inputContainer}>
-                                    <Text style={styles.label}>New Password</Text>
+                                    <View style={styles.labelRow}>
+                                        <Text style={styles.label}>New Password</Text>
+                                        <Text style={styles.star}>*</Text>
+                                    </View>
+
                                     <View style={styles.inputWrapper}>
                                         <TextInput
                                             style={styles.input}
@@ -255,12 +288,12 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                                             onChangeText={setNewPassword}
                                             autoCapitalize="none"
                                             autoCorrect={false}
-                                            returnKeyType="next"
                                         />
                                         <TouchableOpacity
                                             style={styles.eyeButton}
-                                            onPress={() => setShowNewPassword(!showNewPassword)}
-                                            activeOpacity={0.7}
+                                            onPress={() =>
+                                                setShowNewPassword(!showNewPassword)
+                                            }
                                         >
                                             <Image
                                                 source={
@@ -274,8 +307,13 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                                     </View>
                                 </View>
 
+                                {/* ⭐ Confirm Password */}
                                 <View style={styles.inputContainer}>
-                                    <Text style={styles.label}>Confirm Password</Text>
+                                    <View style={styles.labelRow}>
+                                        <Text style={styles.label}>Confirm Password</Text>
+                                        <Text style={styles.star}>*</Text>
+                                    </View>
+
                                     <View style={styles.inputWrapper}>
                                         <TextInput
                                             style={styles.input}
@@ -286,13 +324,12 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                                             onChangeText={setConfirmPassword}
                                             autoCapitalize="none"
                                             autoCorrect={false}
-                                            returnKeyType="done"
-                                            onSubmitEditing={handleResetPassword}
                                         />
                                         <TouchableOpacity
                                             style={styles.eyeButton}
-                                            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            activeOpacity={0.7}
+                                            onPress={() =>
+                                                setShowConfirmPassword(!showConfirmPassword)
+                                            }
                                         >
                                             <Image
                                                 source={
@@ -307,14 +344,14 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                                 </View>
 
                                 <Text style={styles.hint}>
-                                    Password must be at least 8 characters long, include an uppercase letter, lowercase letter, number, and special character
+                                    Password must be at least 8 characters long, include an uppercase
+                                    letter, lowercase letter, number, and special character
                                 </Text>
 
                                 <TouchableOpacity
                                     style={[styles.button, loading && styles.buttonDisabled]}
                                     onPress={handleResetPassword}
                                     disabled={loading}
-                                    activeOpacity={0.8}
                                 >
                                     {loading ? (
                                         <ActivityIndicator color="#fff" size="small" />
@@ -329,6 +366,6 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
-};
+}
 
 export default NewPasswordScreen;

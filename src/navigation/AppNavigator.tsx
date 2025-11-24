@@ -32,13 +32,13 @@ import EditProfileScreen from '../screens/EditProfileScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 
 import BMICards from '../screens/StepScreen/BMICards';
-import BMIResultScreen from "../screens/StepScreen/BMIResultScreen";
+import BMIResultScreen from '../screens/StepScreen/BMIResultScreen';
 import NutritionScreen from '../screens/StepScreen/Nutrition';
 
 // Import LMS Screens
 import CourseCategoriesScreen from '../screens/CourseCategoriesScreen';
 import CourseListScreen from '../screens/CourseListScreen';
-import CourseDetailScreen from '../screens/CourseDetailScreen ';
+import CourseDetailScreen from '../screens/CourseDetailScreen';
 
 // Import New Enrollment Screens
 import MyEnrollmentsScreen from '../screens/MyEnrollmentsScreen';
@@ -47,6 +47,10 @@ import LessonPlayerScreen from '../screens/LessonPlayerScreen';
 
 import AboutApp from '../screens/ProfileScreenPages/AboutAppScreen';
 import TermsAndConditions from '../screens/ProfileScreenPages/TermsAndConditionsScreen';
+import FeedbackPage from '../screens/ProfileScreenPages/FeedbackPage';
+import HelpPage from '../screens/ProfileScreenPages/Help';
+import InstructionPage from '../screens/ProfileScreenPages/Instruction';
+import PrivacyPolicyPage from '../screens/ProfileScreenPages/PrivacyPolicyPage';
 
 import GoogleFitSettingsScreen from '../screens/GoogleFitSettingsScreen';
 
@@ -83,7 +87,9 @@ const HomeTabs = () => {
                     />
                 ),
                 tabBarLabel: ({ color }) => (
-                    <Text style={{ color, fontSize: 12, fontWeight: '500', paddingBottom: 2 }}>
+                    <Text
+                        style={{ color, fontSize: 12, fontWeight: '500', paddingBottom: 2 }}
+                    >
                         {t(route.name)}
                     </Text>
                 ),
@@ -114,7 +120,14 @@ const AppNavigator = () => {
 
     if (isLoading) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }}>
+            <View
+                style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: theme.background,
+                }}
+            >
                 <ActivityIndicator size="large" color={theme.primary} />
             </View>
         );
@@ -174,15 +187,25 @@ const AppNavigator = () => {
                 <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
                 <Stack.Screen name="EditProfile" component={EditProfileScreen} />
                 <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-                <Stack.Screen name="QuickScanDevices" component={QuickScanDevicesScreen} />
+                <Stack.Screen
+                    name="QuickScanDevices"
+                    component={QuickScanDevicesScreen}
+                />
                 <Stack.Screen name="PairedDevices" component={PairedDevicesScreen} />
 
-                <Stack.Screen name="BMIResult" component={BMIResultScreen} options={{ title: "BMI Result" }} />
+                <Stack.Screen
+                    name="BMIResult"
+                    component={BMIResultScreen}
+                    options={{ title: 'BMI Result' }}
+                />
                 <Stack.Screen name="BMI" component={BMICards} />
                 <Stack.Screen name="Nutrition" component={NutritionScreen} />
 
                 {/* LMS Screens */}
-                <Stack.Screen name="CourseCategories" component={CourseCategoriesScreen} />
+                <Stack.Screen
+                    name="CourseCategories"
+                    component={CourseCategoriesScreen}
+                />
                 <Stack.Screen name="CourseList" component={CourseListScreen} />
                 <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
 
@@ -190,23 +213,34 @@ const AppNavigator = () => {
                 <Stack.Screen
                     name="MyEnrollments"
                     component={MyEnrollmentsScreen}
-                    options={{ title: "My Enrollments" }}
+                    options={{ title: 'My Enrollments' }}
                 />
                 <Stack.Screen
                     name="EnrolledCourse"
                     component={EnrolledCourseScreen}
-                    options={{ title: "Course Content" }}
+                    options={{ title: 'Course Content' }}
                 />
                 <Stack.Screen
                     name="LessonPlayer"
                     component={LessonPlayerScreen}
-                    options={{ title: "Lesson" }}
+                    options={{ title: 'Lesson' }}
                 />
 
-
                 <Stack.Screen name="AboutUsScreen" component={AboutApp} />
-                <Stack.Screen name="TermsAndConditionsScreen" component={TermsAndConditions} />
-                <Stack.Screen name="GoogleFitSettings" component={GoogleFitSettingsScreen} options={{ title: "Google Fit Settings" }} />
+                <Stack.Screen
+                    name="TermsAndConditionsScreen"
+                    component={TermsAndConditions}
+                />
+                <Stack.Screen name="Instructions" component={InstructionPage} />
+                <Stack.Screen name="Feedback" component={FeedbackPage} />
+                <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyPage} />
+                <Stack.Screen name="Help" component={HelpPage} />
+
+                <Stack.Screen
+                    name="GoogleFitSettings"
+                    component={GoogleFitSettingsScreen}
+                    options={{ title: 'Google Fit Settings' }}
+                />
             </Stack.Navigator>
         </NavigationContainer>
     );
