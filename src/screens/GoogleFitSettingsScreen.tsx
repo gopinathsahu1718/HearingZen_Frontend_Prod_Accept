@@ -203,7 +203,76 @@ const GoogleFitSettingsScreen: React.FC = () => {
                     )}
                 </View>
 
-                {/* Quota Status Section */}
+                {/* Step Goal Section - Moved Up */}
+                {isConnected && (
+                    <View style={[styles.section, { backgroundColor: theme.cardBackground }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Step Goal</Text>
+
+                        <View style={styles.currentGoal}>
+                            <Text style={[styles.currentGoalLabel, { color: theme.textSecondary }]}>
+                                Current Goal:
+                            </Text>
+                            <Text style={[styles.currentGoalValue, { color: theme.primary }]}>
+                                {stepGoal.toLocaleString()} steps
+                            </Text>
+                        </View>
+
+                        {/* Custom Goal - Moved to Top */}
+                        <Text style={[styles.customGoalTitle, { color: theme.textSecondary }]}>Custom Goal:</Text>
+
+                        <View style={styles.customGoalContainer}>
+                            <TextInput
+                                style={[styles.customGoalInput, { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
+                                value={customGoal}
+                                onChangeText={setCustomGoal}
+                                keyboardType="numeric"
+                                placeholder="Enter goal (1,000 - 50,000)"
+                                placeholderTextColor={theme.textSecondary}
+                            />
+                            <TouchableOpacity
+                                style={[styles.setGoalButton, { backgroundColor: theme.primary }]}
+                                onPress={handleCustomGoalSubmit}
+                                disabled={isUpdatingGoal}
+                            >
+                                {isUpdatingGoal ? (
+                                    <ActivityIndicator color="#fff" size="small" />
+                                ) : (
+                                    <Text style={styles.setGoalButtonText}>Set</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Preset Goals - Below Custom Goal */}
+                        <Text style={[styles.presetsTitle, { color: theme.textSecondary }]}>Preset Goals:</Text>
+
+                        {presets.map((preset) => (
+                            <TouchableOpacity
+                                key={preset.key}
+                                style={[styles.presetButton, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                                onPress={() => handleUpdateGoal({ preset: preset.key })}
+                                disabled={isUpdatingGoal}
+                            >
+                                <View style={styles.presetContent}>
+                                    <Text style={[styles.presetLabel, { color: theme.text }]}>{preset.label}</Text>
+                                    <Text style={[styles.presetSteps, { color: theme.primary }]}>{preset.steps}</Text>
+                                </View>
+                                <Text style={[styles.presetDescription, { color: theme.textSecondary }]}>
+                                    {preset.description}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+
+                        <TouchableOpacity
+                            style={[styles.resetButton, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                            onPress={() => handleUpdateGoal({ reset: true })}
+                            disabled={isUpdatingGoal}
+                        >
+                            <Text style={[styles.resetButtonText, { color: theme.text }]}>Reset to Default (10,000)</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Quota Status Section - Moved Down */}
                 {isConnected && quotaStatus && (
                     <View style={[styles.section, { backgroundColor: theme.cardBackground }]}>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Daily Quota</Text>
@@ -249,73 +318,6 @@ const GoogleFitSettingsScreen: React.FC = () => {
                                 • Chart: {quotaStatus.breakdown.chart}
                             </Text>
                         </View>
-                    </View>
-                )}
-
-                {/* Step Goal Section */}
-                {isConnected && (
-                    <View style={[styles.section, { backgroundColor: theme.cardBackground }]}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Step Goal</Text>
-
-                        <View style={styles.currentGoal}>
-                            <Text style={[styles.currentGoalLabel, { color: theme.textSecondary }]}>
-                                Current Goal:
-                            </Text>
-                            <Text style={[styles.currentGoalValue, { color: theme.primary }]}>
-                                {stepGoal.toLocaleString()} steps
-                            </Text>
-                        </View>
-
-                        <Text style={[styles.presetsTitle, { color: theme.textSecondary }]}>Preset Goals:</Text>
-
-                        {presets.map((preset) => (
-                            <TouchableOpacity
-                                key={preset.key}
-                                style={[styles.presetButton, { backgroundColor: theme.surface, borderColor: theme.border }]}
-                                onPress={() => handleUpdateGoal({ preset: preset.key })}
-                                disabled={isUpdatingGoal}
-                            >
-                                <View style={styles.presetContent}>
-                                    <Text style={[styles.presetLabel, { color: theme.text }]}>{preset.label}</Text>
-                                    <Text style={[styles.presetSteps, { color: theme.primary }]}>{preset.steps}</Text>
-                                </View>
-                                <Text style={[styles.presetDescription, { color: theme.textSecondary }]}>
-                                    {preset.description}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-
-                        <Text style={[styles.customGoalTitle, { color: theme.textSecondary }]}>Custom Goal:</Text>
-
-                        <View style={styles.customGoalContainer}>
-                            <TextInput
-                                style={[styles.customGoalInput, { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
-                                value={customGoal}
-                                onChangeText={setCustomGoal}
-                                keyboardType="numeric"
-                                placeholder="Enter goal (1,000 - 50,000)"
-                                placeholderTextColor={theme.textSecondary}
-                            />
-                            <TouchableOpacity
-                                style={[styles.setGoalButton, { backgroundColor: theme.primary }]}
-                                onPress={handleCustomGoalSubmit}
-                                disabled={isUpdatingGoal}
-                            >
-                                {isUpdatingGoal ? (
-                                    <ActivityIndicator color="#fff" size="small" />
-                                ) : (
-                                    <Text style={styles.setGoalButtonText}>Set</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-
-                        <TouchableOpacity
-                            style={[styles.resetButton, { backgroundColor: theme.surface, borderColor: theme.border }]}
-                            onPress={() => handleUpdateGoal({ reset: true })}
-                            disabled={isUpdatingGoal}
-                        >
-                            <Text style={[styles.resetButtonText, { color: theme.text }]}>Reset to Default (10,000)</Text>
-                        </TouchableOpacity>
                     </View>
                 )}
 
@@ -491,6 +493,7 @@ const styles = StyleSheet.create({
     },
     presetsTitle: {
         fontSize: 14,
+        marginTop: 15,
         marginBottom: 10,
         fontWeight: '600',
     },
@@ -519,7 +522,6 @@ const styles = StyleSheet.create({
     },
     customGoalTitle: {
         fontSize: 14,
-        marginTop: 15,
         marginBottom: 10,
         fontWeight: '600',
     },
@@ -552,6 +554,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         borderWidth: 1,
         alignItems: 'center',
+        marginTop: 5,
     },
     resetButtonText: {
         fontSize: 14,
