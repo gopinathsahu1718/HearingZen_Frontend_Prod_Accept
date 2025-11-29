@@ -1,4 +1,4 @@
-// Updated Frontend: ProfileScreen.tsx - Provider feature removed, Change Password always shown if authenticated
+// Updated Frontend: ProfileScreen.tsx - Provider feature removed, Change Password always shown if authenticated, Step Goal and Reminder removed
 
 import React, { useState } from 'react';
 import {
@@ -14,7 +14,6 @@ import {
     FlatList,
     Alert,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import VersionInfo from 'react-native-version-info';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types/types';
@@ -38,18 +37,11 @@ const ProfileScreen = ({
     const { language, setLanguage } = useLanguage();
     const { isAuthenticated, user, logout, linkGoogle, unlinkGoogle } = useAuth();
     const { t } = useTranslation();
-    const [selectedStepGoal, setSelectedStepGoal] = React.useState(6000);
-    const [reminderTime, setReminderTime] = React.useState(new Date());
-    const [showStepGoalPicker, setShowStepGoalPicker] = React.useState(false);
     const [showLanguagePicker, setShowLanguagePicker] = React.useState(false);
-    const [showTimePicker, setShowTimePicker] = React.useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
 
     const version = VersionInfo.appVersion;
 
-    const stepGoalOptions = [
-        1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
-    ];
     const languageOptions = [
         { code: 'bho', label: 'language.bho' },
         { code: 'zh', label: 'language.zh' },
@@ -274,29 +266,9 @@ const ProfileScreen = ({
         }),
     );
 
-    const formatTime = (date: Date) => {
-        return date.toLocaleTimeString(language, {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-        });
-    };
-
-    const handleStepGoalSelect = (goal: number) => {
-        setSelectedStepGoal(goal);
-        setShowStepGoalPicker(false);
-    };
-
     const handleLanguageSelect = async (code: string) => {
         await setLanguage(code);
         setShowLanguagePicker(false);
-    };
-
-    const handleTimeChange = (event: any, selectedTime?: Date) => {
-        if (selectedTime) {
-            setReminderTime(selectedTime);
-        }
-        setShowTimePicker(false);
     };
 
     const handleLogout = () => {
@@ -349,50 +321,6 @@ const ProfileScreen = ({
             }
         }
     };
-
-    const StepGoalModal = () => (
-        <Modal
-            visible={showStepGoalPicker}
-            transparent={true}
-            animationType="fade"
-            onRequestClose={() => setShowStepGoalPicker(false)}
-        >
-            <TouchableOpacity
-                style={styles.modalOverlay}
-                activeOpacity={1}
-                onPress={() => setShowStepGoalPicker(false)}
-            >
-                <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>{t('Select Step Goal')}</Text>
-                    <FlatList
-                        data={stepGoalOptions}
-                        keyExtractor={item => item.toString()}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={[
-                                    styles.optionItem,
-                                    selectedStepGoal === item && styles.selectedOption,
-                                ]}
-                                onPress={() => handleStepGoalSelect(item)}
-                            >
-                                <Text
-                                    style={[
-                                        styles.optionText,
-                                        selectedStepGoal === item && styles.selectedOptionText,
-                                    ]}
-                                >
-                                    {item.toLocaleString()} {t('steps')}
-                                </Text>
-                                {selectedStepGoal === item && (
-                                    <Text style={styles.checkmark}>✓</Text>
-                                )}
-                            </TouchableOpacity>
-                        )}
-                    />
-                </View>
-            </TouchableOpacity>
-        </Modal>
-    );
 
     const LanguageModal = () => (
         <Modal
@@ -576,23 +504,6 @@ const ProfileScreen = ({
                                 </View>
                             </View>
                         )}
-                        <View style={[styles.section, styles.lastSection]}>
-                            <Image
-                                source={require('../assets/images/goal.png')}
-                                style={styles.icon}
-                            />
-                            <View style={styles.sectionContent}>
-                                <Text style={styles.sectionTitle}>{t('Step Goal')}</Text>
-                                <Text style={styles.sectionSubtext}>
-                                    {t('Daily step target')}
-                                </Text>
-                            </View>
-                            <TouchableOpacity onPress={() => setShowStepGoalPicker(true)}>
-                                <Text style={styles.valueText}>
-                                    {selectedStepGoal.toLocaleString()} ▼
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
                     </View>
 
                     {/* Data Section - Change Password always shown if authenticated */}
@@ -740,18 +651,7 @@ const ProfileScreen = ({
                 </View>
             </ScrollView>
 
-            <StepGoalModal />
             <LanguageModal />
-
-            {showTimePicker && (
-                <DateTimePicker
-                    value={reminderTime}
-                    mode="time"
-                    is24Hour={false}
-                    display="default"
-                    onChange={handleTimeChange}
-                />
-            )}
         </SafeAreaView>
     );
 };
