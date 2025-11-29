@@ -242,19 +242,18 @@ const FitnessApiService = {
     },
 
     /**
-     * Refresh cache
+     * Refresh all caches at once - calls the backend /cache/refresh-all endpoint
      */
-    async refreshCache(type: 'quickSteps' | 'stats' | 'chart'): Promise<any> {
+    async refreshAllCaches(): Promise<any> {
         const token = await getToken();
         if (!token) throw new Error('Not authenticated');
 
-        const response = await fetch(`${API_BASE_URL}/cache/refresh`, {
+        const response = await fetch(`${API_BASE_URL}/cache/refresh-all`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ type }),
         });
 
         return handleApiResponse(response);
@@ -298,4 +297,4 @@ const FitnessApiService = {
     },
 };
 
-export default FitnessApiService;
+export { FitnessApiService };

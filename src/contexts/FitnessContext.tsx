@@ -1,7 +1,7 @@
 // contexts/FitnessContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { Alert } from 'react-native';
-import FitnessApiService from '../services/FitnessApiService';
+import { FitnessApiService } from '../services/FitnessApiService';
 import { useAuth } from './AuthContext';
 
 interface QuickDashboardData {
@@ -90,6 +90,7 @@ interface FitnessContextType {
     refreshStatsData: () => Promise<void>;
     refreshChartData: (period?: 'day' | 'week' | 'month') => Promise<void>;
     refreshAllData: () => Promise<void>;
+    refreshAllCaches: () => Promise<void>;
     stepGoal: number;
     fetchStepGoal: () => Promise<void>;
     updateStepGoal: (goalData: { stepGoal?: number; preset?: string; reset?: boolean }) => Promise<void>;
@@ -335,6 +336,100 @@ export const FitnessProvider: React.FC<{ children: ReactNode }> = ({ children })
         }
     }, [handleError]);
 
+    // NEW METHOD: Refresh all caches using the backend /cache/refresh-all endpoint
+    const refreshAllCaches = useCallback(async () => {
+        if (!isConnected) {
+            Alert.alert('Error', 'Google Fit is not connected');
+            return;
+        }
+
+        setIsLoadingQuick(true);
+        setIsLoadingStats(true);
+        setIsLoadingChart(true);
+
+        try {
+            console.log('🔄 Calling refresh-all API...');
+            const response = await FitnessApiService.refreshAllCaches();
+
+            console.log('📦 Refresh-all response:', JSON.stringify(response, null, 2));
+
+            if (response.success) {
+                // Update quickSteps data
+                if (response.results.quickSteps?.status === 'success' && response.results.quickSteps?.data) {
+                    setQuickData(response.results.quickSteps.data);
+                    setQuickDataSource('google_fit');
+                    console.log('✅ Quick steps updated');
+                }
+
+                // Update stats data
+                if (response.results.stats?.status === 'success' && response.results.stats?.data) {
+                    setStatsData(response.results.stats.data);
+                    setStatsDataSource('google_fit');
+                    console.log('✅ Stats updated');
+                }
+
+                // Update chart data based on selected period
+                const periodKey = selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1);
+                const chartKey = `chart${periodKey}`;
+
+                console.log(`📊 Looking for chart key: ${chartKey}`);
+
+                if (response.results[chartKey]?.status === 'success' && response.results[chartKey]?.data) {
+                    setChartData(response.results[chartKey].data);
+                    setChartDataSource('google_fit');
+                    console.log(`✅ Chart ${selectedPeriod} updated`);
+                }
+
+                // Also update quota status
+                await fetchQuotaStatus();
+
+                // Show success message with summary
+                const { succeeded, failed, total } = response.summary;
+                if (failed > 0) {
+                    Alert.alert(
+                        '⚠️ Partial Success',
+                        `${succeeded} of ${total} caches refreshed successfully.\n${failed} failed to refresh.`
+                    );
+                } else {
+                    Alert.alert(
+                        '✅ Success',
+                        `All data refreshed successfully from Google Fit!`
+                    );
+                }
+            } else {
+                Alert.alert('Error', response.message || 'Failed to refresh caches');
+            }
+        } catch (err: any) {
+            console.error('❌ Refresh all caches error:', err);
+
+            // Handle specific error codes
+            if (err.code === 'GOOGLE_AUTH_EXPIRED') {
+                Alert.alert(
+                    '🔐 Authorization Expired',
+                    'Your Google Fit connection has expired. Please re-link your account in Settings.',
+                    [
+                        { text: 'OK', style: 'default' }
+                    ]
+                );
+            } else if (err.statusCode === 429) {
+                Alert.alert(
+                    '⏳ Quota Exceeded',
+                    'Daily API quota exceeded. Please try again tomorrow.',
+                    [
+                        { text: 'OK', style: 'default' }
+                    ]
+                );
+            } else {
+                const errorMsg = handleError(err, 'Refresh all caches');
+                Alert.alert('❌ Error', errorMsg);
+            }
+        } finally {
+            setIsLoadingQuick(false);
+            setIsLoadingStats(false);
+            setIsLoadingChart(false);
+        }
+    }, [isConnected, selectedPeriod, handleError, fetchQuotaStatus]);
+
     const clearCache = useCallback(async (type: 'quickSteps' | 'stats' | 'chartWeek' | 'chartMonth' | 'chartDay' | 'all') => {
         try {
             await FitnessApiService.clearCache(type);
@@ -349,7 +444,7 @@ export const FitnessProvider: React.FC<{ children: ReactNode }> = ({ children })
         if (isAuthenticated && token) {
             checkConnectionStatus();
         }
-    }, [isAuthenticated, token]);
+    }, [isAuthenticated, token, checkConnectionStatus]);
 
     useEffect(() => {
         if (isConnected) {
@@ -392,6 +487,7 @@ export const FitnessProvider: React.FC<{ children: ReactNode }> = ({ children })
                 refreshStatsData,
                 refreshChartData,
                 refreshAllData,
+                refreshAllCaches,
                 stepGoal,
                 fetchStepGoal,
                 updateStepGoal,

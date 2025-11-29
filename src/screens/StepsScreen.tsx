@@ -15,7 +15,6 @@ import {
     Alert,
     Modal,
     AppState,
-    Platform,
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useFitness } from '../contexts/FitnessContext';
@@ -362,7 +361,6 @@ const Header: React.FC<{
                                     height: dims.ICON_SIZE,
                                 },
                             ]}
-                            resizeMode="contain"
                         />
                     </TouchableOpacity>
                 )}
@@ -803,10 +801,7 @@ const StepsScreen = () => {
         isConnected,
         isLoadingConnection,
         checkConnectionStatus,
-        fetchQuickData,
-        fetchStatsData,
-        fetchChartData,
-        selectedPeriod,
+        refreshAllCaches,
     } = useFitness();
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -814,7 +809,7 @@ const StepsScreen = () => {
         if (isAuthenticated) {
             checkConnectionStatus();
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, checkConnectionStatus]);
 
     const handleRefresh = async () => {
         if (isRefreshing) return;
@@ -822,15 +817,15 @@ const StepsScreen = () => {
         setIsRefreshing(true);
         try {
             if (isConnected) {
-                await Promise.all([
-                    fetchQuickData(),
-                    fetchStatsData(),
-                    fetchChartData(selectedPeriod),
-                ]);
-                Alert.alert('✅ Success', 'Data refreshed successfully');
+                console.log('🔄 StepsScreen: Starting refresh...');
+                await refreshAllCaches();
+                console.log('✅ StepsScreen: Refresh completed');
+            } else {
+                Alert.alert('Error', 'Google Fit is not connected');
             }
         } catch (error: any) {
-            Alert.alert('❌ Error', error.message || 'Failed to refresh data');
+            console.error('❌ StepsScreen: Refresh error:', error);
+            // Error already handled in context
         } finally {
             setIsRefreshing(false);
         }
