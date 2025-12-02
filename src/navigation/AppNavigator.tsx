@@ -52,7 +52,6 @@ import HelpPage from '../screens/ProfileScreenPages/Help';
 import InstructionPage from '../screens/ProfileScreenPages/Instruction';
 import PrivacyPolicyPage from '../screens/ProfileScreenPages/PrivacyPolicyPage';
 
-import GoogleFitSettingsScreen from '../screens/GoogleFitSettingsScreen';
 
 import type { RootStackParamList } from '../types/types';
 
@@ -236,11 +235,7 @@ const AppNavigator = () => {
                 <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyPage} />
                 <Stack.Screen name="Help" component={HelpPage} />
 
-                <Stack.Screen
-                    name="GoogleFitSettings"
-                    component={GoogleFitSettingsScreen}
-                    options={{ title: 'Google Fit Settings' }}
-                />
+
             </Stack.Navigator>
         </NavigationContainer>
     );

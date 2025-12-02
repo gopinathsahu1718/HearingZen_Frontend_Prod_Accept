@@ -80,7 +80,6 @@ export type RootStackParamList = {
     VideoSplash: undefined;
     OnboardingCheck: undefined;
     Onboarding: undefined;
-    GoogleFitSettings: undefined;
 
 
     CourseCategories: undefined;

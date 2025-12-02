@@ -139,7 +139,6 @@ import i18n from './i18n';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
-import { FitnessProvider } from './contexts/FitnessContext';
 import AppNavigator from './navigation/AppNavigator';
 
 const App = () => {
@@ -148,9 +147,7 @@ const App = () => {
       <LanguageProvider>
         <ThemeProvider>
           <AuthProvider>
-            <FitnessProvider>
-              <AppNavigator />
-            </FitnessProvider>
+            <AppNavigator />
           </AuthProvider>
         </ThemeProvider>
       </LanguageProvider>
