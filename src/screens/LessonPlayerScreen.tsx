@@ -69,14 +69,14 @@ const LessonPlayerScreen = () => {
     const [progressData, setProgressData] = useState<ProgressData | null>(null);
     const [showLessonNav, setShowLessonNav] = useState(false);
     const [loadingProgress, setLoadingProgress] = useState(true);
-    const [playing, setPlaying] = useState(true);
+    const [playing, setPlaying] = useState(false);
     const [currentLesson, setCurrentLesson] = useState<LessonWithProgress>(lesson);
     const [videoError, setVideoError] = useState<string | null>(null);
 
     useEffect(() => {
         setCurrentLesson(lesson);
         setVideoError(null);
-        setPlaying(true);
+        setPlaying(false);
         fetchLessonDetails();
         fetchProgress();
     }, [lesson._id]);
@@ -430,6 +430,20 @@ const LessonPlayerScreen = () => {
                 {/* Video Player */}
                 {renderVideoPlayer()}
 
+                {/* Play/Pause Button */}
+                {videoId && !videoError && (
+                    <View style={styles.playControlContainer}>
+                        <TouchableOpacity
+                            style={[styles.playButton, { backgroundColor: theme.primary }]}
+                            onPress={() => setPlaying(!playing)}
+                        >
+                            <Text style={styles.playButtonText}>
+                                {playing ? '⏸ Pause' : '▶ Play'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {/* Navigation Buttons */}
                 <View style={styles.navigationContainer}>
                     <TouchableOpacity
@@ -616,6 +630,20 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    playControlContainer: {
+        paddingHorizontal: 20,
+        paddingTop: 16,
+    },
+    playButton: {
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    playButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
     },
     navigationContainer: {
         flexDirection: 'row',

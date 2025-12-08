@@ -9,7 +9,6 @@ import {
     Dimensions,
     Platform,
     Alert,
-    NativeEventEmitter,
     NativeEventSubscription,
     DeviceEventEmitter,
     ScrollView,
@@ -28,7 +27,6 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) => {
     const { theme } = useTheme();
     const [isBluetoothOn, setIsBluetoothOn] = useState(false);
-    const [isInitializing, setIsInitializing] = useState(true);
 
     const styles = useThemedStyles((theme) =>
         StyleSheet.create({
@@ -51,14 +49,14 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
                 borderRadius: 60,
                 backgroundColor: 'rgba(33, 150, 243, 0.1)',
                 borderWidth: 2,
-                borderColor: isBluetoothOn ? 'rgba(33, 150, 243, 0.7)' : 'rgba(244, 67, 54, 0.3)',
+                borderColor: 'rgba(33, 150, 243, 0.3)',
                 justifyContent: 'center',
                 alignItems: 'center',
                 marginBottom: 15,
             },
             bluetoothIcon: {
                 fontSize: 40,
-                color: isBluetoothOn ? theme.primary : theme.error,
+                color: theme.primary,
             },
             bluetoothStatus: {
                 fontSize: 16,
@@ -112,47 +110,31 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
             pairedDevicesIcon: { color: '#4ECDC4' },
             settingsIcon: { color: '#FFB74D' },
             deviceInfoIcon: { color: '#CE93D8' },
-            loadingText: {
-                color: theme.textSecondary,
-                fontSize: 14,
-                marginTop: 10,
-            },
         })
     );
 
     useEffect(() => {
         const initializeBluetooth = async () => {
             try {
-                setIsInitializing(true);
-
-                // Initialize BLE Manager
                 await BleManager.start({ showAlert: false });
                 const state = await BleManager.checkState();
                 setIsBluetoothOn(state === 'on');
-
-                // Initialize Classic Bluetooth for Android
-                if (Platform.OS === 'android') {
-                    try {
-                        const classicEnabled = await RNBluetoothClassic.isBluetoothEnabled();
-                        setIsBluetoothOn(classicEnabled);
-                    } catch (error) {
-                        console.warn('Classic Bluetooth init warning:', error);
-                    }
-                }
             } catch (error) {
-                console.error('Bluetooth initialization error:', error);
-                Alert.alert(
-                    'Bluetooth Error',
-                    'Failed to initialize Bluetooth. Some features may not work properly.'
-                );
-            } finally {
-                setIsInitializing(false);
+                Alert.alert('Error', 'Failed to initialize BLE: ' + (error as Error).message);
+            }
+
+            if (Platform.OS === 'android') {
+                try {
+                    const classicEnabled = await RNBluetoothClassic.isBluetoothEnabled();
+                    setIsBluetoothOn(classicEnabled);
+                } catch (error) {
+                    Alert.alert('Error', 'Failed to initialize Classic Bluetooth: ' + (error as Error).message);
+                }
             }
         };
 
         initializeBluetooth();
 
-        // BLE State Listener
         const bleStateSubscription: NativeEventSubscription = DeviceEventEmitter.addListener(
             'BleManagerDidUpdateState',
             (args: { state: string }) => {
@@ -160,20 +142,11 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
             }
         );
 
-        // Classic Bluetooth Listeners for Android
         let classicEnabledSub: NativeEventSubscription | undefined;
         let classicDisabledSub: NativeEventSubscription | undefined;
-
         if (Platform.OS === 'android') {
-            classicEnabledSub = RNBluetoothClassic.onBluetoothEnabled(() => {
-                setIsBluetoothOn(true);
-                console.log('Classic Bluetooth enabled');
-            });
-
-            classicDisabledSub = RNBluetoothClassic.onBluetoothDisabled(() => {
-                setIsBluetoothOn(false);
-                console.log('Classic Bluetooth disabled');
-            });
+            classicEnabledSub = RNBluetoothClassic.onBluetoothEnabled(() => setIsBluetoothOn(true));
+            classicDisabledSub = RNBluetoothClassic.onBluetoothDisabled(() => setIsBluetoothOn(false));
         }
 
         return () => {
@@ -188,34 +161,19 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     const handleBluetoothToggle = async (value: boolean) => {
         if (value) {
             try {
-                // Try to enable BLE first
                 await BleManager.enableBluetooth();
-
-                // For Android, also request classic Bluetooth
                 if (Platform.OS === 'android') {
-                    try {
-                        await RNBluetoothClassic.requestBluetoothEnabled();
-                    } catch (classicError) {
-                        console.warn('Classic Bluetooth enable warning:', classicError);
-                    }
+                    await RNBluetoothClassic.requestBluetoothEnabled();
                 }
-
                 setIsBluetoothOn(true);
-                Alert.alert('Success', 'Bluetooth has been enabled');
             } catch (error) {
                 setIsBluetoothOn(false);
-                Alert.alert(
-                    'Bluetooth Enable Failed',
-                    'Please enable Bluetooth in your device settings.\n\n' +
-                    '1. Open Settings\n' +
-                    '2. Go to Bluetooth\n' +
-                    '3. Turn on Bluetooth'
-                );
+                Alert.alert('Bluetooth Enable Failed', 'Please enable Bluetooth in system settings.');
             }
         } else {
             Alert.alert(
                 'Disable Bluetooth',
-                'For security reasons, Bluetooth cannot be disabled from this app. Please use your device settings to disable Bluetooth.',
+                'Cannot disable from app. Use system settings.',
                 [{ text: 'OK', onPress: () => setIsBluetoothOn(true) }]
             );
         }
@@ -226,22 +184,13 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
         text,
         iconColor,
         onPress,
-        disabled = false,
     }: {
         icon: string;
         text: string;
         iconColor: any;
         onPress: () => void;
-        disabled?: boolean;
     }) => (
-        <TouchableOpacity
-            style={[
-                styles.actionButton,
-                disabled && { opacity: 0.6 }
-            ]}
-            onPress={onPress}
-            disabled={disabled}
-        >
+        <TouchableOpacity style={styles.actionButton} onPress={onPress}>
             <Text style={[styles.actionIcon, iconColor]}>{icon}</Text>
             <Text style={styles.actionText}>{text}</Text>
         </TouchableOpacity>
@@ -252,32 +201,21 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.bluetoothSection}>
                     <View style={styles.bluetoothCircle}>
-                        <Text style={styles.bluetoothIcon}>
-                            {isBluetoothOn ? '🔷' : '🔴'}
-                        </Text>
+                        <Text style={styles.bluetoothIcon}>🔷</Text>
                     </View>
                     <Text style={styles.bluetoothStatus}>
                         {isBluetoothOn ? 'Bluetooth Enabled' : 'Bluetooth Disabled'}
                     </Text>
-
-                    {isInitializing && (
-                        <Text style={styles.loadingText}>Initializing Bluetooth...</Text>
-                    )}
-
                     <View style={styles.bluetoothToggle}>
                         <Text style={styles.bluetoothToggleText}>
                             {isBluetoothOn ? 'Bluetooth On' : 'Turn On Bluetooth'}
                         </Text>
                         <Switch
-                            trackColor={{
-                                false: theme.switchTrackFalse,
-                                true: theme.switchTrackTrue
-                            }}
-                            thumbColor={isBluetoothOn ? theme.primary : theme.switchThumb}
+                            trackColor={{ false: theme.switchTrackFalse, true: theme.switchTrackTrue }}
+                            thumbColor={theme.switchThumb}
                             ios_backgroundColor={theme.switchTrackFalse}
                             onValueChange={handleBluetoothToggle}
                             value={isBluetoothOn}
-                            disabled={isInitializing}
                         />
                     </View>
                 </View>
@@ -289,14 +227,12 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
                             text="Quick Scan"
                             iconColor={styles.quickScanIcon}
                             onPress={() => navigation.navigate('QuickScanDevices')}
-                            disabled={!isBluetoothOn}
                         />
                         <ActionButton
                             icon="📱"
                             text="Paired Devices"
                             iconColor={styles.pairedDevicesIcon}
-                            onPress={() => navigation.navigate('PairedDevices')}
-                            disabled={!isBluetoothOn}
+                            onPress={() => console.log('Paired devices pressed')}
                         />
                     </View>
                     <View style={styles.gridRow}>
@@ -304,13 +240,13 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
                             icon="⚙️"
                             text="Settings"
                             iconColor={styles.settingsIcon}
-                            onPress={() => navigation.navigate('Settings')}
+                            onPress={() => console.log('Settings pressed')}
                         />
                         <ActionButton
                             icon="ℹ️"
                             text="Device Info"
                             iconColor={styles.deviceInfoIcon}
-                            onPress={() => navigation.navigate('DeviceInfo')}
+                            onPress={() => console.log('Device Info pressed')}
                         />
                     </View>
                 </View>
