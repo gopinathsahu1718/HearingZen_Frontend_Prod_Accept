@@ -13,6 +13,7 @@ import {
     Dimensions,
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/types';
@@ -40,40 +41,48 @@ interface ApiResponse {
     data: CategoryData[];
 }
 
-interface SubjectPerformance {
-    name: string;
-    percentage: number;
-    color: string;
+interface EnrolledCourseProgress {
+    _id: string;
+    title: string;
+    description: string;
+    thumbnail_image_url: string;
+    author_name: string;
+    category: string;
+    progress: {
+        percentage: number;
+        completed: number;
+        total: number;
+    };
+    enrolledAt: string;
 }
 
 interface RecentCourse {
-    id: string;
+    _id: string;
     title: string;
-    level: string;
-    levelColor: string;
-    isNew?: boolean;
+    thumbnail_image_url: string;
+    author_name: string;
+    category: string;
+    enrolledAt: string;
+    preview_video_url: string;
+    description: string;
+    price: number;
+    actual_price: number;
+    what_you_learn: string[];
 }
 
 const BASE_URL = 'https://api.hearingzen.in';
 const API_URL = `${BASE_URL}/api/course/public-categories`;
-
-// Dummy data for Performance section
-const performanceData: SubjectPerformance[] = [
-    { name: 'Mathematics', percentage: 85, color: '#3B82F6' },
-    { name: 'Chemistry', percentage: 70, color: '#10B981' },
-    { name: 'Physics', percentage: 60, color: '#EF4444' },
-];
-
-// Dummy data for Recent Courses
-const recentCoursesData: RecentCourse[] = [
-    { id: '1', title: 'React Native Dev', level: 'Advanced', levelColor: '#FEE2E2', isNew: true },
-    { id: '2', title: 'Machine Learning', level: 'Intermediate', levelColor: '#FEF3C7', isNew: false },
-];
+const ENROLLED_PROGRESS_URL = `${BASE_URL}/api/course/enrolled-with-progress`;
+const RECENT_COURSES_URL = `${BASE_URL}/api/course/recent-enrolled`;
 
 const CourseCategoriesScreen = () => {
     const { theme } = useTheme();
+    const { token, isAuthenticated } = useAuth();
     const navigation = useNavigation<NavigationProp>();
+
     const [categories, setCategories] = useState<CategoryData[]>([]);
+    const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourseProgress[]>([]);
+    const [recentCourses, setRecentCourses] = useState<RecentCourse[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -86,19 +95,74 @@ const CourseCategoriesScreen = () => {
             }
         } catch (error) {
             console.error('Error fetching categories:', error);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
         }
     };
 
+    const fetchEnrolledCoursesWithProgress = async () => {
+        if (!isAuthenticated || !token) {
+            setEnrolledCourses([]);
+            return;
+        }
+
+        try {
+            const response = await fetch(ENROLLED_PROGRESS_URL, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            const data = await response.json();
+            if (data.success) {
+                setEnrolledCourses(data.data || []);
+            } else {
+                setEnrolledCourses([]);
+            }
+        } catch (error) {
+            console.error('Error fetching enrolled courses:', error);
+            setEnrolledCourses([]);
+        }
+    };
+
+    const fetchRecentCourses = async () => {
+        if (!isAuthenticated || !token) {
+            setRecentCourses([]);
+            return;
+        }
+
+        try {
+            const response = await fetch(RECENT_COURSES_URL, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            const data = await response.json();
+            if (data.success) {
+                setRecentCourses(data.data || []);
+            } else {
+                setRecentCourses([]);
+            }
+        } catch (error) {
+            console.error('Error fetching recent courses:', error);
+            setRecentCourses([]);
+        }
+    };
+
+    const fetchAllData = async () => {
+        await Promise.all([
+            fetchCategories(),
+            fetchEnrolledCoursesWithProgress(),
+            fetchRecentCourses(),
+        ]);
+        setLoading(false);
+        setRefreshing(false);
+    };
+
     useEffect(() => {
-        fetchCategories();
-    }, []);
+        fetchAllData();
+    }, [isAuthenticated, token]);
 
     const onRefresh = () => {
         setRefreshing(true);
-        fetchCategories();
+        fetchAllData();
     };
 
     const handleCategoryPress = (categoryData: CategoryData) => {
@@ -108,21 +172,55 @@ const CourseCategoriesScreen = () => {
         });
     };
 
+    const handleEnrolledCoursePress = (courseId: string) => {
+        navigation.navigate('EnrolledCourse', { courseId });
+    };
+
+    const handleRecentCoursePress = (course: RecentCourse) => {
+        // Navigate to CourseDetail with full course data
+        const courseData = {
+            _id: course._id,
+            title: course.title,
+            description: course.description,
+            thumbnail_image_url: course.thumbnail_image_url,
+            preview_video_url: course.preview_video_url,
+            author_name: course.author_name,
+            price: course.price,
+            actual_price: course.actual_price,
+            what_you_learn: course.what_you_learn,
+            lessons: [], // Will be fetched in CourseDetail if needed
+        };
+        navigation.navigate('CourseDetail', { course: courseData });
+    };
+
     const calculateOverallPerformance = (): number => {
-        const total = performanceData.reduce((sum, item) => sum + item.percentage, 0);
-        return Math.round(total / performanceData.length);
+        if (enrolledCourses.length === 0) return 0;
+        const total = enrolledCourses.reduce((sum, course) => sum + course.progress.percentage, 0);
+        return Math.round(total / enrolledCourses.length);
+    };
+
+    const getProgressColor = (percentage: number): string => {
+        if (percentage >= 75) return '#10B981';
+        if (percentage >= 50) return '#F59E0B';
+        if (percentage >= 25) return '#3B82F6';
+        return '#EF4444';
     };
 
     const renderPerformanceSection = () => {
+        if (!isAuthenticated) return null;
+        if (enrolledCourses.length === 0) return null;
+
         const overallPerformance = calculateOverallPerformance();
 
         return (
             <View style={[styles.performanceCard, { backgroundColor: theme.cardBackground }]}>
                 <View style={styles.performanceHeader}>
                     <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                        Weekly test overview
+                        My Progress
                     </Text>
-                    <Text style={[styles.updatedText, { color: theme.primary }]}>Updated</Text>
+                    <Text style={[styles.updatedText, { color: theme.primary }]}>
+                        {enrolledCourses.length} Course{enrolledCourses.length !== 1 ? 's' : ''}
+                    </Text>
                 </View>
 
                 <View style={styles.performanceContent}>
@@ -136,71 +234,93 @@ const CourseCategoriesScreen = () => {
                         </View>
                     </View>
 
-                    <View style={styles.subjectsContainer}>
-                        {performanceData.map((subject, index) => (
-                            <View key={index} style={styles.subjectRow}>
-                                <View style={styles.subjectInfo}>
-                                    <View style={[styles.dot, { backgroundColor: subject.color }]} />
-                                    <View>
-                                        <Text style={[styles.subjectName, { color: theme.text }]}>
-                                            {subject.name}
-                                        </Text>
-                                        <Text style={[styles.subjectPercentage, { color: theme.textSecondary }]}>
-                                            {subject.percentage}%
-                                        </Text>
+                    <ScrollView
+                        style={styles.subjectsContainer}
+                        showsVerticalScrollIndicator={false}
+                        nestedScrollEnabled={true}
+                    >
+                        {enrolledCourses.map((course, index) => {
+                            const color = getProgressColor(course.progress.percentage);
+                            return (
+                                <TouchableOpacity
+                                    key={course._id}
+                                    style={styles.subjectRow}
+                                    onPress={() => handleEnrolledCoursePress(course._id)}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={styles.subjectInfo}>
+                                        <View style={[styles.dot, { backgroundColor: color }]} />
+                                        <View style={styles.subjectTextContainer}>
+                                            <Text
+                                                style={[styles.subjectName, { color: theme.text }]}
+                                                numberOfLines={1}
+                                            >
+                                                {course.title}
+                                            </Text>
+                                            <Text style={[styles.subjectPercentage, { color: theme.textSecondary }]}>
+                                                {course.progress.completed}/{course.progress.total} lessons • {course.progress.percentage}%
+                                            </Text>
+                                        </View>
                                     </View>
-                                </View>
-                                <View style={styles.progressBarWrapper}>
-                                    <View
-                                        style={[
-                                            styles.progressBar,
-                                            { width: `${subject.percentage}%`, backgroundColor: subject.color },
-                                        ]}
-                                    />
-                                    <View style={[styles.progressBarBg, { backgroundColor: theme.border }]} />
-                                </View>
-                            </View>
-                        ))}
-                    </View>
+                                    <View style={styles.progressBarContainer}>
+                                        <View style={[styles.progressBarBg, { backgroundColor: theme.border }]}>
+                                            <View
+                                                style={[
+                                                    styles.progressBar,
+                                                    { width: `${course.progress.percentage}%`, backgroundColor: color },
+                                                ]}
+                                            />
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
                 </View>
             </View>
         );
     };
 
     const renderRecentCourses = () => {
+        if (!isAuthenticated) return null;
+        if (recentCourses.length === 0) return null;
+
         return (
             <View style={styles.recentCoursesSection}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent Courses</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent Enrolled Courses</Text>
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.recentCoursesScroll}
                 >
-                    {recentCoursesData.map((course) => (
-                        <View
-                            key={course.id}
+                    {recentCourses.map((course) => (
+                        <TouchableOpacity
+                            key={course._id}
                             style={[styles.recentCourseCard, { backgroundColor: theme.cardBackground }]}
+                            onPress={() => handleRecentCoursePress(course)}
+                            activeOpacity={0.7}
                         >
-                            <View style={[styles.courseProgress, { backgroundColor: theme.primary }]} />
-                            <Text
-                                style={[styles.recentCourseTitle, { color: theme.text }]}
-                                numberOfLines={2}
-                            >
-                                {course.title}
-                            </Text>
-                            <View style={styles.courseBadgeContainer}>
-                                <View style={[styles.levelBadge, { backgroundColor: course.levelColor }]}>
-                                    <Text style={[styles.levelText, { color: course.level === 'Advanced' ? '#DC2626' : '#F59E0B' }]}>
-                                        {course.level}
+                            {course.thumbnail_image_url && (
+                                <Image
+                                    source={{ uri: `${BASE_URL}${course.thumbnail_image_url}` }}
+                                    style={styles.recentCourseThumbnail}
+                                    resizeMode="cover"
+                                />
+                            )}
+                            <View style={styles.recentCourseContent}>
+                                <Text
+                                    style={[styles.recentCourseTitle, { color: theme.text }]}
+                                    numberOfLines={2}
+                                >
+                                    {course.title}
+                                </Text>
+                                <View style={styles.authorContainer}>
+                                    <Text style={[styles.authorText, { color: theme.textSecondary }]} numberOfLines={1}>
+                                        {course.author_name || 'Unknown Author'}
                                     </Text>
                                 </View>
-                                {course.isNew && (
-                                    <View style={[styles.newBadge, { backgroundColor: '#10B981' }]}>
-                                        <Text style={styles.newText}>NEW</Text>
-                                    </View>
-                                )}
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     ))}
                 </ScrollView>
             </View>
@@ -264,7 +384,9 @@ const CourseCategoriesScreen = () => {
                     />
                 }
             >
-                <Text style={[styles.mainTitle, { color: theme.text }]}>Performance</Text>
+                {isAuthenticated && enrolledCourses.length > 0 && (
+                    <Text style={[styles.mainTitle, { color: theme.text }]}>Performance</Text>
+                )}
 
                 {renderPerformanceSection()}
                 {renderRecentCourses()}
@@ -286,7 +408,6 @@ const CourseCategoriesScreen = () => {
                         ))
                     )}
                 </View>
-
             </ScrollView>
         </View>
     );
@@ -335,7 +456,7 @@ const styles = StyleSheet.create({
     },
     performanceContent: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
     circularProgress: {
         marginRight: 30,
@@ -366,6 +487,7 @@ const styles = StyleSheet.create({
     },
     subjectsContainer: {
         flex: 1,
+        maxHeight: 180, // Fixed height for ~3 courses
     },
     subjectRow: {
         marginBottom: 16,
@@ -380,29 +502,32 @@ const styles = StyleSheet.create({
         height: 12,
         borderRadius: 6,
         marginRight: 10,
+        flexShrink: 0,
+    },
+    subjectTextContainer: {
+        flex: 1,
     },
     subjectName: {
         fontSize: 16,
         fontWeight: '600',
     },
     subjectPercentage: {
-        fontSize: 13,
+        fontSize: 12,
         marginTop: 2,
     },
-    progressBarWrapper: {
+    progressBarContainer: {
         height: 8,
-        position: 'relative',
-    },
-    progressBar: {
-        height: 8,
-        borderRadius: 4,
-        position: 'absolute',
-        left: 0,
+        width: '100%',
     },
     progressBarBg: {
         height: 8,
         borderRadius: 4,
         width: '100%',
+        overflow: 'hidden',
+    },
+    progressBar: {
+        height: '100%',
+        borderRadius: 4,
     },
     recentCoursesSection: {
         marginTop: 24,
@@ -418,62 +543,45 @@ const styles = StyleSheet.create({
         minWidth: 200,
         maxWidth: 280,
         borderRadius: 16,
-        padding: 16,
         marginRight: 16,
         elevation: 3,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
+        overflow: 'hidden',
     },
-    courseProgress: {
-        height: 4,
-        borderRadius: 2,
-        marginBottom: 16,
+    recentCourseThumbnail: {
         width: '100%',
+        height: 120,
+    },
+    recentCourseContent: {
+        padding: 16,
     },
     recentCourseTitle: {
         fontSize: 17,
         fontWeight: 'bold',
-        marginBottom: 12,
+        marginBottom: 8,
         lineHeight: 22,
     },
-    courseBadgeContainer: {
+    authorContainer: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    levelBadge: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-        marginRight: 8,
-    },
-    levelText: {
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    newBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 12,
-    },
-    newText: {
-        color: '#FFFFFF',
-        fontSize: 11,
-        fontWeight: 'bold',
+    authorText: {
+        fontSize: 13,
+        fontStyle: 'italic',
     },
     categoriesContainer: {
         paddingHorizontal: 20,
         paddingBottom: 20,
     },
-
     noCategoriesText: {
         fontSize: 16,
         textAlign: 'center',
         paddingVertical: 20,
         fontStyle: 'italic',
     },
-
     card: {
         borderRadius: 16,
         marginBottom: 20,
