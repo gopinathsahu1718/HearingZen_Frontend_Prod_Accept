@@ -63,10 +63,11 @@
         "passwordChanged": "पासवर्ड सफलतापूर्वक बदल दिया गया"
     },
     "common": {
-        "ok": "ठीक",
-        "success": "सफलता",
+        "ok": "ठीक है",
+        "success": "सफल",
         "error": "त्रुटि",
-        "cancel": "रद्द करें"
+        "cancel": "रद्द करें",
+        "login": "लॉगिन"
     },
     "courses": {
         "myProgress": "मेरा प्रगति",

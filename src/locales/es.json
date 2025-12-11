@@ -66,7 +66,8 @@
         "ok": "Aceptar",
         "success": "Éxito",
         "error": "Error",
-        "cancel": "Cancelar"
+        "cancel": "Cancelar",
+        "login": "Iniciar sesión"
     },
     "courses": {
         "myProgress": "Mi progreso",

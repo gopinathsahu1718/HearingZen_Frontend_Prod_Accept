@@ -64,9 +64,10 @@
     },
     "common": {
         "ok": "సరే",
-        "success": "విజయం",
-        "error": "తప్పు",
-        "cancel": "రద్దు చేయి"
+        "success": "విజయవంతం",
+        "error": "లోపం",
+        "cancel": "రద్దు చేయి",
+        "login": "లాగిన్"
     },
     "courses": {
         "myProgress": "నా ప్రోగ్రెస్",

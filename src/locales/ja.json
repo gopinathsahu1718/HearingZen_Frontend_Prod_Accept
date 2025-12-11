@@ -66,7 +66,8 @@
         "ok": "OK",
         "success": "成功",
         "error": "エラー",
-        "cancel": "キャンセル"
+        "cancel": "キャンセル",
+        "login": "ログイン"
     },
     "courses": {
         "myProgress": "マイプログレス",
