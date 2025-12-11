@@ -40,24 +40,20 @@ import Svg, {
   G,
 } from 'react-native-svg';
 import BMICards from './StepScreen/BMICards';
-
 const { width } = Dimensions.get('window');
 const BOX_SIZE = width * 0.22;
 const SIZE = width * 0.5;
 const STROKE_WIDTH = SIZE * 0.06;
 const RADIUS = (SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-
 const API_BASE_URL = 'http://13.200.222.176/api/steps';
 const SYNC_INTERVAL = 30000; // 30 seconds
-
 // AsyncStorage keys
 const STEPS_DATA_KEY = '@steps_data';
 const OFFLINE_QUEUE_KEY = '@steps_offline_queue';
 const LAST_SYNC_KEY = '@steps_last_sync';
 const BASELINE_KEY = '@steps_baseline'; // NEW: Store baseline separately
 const MOTION_OFFSET_KEY = '@steps_motion_offset'; // NEW: Store motion sensor offset
-
 type Period = 'Month' | 'Week' | 'Day';
 type Point = { x: number; y: number; value?: number };
 type SelectedPoint = {
@@ -67,7 +63,6 @@ type SelectedPoint = {
   label: string;
   value: number;
 };
-
 interface StepsData {
   currentSteps: number;
   currentDistance: number;
@@ -77,7 +72,6 @@ interface StepsData {
   lastUpdated: number;
   currentDate: string;
 }
-
 interface BaselineData {
   steps: number;
   distance: number;
@@ -85,7 +79,6 @@ interface BaselineData {
   activeTime: number;
   date: string;
 }
-
 interface OfflineEntry {
   steps: number;
   distance: number;
@@ -93,19 +86,15 @@ interface OfflineEntry {
   activeTime: number;
   timestamp: string;
 }
-
 const AnimatedPath = Animated.createAnimatedComponent(Path);
-
 // Get current IST date in YYYY-MM-DD format
 const getISTDate = () => {
   return moment().tz('Asia/Kolkata').format('YYYY-MM-DD');
 };
-
 // Convert timestamp to IST
 const getISTTimestamp = () => {
   return moment().tz('Asia/Kolkata').toISOString();
 };
-
 // ============ HEADER COMPONENT ============
 const Header: React.FC<{
   onRefresh?: () => void;
@@ -117,7 +106,6 @@ const Header: React.FC<{
   onSettings
 }) => {
     const { theme } = useTheme();
-
     return (
       <View
         style={[
@@ -140,7 +128,6 @@ const Header: React.FC<{
             />
           )}
         </TouchableOpacity>
-
         <TouchableOpacity onPress={onSettings} style={styles.shareButton}>
           <Image
             source={require('../assets/images/settings.png')}
@@ -151,7 +138,6 @@ const Header: React.FC<{
       </View>
     );
   };
-
 // ============ STEP CIRCLE COMPONENT ============
 const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
   steps = 0,
@@ -161,7 +147,6 @@ const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
   const progress = steps / goal;
   const strokeDashoffset = CIRCUMFERENCE - CIRCUMFERENCE * progress;
   const progressColor = steps >= goal ? '#00FF7F' : '#00BFFF';
-
   return (
     <View style={styles.circleContainer}>
       <View style={styles.shadowWrapper}>
@@ -177,7 +162,6 @@ const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
           ]}
         />
       </View>
-
       <Svg width={SIZE} height={SIZE}>
         <Circle
           stroke={theme.border || '#1e1e2d'}
@@ -202,7 +186,6 @@ const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
           originY={SIZE / 2}
         />
       </Svg>
-
       <View style={styles.centerContent}>
         <Image
           source={require('../assets/stepIcons/footprint.png')}
@@ -228,7 +211,6 @@ const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
     </View>
   );
 };
-
 // ============ STATS PANEL COMPONENT ============
 const StatsPanel: React.FC<{
   distance?: number;
@@ -263,7 +245,6 @@ const StatsPanel: React.FC<{
       bg: theme.cardBackground,
     },
   ];
-
   return (
     <View style={styles.statsContainer}>
       {stats.map((stat, index) => (
@@ -294,7 +275,6 @@ const StatsPanel: React.FC<{
     </View>
   );
 };
-
 // ============ STEPS CHART COMPONENT ============
 const StepsChart: React.FC<{
   isAuthenticated: boolean;
@@ -316,7 +296,6 @@ const StepsChart: React.FC<{
   const [isLoading, setIsLoading] = useState(false);
   const animProgress = useRef(new Animated.Value(0)).current;
   const pointScale = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     const listener = ({ window }: { window: { width: number } }) =>
       setScreenWidth(window.width);
@@ -325,7 +304,6 @@ const StepsChart: React.FC<{
       : undefined;
     return () => sub?.remove?.();
   }, []);
-
   useEffect(() => {
     animProgress.setValue(0);
     pointScale.setValue(0);
@@ -343,10 +321,8 @@ const StepsChart: React.FC<{
       }),
     ]).start();
   }, [selectedPeriod]);
-
   const fetchChartData = async (period: Period) => {
     if (!isAuthenticated || !token) return;
-
     setIsLoading(true);
     try {
       const netInfo = await NetInfo.fetch();
@@ -359,7 +335,6 @@ const StepsChart: React.FC<{
         setIsLoading(false);
         return;
       }
-
       const response = await fetch(
         `${API_BASE_URL}/history?period=${period.toLowerCase()}`,
         {
@@ -370,13 +345,10 @@ const StepsChart: React.FC<{
           },
         }
       );
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch chart data');
       }
-
       processChartData(data.data.history || [], period);
     } catch (error: any) {
       console.error('Fetch chart error:', error);
@@ -385,29 +357,17 @@ const StepsChart: React.FC<{
       setIsLoading(false);
     }
   };
-
   const processChartData = (history: any[], period: Period) => {
     const isSmall = screenWidth < 360;
     const isMedium = screenWidth >= 360 && screenWidth < 420;
-
-    // Reduce chart width significantly to prevent overflow
-    const Y_AXIS_SPACE = 45;
-    const CARD_PADDING = 32; // 16px on each side
-    const SAFE_MARGIN = 20; // Extra margin for safety
-    const availableWidth = screenWidth - Y_AXIS_SPACE - CARD_PADDING - SAFE_MARGIN;
-    const totalChartWidth = Math.max(availableWidth * 0.95, 280);
     const chartHeight = isSmall ? 90 : isMedium ? 110 : 130;
-
     let points: Point[] = [];
     let labels: string[] = [];
-
     if (history.length === 0) {
       setChartData({ points: [], labels: [] });
       return;
     }
-
     const maxSteps = Math.max(...history.map((h: any) => h.totalSteps || 0), 1);
-
     history.forEach((entry: any, i: number) => {
       if (period === 'Day') {
         labels.push(moment(entry.date || entry.timestamp).format('h A'));
@@ -418,23 +378,19 @@ const StepsChart: React.FC<{
         const end = moment(entry.weekEnd).format('MMM D');
         labels.push(`${start}-${end}`);
       }
-
       points.push({
-        x: (i / Math.max(history.length - 1, 1)) * totalChartWidth,
+        x: i / Math.max(history.length - 1, 1), // Normalized 0 to 1
         y: chartHeight - ((entry.totalSteps || 0) / maxSteps) * chartHeight * 0.75,
         value: entry.totalSteps || 0,
       });
     });
-
     setChartData({ points, labels });
   };
-
   useEffect(() => {
     if (isAuthenticated) {
       fetchChartData(selectedPeriod);
     }
   }, [selectedPeriod, isAuthenticated, token]);
-
   const isSmall = screenWidth < 360;
   const isMedium = screenWidth >= 360 && screenWidth < 420;
 
@@ -443,15 +399,73 @@ const StepsChart: React.FC<{
   const CARD_PADDING = 32;
   const SAFE_MARGIN = 20;
   const availableWidth = screenWidth - Y_AXIS_WIDTH - CARD_PADDING - SAFE_MARGIN;
-  const totalChartWidth = Math.max(availableWidth * 0.95, 280);
-  const visibleChartWidth = availableWidth;
   const chartHeight = isSmall ? 90 : isMedium ? 110 : 130;
   const labelPadding = isSmall ? 10 : 15;
   const sidePadding = labelPadding;
   const periodOptions: Period[] = ['Month', 'Week', 'Day'];
   const periodBtnRef = useRef<any>(null);
   const DROPDOWN_WIDTH = 140;
-
+  const dataPoints = chartData.points;
+  const labels = chartData.labels;
+  // Calculate actual total chart width based on number of points
+  const actualTotalWidth = useMemo(() => {
+    const numPoints = dataPoints.length;
+    if (numPoints === 0) return Math.max(availableWidth * 0.95, 280);
+    const minSpacePerPoint = selectedPeriod === 'Day' ? 35 : selectedPeriod === 'Week' ? 60 : 30;
+    const suggestedWidth = numPoints * minSpacePerPoint;
+    return Math.max(suggestedWidth, availableWidth * 0.9);
+  }, [dataPoints.length, selectedPeriod, availableWidth]);
+  // Calculate Y-axis values
+  const maxSteps = dataPoints.length > 0
+    ? Math.max(...dataPoints.map(p => p.value || 0))
+    : 10000;
+  const yAxisValues = [
+    Math.round(maxSteps),
+    Math.round(maxSteps * 0.75),
+    Math.round(maxSteps * 0.5),
+    Math.round(maxSteps * 0.25),
+    0
+  ];
+  useEffect(() => {
+    // Chart now fits within view, no scroll needed
+  }, [actualTotalWidth, selectedPeriod, dataPoints.length]);
+  const insetPoints = useMemo(() => {
+    if (!dataPoints || dataPoints.length === 0) return dataPoints;
+    const scaleWidth = Math.max(0, actualTotalWidth - sidePadding * 2);
+    return dataPoints.map(pt => ({
+      ...pt,
+      x: sidePadding + (pt.x * scaleWidth),
+    }));
+  }, [dataPoints, sidePadding, actualTotalWidth]);
+  const generateSmoothPath = (pts: Point[]) => {
+    if (!pts || pts.length === 0) return '';
+    if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+    const tension = 0.5;
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const cp1x = p1.x + ((p2.x - p0.x) / 6) * tension;
+      const cp1y = p1.y + ((p2.y - p0.y) / 6) * tension;
+      const cp2x = p2.x - ((p3.x - p1.x) / 6) * tension;
+      const cp2y = p2.y - ((p3.y - p1.y) / 6) * tension;
+      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+    }
+    return d;
+  };
+  const generateFillPath = (pts: Point[]) => {
+    const line = generateSmoothPath(pts);
+    if (!line) return '';
+    const lastX = pts[pts.length - 1].x;
+    const firstX = pts[0].x;
+    return `${line} L ${lastX} ${chartHeight} L ${firstX} ${chartHeight} Z`;
+  };
+  const mainPath = useMemo(() => generateSmoothPath(insetPoints), [insetPoints]);
+  const fillPath = useMemo(() => generateFillPath(insetPoints), [insetPoints]);
+  const refLines = [chartHeight * 0.25, chartHeight * 0.5, chartHeight * 0.75];
+  const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
   const openDropdown = () => {
     const ref = periodBtnRef.current as any;
     if (ref && typeof ref.measureInWindow === 'function') {
@@ -472,67 +486,6 @@ const StepsChart: React.FC<{
       setDropdownOpen(true);
     }
   };
-
-  const dataPoints = chartData.points;
-  const labels = chartData.labels;
-
-  // Calculate Y-axis values
-  const maxSteps = dataPoints.length > 0
-    ? Math.max(...dataPoints.map(p => p.value || 0))
-    : 10000;
-  const yAxisValues = [
-    Math.round(maxSteps),
-    Math.round(maxSteps * 0.75),
-    Math.round(maxSteps * 0.5),
-    Math.round(maxSteps * 0.25),
-    0
-  ];
-
-  useEffect(() => {
-    // Chart now fits within view, no scroll needed
-  }, [totalChartWidth, visibleChartWidth, selectedPeriod, dataPoints.length]);
-
-  const insetPoints = useMemo(() => {
-    if (!dataPoints || dataPoints.length === 0) return dataPoints;
-    const scaleWidth = Math.max(0, totalChartWidth - sidePadding * 2);
-    return dataPoints.map(pt => ({
-      ...pt,
-      x: sidePadding + (pt.x / totalChartWidth) * scaleWidth,
-    }));
-  }, [dataPoints, sidePadding, totalChartWidth]);
-
-  const generateSmoothPath = (pts: Point[]) => {
-    if (!pts || pts.length === 0) return '';
-    if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
-    const tension = 0.5;
-    let d = `M ${pts[0].x} ${pts[0].y}`;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i - 1] || pts[i];
-      const p1 = pts[i];
-      const p2 = pts[i + 1];
-      const p3 = pts[i + 2] || p2;
-      const cp1x = p1.x + ((p2.x - p0.x) / 6) * tension;
-      const cp1y = p1.y + ((p2.y - p0.y) / 6) * tension;
-      const cp2x = p2.x - ((p3.x - p1.x) / 6) * tension;
-      const cp2y = p2.y - ((p3.y - p1.y) / 6) * tension;
-      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
-    }
-    return d;
-  };
-
-  const generateFillPath = (pts: Point[]) => {
-    const line = generateSmoothPath(pts);
-    if (!line) return '';
-    const lastX = pts[pts.length - 1].x;
-    return `${line} L ${lastX} ${chartHeight} L ${pts[0].x} ${chartHeight} Z`;
-  };
-
-  const mainPath = useMemo(() => generateSmoothPath(insetPoints), [insetPoints]);
-  const fillPath = useMemo(() => generateFillPath(insetPoints), [insetPoints]);
-  const refLines = [chartHeight * 0.25, chartHeight * 0.5, chartHeight * 0.75];
-
-  const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-
   const onPressPoint = (pt: Point, idx: number) => {
     const approxLabelIdx = Math.round(
       (idx / Math.max(insetPoints.length - 1, 1)) * (labels.length - 1),
@@ -541,9 +494,7 @@ const StepsChart: React.FC<{
     const v = typeof pt.value === 'number' ? pt.value : 0;
     setSelectedPoint({ index: idx, x: pt.x, y: pt.y, label, value: v });
   };
-
   useEffect(() => setSelectedPoint(null), [selectedPeriod]);
-
   const getDisplayDate = (): string => {
     const today = moment().tz('Asia/Kolkata');
     if (selectedPeriod === 'Day') {
@@ -556,7 +507,6 @@ const StepsChart: React.FC<{
       return today.format('MMMM YYYY');
     }
   };
-
   if (!isAuthenticated) {
     return (
       <View
@@ -590,7 +540,6 @@ const StepsChart: React.FC<{
       </View>
     );
   }
-
   return (
     <View
       style={[
@@ -628,17 +577,14 @@ const StepsChart: React.FC<{
           </Text>
         </TouchableOpacity>
       </View>
-
       <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 6 }}>
         {getDisplayDate()}
       </Text>
-
       {isLoading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.primary} />
         </View>
       )}
-
       {!isLoading && insetPoints.length === 0 && (
         <View style={styles.noDataContainer}>
           <Text style={[styles.noDataText, { color: theme.textSecondary }]}>
@@ -646,7 +592,6 @@ const StepsChart: React.FC<{
           </Text>
         </View>
       )}
-
       {!isLoading && insetPoints.length > 0 && (
         <>
           {dropdownOpen && (
@@ -693,11 +638,10 @@ const StepsChart: React.FC<{
               </View>
             </Modal>
           )}
-
-          <View style={[styles.chartWrap, { width: '100%', maxWidth: visibleChartWidth + Y_AXIS_WIDTH }]}>
-            <View style={{ flexDirection: 'row', width: '100%' }}>
-              {/* Y-axis labels */}
-              <View style={[styles.yAxisContainer, { height: chartHeight + 34, width: Y_AXIS_WIDTH }]}>
+          <View style={[styles.chartWrap, { width: '100%' }]}>
+            <View style={{ flexDirection: 'row' }}>
+              {/* Y-axis labels - fixed */}
+              <View style={[styles.yAxisContainer, { height: chartHeight + 34, width: Y_AXIS_WIDTH, flexShrink: 0 }]}>
                 {yAxisValues.map((value, idx) => (
                   <Text
                     key={idx}
@@ -713,10 +657,14 @@ const StepsChart: React.FC<{
                   </Text>
                 ))}
               </View>
-
-              {/* Chart - No ScrollView needed, fits perfectly */}
-              <View style={{ flex: 1, overflow: 'hidden' }}>
-                <Svg width={totalChartWidth} height={chartHeight + 34}>
+              {/* Chart - Horizontally scrollable */}
+              <ScrollView
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+                style={{ flex: 1 }}
+                contentContainerStyle={{ alignItems: 'flex-start' }}
+              >
+                <Svg width={actualTotalWidth} height={chartHeight + 34}>
                   <Defs>
                     <LinearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                       <Stop offset="0%" stopColor={theme.primary} stopOpacity="1" />
@@ -728,12 +676,11 @@ const StepsChart: React.FC<{
                       <Stop offset="100%" stopColor={theme.secondary} stopOpacity="0.02" />
                     </LinearGradient>
                   </Defs>
-
                   {refLines.map((y, i) => (
                     <Line
                       key={i}
                       x1={0}
-                      x2={totalChartWidth}
+                      x2={actualTotalWidth}
                       y1={y}
                       y2={y}
                       stroke={`${theme.text}22`}
@@ -741,11 +688,9 @@ const StepsChart: React.FC<{
                       strokeDasharray="4,6"
                     />
                   ))}
-
                   <G>
                     <Path d={fillPath} fill="url(#fillGrad)" />
                   </G>
-
                   <G>
                     <AnimatedPath
                       d={mainPath}
@@ -756,13 +701,11 @@ const StepsChart: React.FC<{
                       strokeLinejoin="round"
                     />
                   </G>
-
                   {insetPoints.map((pt, i) => {
                     const isHighlighted = selectedPoint?.index === i;
                     const cx = pt.x;
                     const cy = pt.y;
                     const hitR = isSmall ? 14 : 18;
-
                     return (
                       <React.Fragment key={i}>
                         <Circle
@@ -804,14 +747,12 @@ const StepsChart: React.FC<{
                       </React.Fragment>
                     );
                   })}
-
                   {labels.map((lab, idx) => {
                     const steps = Math.max(labels.length - 1, 1);
-                    const usableWidth = totalChartWidth - sidePadding * 2;
+                    const usableWidth = actualTotalWidth - sidePadding * 2;
                     const rawX = sidePadding + (idx / steps) * usableWidth;
-                    const x = clamp(rawX, sidePadding, totalChartWidth - sidePadding);
+                    const x = clamp(rawX, sidePadding, actualTotalWidth - sidePadding);
                     const labelY = chartHeight + (isSmall ? 18 : 22);
-
                     return (
                       <SvgText
                         key={idx}
@@ -826,17 +767,15 @@ const StepsChart: React.FC<{
                       </SvgText>
                     );
                   })}
-
                   {selectedPoint && (() => {
                     const tooltipWidth = isSmall ? 76 : 96;
                     const tooltipHeight = isSmall ? 36 : 42;
                     const tooltipPadding = 8;
                     const minX = sidePadding + tooltipWidth / 2;
-                    const maxX = totalChartWidth - sidePadding - tooltipWidth / 2;
+                    const maxX = actualTotalWidth - sidePadding - tooltipWidth / 2;
                     const anchoredX = clamp(selectedPoint.x, minX, maxX);
                     const rectY = Math.max(6, selectedPoint.y - tooltipHeight - 16);
                     const rectX = anchoredX - tooltipWidth / 2;
-
                     return (
                       <G key="tooltip" onPress={() => setSelectedPoint(null)}>
                         <Line
@@ -880,7 +819,7 @@ const StepsChart: React.FC<{
                     );
                   })()}
                 </Svg>
-              </View>
+              </ScrollView>
             </View>
           </View>
         </>
@@ -888,13 +827,11 @@ const StepsChart: React.FC<{
     </View>
   );
 };
-
 // ============ MAIN STEPS SCREEN ============
 const StepsScreen = () => {
   const { theme } = useTheme();
   const { steps, distance, calories, activeTime } = useMotionSteps();
   const { token, isAuthenticated } = useAuth();
-
   const [localStepsData, setLocalStepsData] = useState<StepsData>({
     currentSteps: 0,
     currentDistance: 0,
@@ -904,7 +841,6 @@ const StepsScreen = () => {
     lastUpdated: Date.now(),
     currentDate: getISTDate(),
   });
-
   const [baseline, setBaseline] = useState<BaselineData>({
     steps: 0,
     distance: 0,
@@ -912,14 +848,12 @@ const StepsScreen = () => {
     activeTime: 0,
     date: getISTDate(),
   });
-
   const [motionOffset, setMotionOffset] = useState({
     steps: 0,
     distance: 0,
     calories: 0,
     activeTime: 0,
   });
-
   const [offlineQueue, setOfflineQueue] = useState<OfflineEntry[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -929,7 +863,6 @@ const StepsScreen = () => {
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializedRef = useRef(false);
   const lastSyncedStepsRef = useRef(0);
-
   const stylesTheme = useThemedStyles(theme =>
     StyleSheet.create({
       container: {
@@ -938,7 +871,6 @@ const StepsScreen = () => {
       },
     }),
   );
-
   // Load baseline and offset from AsyncStorage
   const loadBaseline = async () => {
     try {
@@ -946,9 +878,7 @@ const StepsScreen = () => {
         AsyncStorage.getItem(BASELINE_KEY),
         AsyncStorage.getItem(MOTION_OFFSET_KEY),
       ]);
-
       const currentDate = getISTDate();
-
       if (baselineStr) {
         const savedBaseline: BaselineData = JSON.parse(baselineStr);
 
@@ -972,7 +902,6 @@ const StepsScreen = () => {
           setBaseline(savedBaseline);
         }
       }
-
       if (offsetStr) {
         const savedOffset = JSON.parse(offsetStr);
         setMotionOffset(savedOffset);
@@ -981,7 +910,6 @@ const StepsScreen = () => {
       console.error('Load baseline error:', error);
     }
   };
-
   // Save baseline to AsyncStorage
   const saveBaseline = async (newBaseline: BaselineData) => {
     try {
@@ -990,7 +918,6 @@ const StepsScreen = () => {
       console.error('Save baseline error:', error);
     }
   };
-
   // Save motion offset to AsyncStorage
   const saveMotionOffset = async (offset: typeof motionOffset) => {
     try {
@@ -999,7 +926,6 @@ const StepsScreen = () => {
       console.error('Save motion offset error:', error);
     }
   };
-
   // Load data from AsyncStorage
   const loadLocalData = async () => {
     try {
@@ -1007,11 +933,9 @@ const StepsScreen = () => {
         AsyncStorage.getItem(STEPS_DATA_KEY),
         AsyncStorage.getItem(OFFLINE_QUEUE_KEY),
       ]);
-
       if (stepsDataStr) {
         const data: StepsData = JSON.parse(stepsDataStr);
         const currentDate = getISTDate();
-
         // Reset if new day
         if (data.currentDate !== currentDate) {
           const resetData: StepsData = {
@@ -1029,7 +953,6 @@ const StepsScreen = () => {
           setLocalStepsData(data);
         }
       }
-
       if (queueStr) {
         setOfflineQueue(JSON.parse(queueStr));
       }
@@ -1037,7 +960,6 @@ const StepsScreen = () => {
       console.error('Load local data error:', error);
     }
   };
-
   // Save data to AsyncStorage
   const saveLocalData = async (data: StepsData) => {
     try {
@@ -1046,13 +968,10 @@ const StepsScreen = () => {
       console.error('Save local data error:', error);
     }
   };
-
   // Fetch current data from backend and set as baseline
   const fetchCurrentDataFromBackend = async (showLoader = false) => {
     if (!token || !isAuthenticated) return;
-
     if (showLoader) setIsRefreshing(true);
-
     try {
       // Check internet connection first
       const netInfo = await NetInfo.fetch();
@@ -1065,7 +984,6 @@ const StepsScreen = () => {
         if (showLoader) setIsRefreshing(false);
         return;
       }
-
       const response = await fetch(`${API_BASE_URL}/current`, {
         method: 'GET',
         headers: {
@@ -1073,13 +991,10 @@ const StepsScreen = () => {
           'Content-Type': 'application/json',
         },
       });
-
       const result = await response.json();
-
       if (response.ok && result.success) {
         const backendData = result.data;
         const currentDate = getISTDate();
-
         // Set backend data as baseline
         const newBaseline: BaselineData = {
           steps: backendData.currentSteps || 0,
@@ -1088,10 +1003,8 @@ const StepsScreen = () => {
           activeTime: backendData.currentActiveTime || 0,
           date: currentDate,
         };
-
         setBaseline(newBaseline);
         await saveBaseline(newBaseline);
-
         // Store the motion sensor values at the time of fetching as offset
         const newOffset = {
           steps: steps,
@@ -1101,7 +1014,6 @@ const StepsScreen = () => {
         };
         setMotionOffset(newOffset);
         await saveMotionOffset(newOffset);
-
         // Update local data with baseline
         const newData: StepsData = {
           currentSteps: newBaseline.steps,
@@ -1112,11 +1024,9 @@ const StepsScreen = () => {
           lastUpdated: Date.now(),
           currentDate,
         };
-
         setLocalStepsData(newData);
         await saveLocalData(newData);
         lastSyncedStepsRef.current = newBaseline.steps;
-
         if (showLoader) {
           Alert.alert(
             'Success',
@@ -1124,7 +1034,6 @@ const StepsScreen = () => {
             [{ text: 'OK' }]
           );
         }
-
         console.log('Fetched from backend - Baseline:', newBaseline, 'Offset:', newOffset);
       } else {
         throw new Error(result.message || 'Failed to fetch data');
@@ -1142,16 +1051,13 @@ const StepsScreen = () => {
       if (showLoader) setIsRefreshing(false);
     }
   };
-
   // Sync data to backend
   const syncToBackend = async () => {
     if (!token || !isAuthenticated || isSyncing) return;
-
     // Don't sync if steps haven't changed
     if (localStepsData.currentSteps === lastSyncedStepsRef.current) {
       return;
     }
-
     setIsSyncing(true);
     try {
       const netInfo = await NetInfo.fetch();
@@ -1164,19 +1070,16 @@ const StepsScreen = () => {
           activeTime: localStepsData.currentActiveTime,
           timestamp: getISTTimestamp(),
         };
-
         const newQueue = [...offlineQueue, entry];
         setOfflineQueue(newQueue);
         await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(newQueue));
         console.log('No internet, added to offline queue');
         return;
       }
-
       // Sync offline queue first if exists
       if (offlineQueue.length > 0) {
         await syncOfflineQueue();
       }
-
       // Sync current data
       const response = await fetch(`${API_BASE_URL}/update`, {
         method: 'POST',
@@ -1192,9 +1095,7 @@ const StepsScreen = () => {
           timestamp: getISTTimestamp(),
         }),
       });
-
       const result = await response.json();
-
       if (response.ok && result.success) {
         await AsyncStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
         lastSyncedStepsRef.current = localStepsData.currentSteps;
@@ -1219,11 +1120,9 @@ const StepsScreen = () => {
       setIsSyncing(false);
     }
   };
-
   // Sync offline queue
   const syncOfflineQueue = async () => {
     if (!token || offlineQueue.length === 0) return;
-
     try {
       const response = await fetch(`${API_BASE_URL}/sync`, {
         method: 'POST',
@@ -1235,9 +1134,7 @@ const StepsScreen = () => {
           entries: offlineQueue,
         }),
       });
-
       const result = await response.json();
-
       if (response.ok && result.success) {
         setOfflineQueue([]);
         await AsyncStorage.removeItem(OFFLINE_QUEUE_KEY);
@@ -1247,13 +1144,10 @@ const StepsScreen = () => {
       console.error('Sync offline queue error:', error);
     }
   };
-
   // Calculate incremental steps from motion sensor
   useEffect(() => {
     if (!isInitializedRef.current) return;
-
     const currentDate = getISTDate();
-
     // Reset if new day
     if (baseline.date !== currentDate) {
       const resetBaseline: BaselineData = {
@@ -1265,7 +1159,6 @@ const StepsScreen = () => {
       };
       setBaseline(resetBaseline);
       saveBaseline(resetBaseline);
-
       const resetOffset = {
         steps: steps,
         distance: distance,
@@ -1274,7 +1167,6 @@ const StepsScreen = () => {
       };
       setMotionOffset(resetOffset);
       saveMotionOffset(resetOffset);
-
       const resetData: StepsData = {
         currentSteps: 0,
         currentDistance: 0,
@@ -1289,19 +1181,16 @@ const StepsScreen = () => {
       lastSyncedStepsRef.current = 0;
       return;
     }
-
     // Calculate increment from motion sensor since last offset
     const stepIncrement = Math.max(0, steps - motionOffset.steps);
     const distanceIncrement = Math.max(0, distance - motionOffset.distance);
     const caloriesIncrement = Math.max(0, calories - motionOffset.calories);
     const activeTimeIncrement = Math.max(0, activeTime - motionOffset.activeTime);
-
     // Add increment to baseline
     const newSteps = baseline.steps + stepIncrement;
     const newDistance = baseline.distance + distanceIncrement;
     const newCalories = baseline.calories + caloriesIncrement;
     const newActiveTime = baseline.activeTime + activeTimeIncrement;
-
     const updatedData: StepsData = {
       currentSteps: newSteps,
       currentDistance: newDistance,
@@ -1311,22 +1200,17 @@ const StepsScreen = () => {
       lastUpdated: Date.now(),
       currentDate,
     };
-
     setLocalStepsData(updatedData);
     saveLocalData(updatedData);
-
     console.log('Motion update - Baseline:', baseline.steps, 'Increment:', stepIncrement, 'Total:', newSteps);
   }, [steps, distance, calories, activeTime]);
-
   // Initialize data on mount
   useEffect(() => {
     const initialize = async () => {
       await Promise.all([loadLocalData(), loadBaseline()]);
-
       if (isAuthenticated && token) {
         // Fetch from backend and set as baseline
         await fetchCurrentDataFromBackend(false);
-
         // Check for offline queue to sync
         const queueStr = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
         if (queueStr) {
@@ -1336,17 +1220,13 @@ const StepsScreen = () => {
           }
         }
       }
-
       isInitializedRef.current = true;
     };
-
     initialize();
   }, []);
-
   // Auto-sync when steps change (debounced)
   useEffect(() => {
     if (!isAuthenticated || !token || !isInitializedRef.current) return;
-
     // Sync whenever steps change (with debounce via interval)
     const shouldSync = localStepsData.currentSteps !== lastSyncedStepsRef.current;
 
@@ -1355,7 +1235,6 @@ const StepsScreen = () => {
       syncToBackend();
     }
   }, [localStepsData.currentSteps, isAuthenticated, token]);
-
   // Setup 30-second sync interval for authenticated users
   useEffect(() => {
     if (isAuthenticated && token && isInitializedRef.current) {
@@ -1366,7 +1245,6 @@ const StepsScreen = () => {
         console.log('30-second interval fired, syncing...');
         syncToBackend();
       }, SYNC_INTERVAL);
-
       return () => {
         if (syncIntervalRef.current) {
           console.log('Clearing sync interval');
@@ -1382,7 +1260,6 @@ const StepsScreen = () => {
       }
     }
   }, [isAuthenticated, token]);
-
   // Handle manual refresh
   const handleRefresh = async () => {
     if (isAuthenticated && token) {
@@ -1393,13 +1270,11 @@ const StepsScreen = () => {
       setIsRefreshing(false);
     }
   };
-
   // Handle settings modal
   const handleOpenSettings = () => {
     setGoalInput(localStepsData.dailyGoal.toString());
     setSettingsVisible(true);
   };
-
   // Update daily goal
   const handleUpdateGoal = async () => {
     const newGoal = parseInt(goalInput);
@@ -1412,9 +1287,7 @@ const StepsScreen = () => {
       );
       return;
     }
-
     setIsUpdatingGoal(true);
-
     try {
       if (isAuthenticated && token) {
         // Check internet
@@ -1428,7 +1301,6 @@ const StepsScreen = () => {
           setIsUpdatingGoal(false);
           return;
         }
-
         // Update on backend
         const response = await fetch(`${API_BASE_URL}/goal`, {
           method: 'PUT',
@@ -1438,20 +1310,16 @@ const StepsScreen = () => {
           },
           body: JSON.stringify({ dailyGoal: newGoal }),
         });
-
         const result = await response.json();
-
         if (!response.ok) {
           throw new Error(result.message || 'Failed to update goal');
         }
-
         Alert.alert(
           'Success',
           `Daily goal updated to ${newGoal.toLocaleString()} steps!`,
           [{ text: 'OK' }]
         );
       }
-
       // Update locally
       const updatedData = {
         ...localStepsData,
@@ -1472,12 +1340,15 @@ const StepsScreen = () => {
       setIsUpdatingGoal(false);
     }
   };
-
   const percentage = (localStepsData.currentSteps / localStepsData.dailyGoal) * 100;
-
   return (
     <SafeAreaView style={stylesTheme.container}>
-      <ScrollView>
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: 20, // Extra bottom padding for small devices
+        }}
+      >
         <Header
           onRefresh={handleRefresh}
           isRefreshing={isRefreshing}
@@ -1487,18 +1358,15 @@ const StepsScreen = () => {
           steps={localStepsData.currentSteps}
           goal={localStepsData.dailyGoal}
         />
-
         <StatsPanel
           distance={localStepsData.currentDistance}
           calories={localStepsData.currentCalories}
           activeMins={localStepsData.currentActiveTime}
           percentage={percentage}
         />
-
         <StepsChart isAuthenticated={isAuthenticated} token={token} />
         <BMICards />
       </ScrollView>
-
       {/* Settings Modal */}
       <Modal
         visible={settingsVisible}
@@ -1521,7 +1389,6 @@ const StepsScreen = () => {
                 </Text>
               </TouchableOpacity>
             </View>
-
             <View style={styles.modalBody}>
               <Text style={[styles.settingLabel, { color: theme.text }]}>
                 Daily Step Goal
@@ -1545,7 +1412,6 @@ const StepsScreen = () => {
               <Text style={[styles.settingHint, { color: theme.textSecondary }]}>
                 Set a daily step goal between 1,000 and 100,000 steps
               </Text>
-
               <TouchableOpacity
                 style={[
                   styles.updateButton,
@@ -1568,7 +1434,6 @@ const StepsScreen = () => {
     </SafeAreaView>
   );
 };
-
 // ============ STYLES ============
 const styles = StyleSheet.create({
   headerWrapper: {
@@ -1844,5 +1709,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
 export default StepsScreen;
