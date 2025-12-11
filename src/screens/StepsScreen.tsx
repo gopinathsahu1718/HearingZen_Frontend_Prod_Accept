@@ -20,6 +20,7 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  Switch,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
@@ -40,20 +41,25 @@ import Svg, {
   G,
 } from 'react-native-svg';
 import BMICards from './StepScreen/BMICards';
+
 const { width } = Dimensions.get('window');
 const BOX_SIZE = width * 0.22;
 const SIZE = width * 0.5;
 const STROKE_WIDTH = SIZE * 0.06;
 const RADIUS = (SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
 const API_BASE_URL = 'http://13.200.222.176/api/steps';
 const SYNC_INTERVAL = 30000; // 30 seconds
+
 // AsyncStorage keys
 const STEPS_DATA_KEY = '@steps_data';
 const OFFLINE_QUEUE_KEY = '@steps_offline_queue';
 const LAST_SYNC_KEY = '@steps_last_sync';
-const BASELINE_KEY = '@steps_baseline'; // NEW: Store baseline separately
-const MOTION_OFFSET_KEY = '@steps_motion_offset'; // NEW: Store motion sensor offset
+const BASELINE_KEY = '@steps_baseline';
+const MOTION_OFFSET_KEY = '@steps_motion_offset';
+const TRACKING_ENABLED_KEY = '@steps_tracking_enabled'; // NEW
+
 type Period = 'Month' | 'Week' | 'Day';
 type Point = { x: number; y: number; value?: number };
 type SelectedPoint = {
@@ -63,6 +69,7 @@ type SelectedPoint = {
   label: string;
   value: number;
 };
+
 interface StepsData {
   currentSteps: number;
   currentDistance: number;
@@ -72,6 +79,7 @@ interface StepsData {
   lastUpdated: number;
   currentDate: string;
 }
+
 interface BaselineData {
   steps: number;
   distance: number;
@@ -79,6 +87,7 @@ interface BaselineData {
   activeTime: number;
   date: string;
 }
+
 interface OfflineEntry {
   steps: number;
   distance: number;
@@ -86,15 +95,19 @@ interface OfflineEntry {
   activeTime: number;
   timestamp: string;
 }
+
 const AnimatedPath = Animated.createAnimatedComponent(Path);
+
 // Get current IST date in YYYY-MM-DD format
 const getISTDate = () => {
   return moment().tz('Asia/Kolkata').format('YYYY-MM-DD');
 };
+
 // Convert timestamp to IST
 const getISTTimestamp = () => {
   return moment().tz('Asia/Kolkata').toISOString();
 };
+
 // ============ HEADER COMPONENT ============
 const Header: React.FC<{
   onRefresh?: () => void;
@@ -138,6 +151,7 @@ const Header: React.FC<{
       </View>
     );
   };
+
 // ============ STEP CIRCLE COMPONENT ============
 const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
   steps = 0,
@@ -147,6 +161,7 @@ const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
   const progress = steps / goal;
   const strokeDashoffset = CIRCUMFERENCE - CIRCUMFERENCE * progress;
   const progressColor = steps >= goal ? '#00FF7F' : '#00BFFF';
+
   return (
     <View style={styles.circleContainer}>
       <View style={styles.shadowWrapper}>
@@ -211,6 +226,7 @@ const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
     </View>
   );
 };
+
 // ============ STATS PANEL COMPONENT ============
 const StatsPanel: React.FC<{
   distance?: number;
@@ -245,6 +261,7 @@ const StatsPanel: React.FC<{
       bg: theme.cardBackground,
     },
   ];
+
   return (
     <View style={styles.statsContainer}>
       {stats.map((stat, index) => (
@@ -275,6 +292,7 @@ const StatsPanel: React.FC<{
     </View>
   );
 };
+
 // ============ STEPS CHART COMPONENT ============
 const StepsChart: React.FC<{
   isAuthenticated: boolean;
@@ -294,8 +312,10 @@ const StepsChart: React.FC<{
     labels: [],
   });
   const [isLoading, setIsLoading] = useState(false);
+
   const animProgress = useRef(new Animated.Value(0)).current;
   const pointScale = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     const listener = ({ window }: { window: { width: number } }) =>
       setScreenWidth(window.width);
@@ -304,6 +324,7 @@ const StepsChart: React.FC<{
       : undefined;
     return () => sub?.remove?.();
   }, []);
+
   useEffect(() => {
     animProgress.setValue(0);
     pointScale.setValue(0);
@@ -321,6 +342,7 @@ const StepsChart: React.FC<{
       }),
     ]).start();
   }, [selectedPeriod]);
+
   const fetchChartData = async (period: Period) => {
     if (!isAuthenticated || !token) return;
     setIsLoading(true);
@@ -335,6 +357,7 @@ const StepsChart: React.FC<{
         setIsLoading(false);
         return;
       }
+
       const response = await fetch(
         `${API_BASE_URL}/history?period=${period.toLowerCase()}`,
         {
@@ -345,10 +368,12 @@ const StepsChart: React.FC<{
           },
         }
       );
+
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch chart data');
       }
+
       processChartData(data.data.history || [], period);
     } catch (error: any) {
       console.error('Fetch chart error:', error);
@@ -357,17 +382,22 @@ const StepsChart: React.FC<{
       setIsLoading(false);
     }
   };
+
   const processChartData = (history: any[], period: Period) => {
     const isSmall = screenWidth < 360;
     const isMedium = screenWidth >= 360 && screenWidth < 420;
     const chartHeight = isSmall ? 90 : isMedium ? 110 : 130;
+
     let points: Point[] = [];
     let labels: string[] = [];
+
     if (history.length === 0) {
       setChartData({ points: [], labels: [] });
       return;
     }
+
     const maxSteps = Math.max(...history.map((h: any) => h.totalSteps || 0), 1);
+
     history.forEach((entry: any, i: number) => {
       if (period === 'Day') {
         labels.push(moment(entry.date || entry.timestamp).format('h A'));
@@ -378,23 +408,26 @@ const StepsChart: React.FC<{
         const end = moment(entry.weekEnd).format('MMM D');
         labels.push(`${start}-${end}`);
       }
+
       points.push({
-        x: i / Math.max(history.length - 1, 1), // Normalized 0 to 1
+        x: i / Math.max(history.length - 1, 1),
         y: chartHeight - ((entry.totalSteps || 0) / maxSteps) * chartHeight * 0.75,
         value: entry.totalSteps || 0,
       });
     });
+
     setChartData({ points, labels });
   };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchChartData(selectedPeriod);
     }
   }, [selectedPeriod, isAuthenticated, token]);
+
   const isSmall = screenWidth < 360;
   const isMedium = screenWidth >= 360 && screenWidth < 420;
 
-  // Adjusted dimensions to fit within card without overflow
   const Y_AXIS_WIDTH = 45;
   const CARD_PADDING = 32;
   const SAFE_MARGIN = 20;
@@ -402,12 +435,14 @@ const StepsChart: React.FC<{
   const chartHeight = isSmall ? 90 : isMedium ? 110 : 130;
   const labelPadding = isSmall ? 10 : 15;
   const sidePadding = labelPadding;
+
   const periodOptions: Period[] = ['Month', 'Week', 'Day'];
   const periodBtnRef = useRef<any>(null);
   const DROPDOWN_WIDTH = 140;
+
   const dataPoints = chartData.points;
   const labels = chartData.labels;
-  // Calculate actual total chart width based on number of points
+
   const actualTotalWidth = useMemo(() => {
     const numPoints = dataPoints.length;
     if (numPoints === 0) return Math.max(availableWidth * 0.95, 280);
@@ -415,7 +450,7 @@ const StepsChart: React.FC<{
     const suggestedWidth = numPoints * minSpacePerPoint;
     return Math.max(suggestedWidth, availableWidth * 0.9);
   }, [dataPoints.length, selectedPeriod, availableWidth]);
-  // Calculate Y-axis values
+
   const maxSteps = dataPoints.length > 0
     ? Math.max(...dataPoints.map(p => p.value || 0))
     : 10000;
@@ -426,9 +461,7 @@ const StepsChart: React.FC<{
     Math.round(maxSteps * 0.25),
     0
   ];
-  useEffect(() => {
-    // Chart now fits within view, no scroll needed
-  }, [actualTotalWidth, selectedPeriod, dataPoints.length]);
+
   const insetPoints = useMemo(() => {
     if (!dataPoints || dataPoints.length === 0) return dataPoints;
     const scaleWidth = Math.max(0, actualTotalWidth - sidePadding * 2);
@@ -437,6 +470,7 @@ const StepsChart: React.FC<{
       x: sidePadding + (pt.x * scaleWidth),
     }));
   }, [dataPoints, sidePadding, actualTotalWidth]);
+
   const generateSmoothPath = (pts: Point[]) => {
     if (!pts || pts.length === 0) return '';
     if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
@@ -455,6 +489,7 @@ const StepsChart: React.FC<{
     }
     return d;
   };
+
   const generateFillPath = (pts: Point[]) => {
     const line = generateSmoothPath(pts);
     if (!line) return '';
@@ -462,10 +497,14 @@ const StepsChart: React.FC<{
     const firstX = pts[0].x;
     return `${line} L ${lastX} ${chartHeight} L ${firstX} ${chartHeight} Z`;
   };
+
   const mainPath = useMemo(() => generateSmoothPath(insetPoints), [insetPoints]);
   const fillPath = useMemo(() => generateFillPath(insetPoints), [insetPoints]);
+
   const refLines = [chartHeight * 0.25, chartHeight * 0.5, chartHeight * 0.75];
+
   const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+
   const openDropdown = () => {
     const ref = periodBtnRef.current as any;
     if (ref && typeof ref.measureInWindow === 'function') {
@@ -486,6 +525,7 @@ const StepsChart: React.FC<{
       setDropdownOpen(true);
     }
   };
+
   const onPressPoint = (pt: Point, idx: number) => {
     const approxLabelIdx = Math.round(
       (idx / Math.max(insetPoints.length - 1, 1)) * (labels.length - 1),
@@ -494,7 +534,9 @@ const StepsChart: React.FC<{
     const v = typeof pt.value === 'number' ? pt.value : 0;
     setSelectedPoint({ index: idx, x: pt.x, y: pt.y, label, value: v });
   };
+
   useEffect(() => setSelectedPoint(null), [selectedPeriod]);
+
   const getDisplayDate = (): string => {
     const today = moment().tz('Asia/Kolkata');
     if (selectedPeriod === 'Day') {
@@ -507,6 +549,7 @@ const StepsChart: React.FC<{
       return today.format('MMMM YYYY');
     }
   };
+
   if (!isAuthenticated) {
     return (
       <View
@@ -540,6 +583,7 @@ const StepsChart: React.FC<{
       </View>
     );
   }
+
   return (
     <View
       style={[
@@ -580,11 +624,13 @@ const StepsChart: React.FC<{
       <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 6 }}>
         {getDisplayDate()}
       </Text>
+
       {isLoading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.primary} />
         </View>
       )}
+
       {!isLoading && insetPoints.length === 0 && (
         <View style={styles.noDataContainer}>
           <Text style={[styles.noDataText, { color: theme.textSecondary }]}>
@@ -592,6 +638,7 @@ const StepsChart: React.FC<{
           </Text>
         </View>
       )}
+
       {!isLoading && insetPoints.length > 0 && (
         <>
           {dropdownOpen && (
@@ -638,9 +685,9 @@ const StepsChart: React.FC<{
               </View>
             </Modal>
           )}
+
           <View style={[styles.chartWrap, { width: '100%' }]}>
             <View style={{ flexDirection: 'row' }}>
-              {/* Y-axis labels - fixed */}
               <View style={[styles.yAxisContainer, { height: chartHeight + 34, width: Y_AXIS_WIDTH, flexShrink: 0 }]}>
                 {yAxisValues.map((value, idx) => (
                   <Text
@@ -657,7 +704,7 @@ const StepsChart: React.FC<{
                   </Text>
                 ))}
               </View>
-              {/* Chart - Horizontally scrollable */}
+
               <ScrollView
                 horizontal={true}
                 showsHorizontalScrollIndicator={false}
@@ -676,6 +723,7 @@ const StepsChart: React.FC<{
                       <Stop offset="100%" stopColor={theme.secondary} stopOpacity="0.02" />
                     </LinearGradient>
                   </Defs>
+
                   {refLines.map((y, i) => (
                     <Line
                       key={i}
@@ -688,9 +736,11 @@ const StepsChart: React.FC<{
                       strokeDasharray="4,6"
                     />
                   ))}
+
                   <G>
                     <Path d={fillPath} fill="url(#fillGrad)" />
                   </G>
+
                   <G>
                     <AnimatedPath
                       d={mainPath}
@@ -701,6 +751,7 @@ const StepsChart: React.FC<{
                       strokeLinejoin="round"
                     />
                   </G>
+
                   {insetPoints.map((pt, i) => {
                     const isHighlighted = selectedPoint?.index === i;
                     const cx = pt.x;
@@ -747,6 +798,7 @@ const StepsChart: React.FC<{
                       </React.Fragment>
                     );
                   })}
+
                   {labels.map((lab, idx) => {
                     const steps = Math.max(labels.length - 1, 1);
                     const usableWidth = actualTotalWidth - sidePadding * 2;
@@ -767,6 +819,7 @@ const StepsChart: React.FC<{
                       </SvgText>
                     );
                   })}
+
                   {selectedPoint && (() => {
                     const tooltipWidth = isSmall ? 76 : 96;
                     const tooltipHeight = isSmall ? 36 : 42;
@@ -827,11 +880,15 @@ const StepsChart: React.FC<{
     </View>
   );
 };
+
 // ============ MAIN STEPS SCREEN ============
 const StepsScreen = () => {
   const { theme } = useTheme();
   const { steps, distance, calories, activeTime } = useMotionSteps();
   const { token, isAuthenticated } = useAuth();
+
+  const [isTrackingEnabled, setIsTrackingEnabled] = useState(true);
+
   const [localStepsData, setLocalStepsData] = useState<StepsData>({
     currentSteps: 0,
     currentDistance: 0,
@@ -841,6 +898,7 @@ const StepsScreen = () => {
     lastUpdated: Date.now(),
     currentDate: getISTDate(),
   });
+
   const [baseline, setBaseline] = useState<BaselineData>({
     steps: 0,
     distance: 0,
@@ -848,21 +906,25 @@ const StepsScreen = () => {
     activeTime: 0,
     date: getISTDate(),
   });
+
   const [motionOffset, setMotionOffset] = useState({
     steps: 0,
     distance: 0,
     calories: 0,
     activeTime: 0,
   });
+
   const [offlineQueue, setOfflineQueue] = useState<OfflineEntry[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [goalInput, setGoalInput] = useState('10000');
   const [isUpdatingGoal, setIsUpdatingGoal] = useState(false);
+
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializedRef = useRef(false);
   const lastSyncedStepsRef = useRef(0);
+
   const stylesTheme = useThemedStyles(theme =>
     StyleSheet.create({
       container: {
@@ -871,6 +933,28 @@ const StepsScreen = () => {
       },
     }),
   );
+
+  // Load tracking enabled state
+  const loadTrackingState = async () => {
+    try {
+      const enabled = await AsyncStorage.getItem(TRACKING_ENABLED_KEY);
+      if (enabled !== null) {
+        setIsTrackingEnabled(enabled === 'true');
+      }
+    } catch (error) {
+      console.error('Load tracking state error:', error);
+    }
+  };
+
+  // Save tracking enabled state
+  const saveTrackingState = async (enabled: boolean) => {
+    try {
+      await AsyncStorage.setItem(TRACKING_ENABLED_KEY, enabled.toString());
+    } catch (error) {
+      console.error('Save tracking state error:', error);
+    }
+  };
+
   // Load baseline and offset from AsyncStorage
   const loadBaseline = async () => {
     try {
@@ -878,11 +962,12 @@ const StepsScreen = () => {
         AsyncStorage.getItem(BASELINE_KEY),
         AsyncStorage.getItem(MOTION_OFFSET_KEY),
       ]);
+
       const currentDate = getISTDate();
+
       if (baselineStr) {
         const savedBaseline: BaselineData = JSON.parse(baselineStr);
 
-        // Reset baseline if new day
         if (savedBaseline.date !== currentDate) {
           const resetBaseline: BaselineData = {
             steps: 0,
@@ -894,7 +979,6 @@ const StepsScreen = () => {
           setBaseline(resetBaseline);
           await AsyncStorage.setItem(BASELINE_KEY, JSON.stringify(resetBaseline));
 
-          // Reset motion offset for new day
           const resetOffset = { steps: 0, distance: 0, calories: 0, activeTime: 0 };
           setMotionOffset(resetOffset);
           await AsyncStorage.setItem(MOTION_OFFSET_KEY, JSON.stringify(resetOffset));
@@ -902,6 +986,7 @@ const StepsScreen = () => {
           setBaseline(savedBaseline);
         }
       }
+
       if (offsetStr) {
         const savedOffset = JSON.parse(offsetStr);
         setMotionOffset(savedOffset);
@@ -910,6 +995,7 @@ const StepsScreen = () => {
       console.error('Load baseline error:', error);
     }
   };
+
   // Save baseline to AsyncStorage
   const saveBaseline = async (newBaseline: BaselineData) => {
     try {
@@ -918,6 +1004,7 @@ const StepsScreen = () => {
       console.error('Save baseline error:', error);
     }
   };
+
   // Save motion offset to AsyncStorage
   const saveMotionOffset = async (offset: typeof motionOffset) => {
     try {
@@ -926,6 +1013,7 @@ const StepsScreen = () => {
       console.error('Save motion offset error:', error);
     }
   };
+
   // Load data from AsyncStorage
   const loadLocalData = async () => {
     try {
@@ -933,10 +1021,11 @@ const StepsScreen = () => {
         AsyncStorage.getItem(STEPS_DATA_KEY),
         AsyncStorage.getItem(OFFLINE_QUEUE_KEY),
       ]);
+
       if (stepsDataStr) {
         const data: StepsData = JSON.parse(stepsDataStr);
         const currentDate = getISTDate();
-        // Reset if new day
+
         if (data.currentDate !== currentDate) {
           const resetData: StepsData = {
             currentSteps: 0,
@@ -953,6 +1042,7 @@ const StepsScreen = () => {
           setLocalStepsData(data);
         }
       }
+
       if (queueStr) {
         setOfflineQueue(JSON.parse(queueStr));
       }
@@ -960,6 +1050,7 @@ const StepsScreen = () => {
       console.error('Load local data error:', error);
     }
   };
+
   // Save data to AsyncStorage
   const saveLocalData = async (data: StepsData) => {
     try {
@@ -968,12 +1059,14 @@ const StepsScreen = () => {
       console.error('Save local data error:', error);
     }
   };
+
   // Fetch current data from backend and set as baseline
   const fetchCurrentDataFromBackend = async (showLoader = false) => {
-    if (!token || !isAuthenticated) return;
+    if (!token || !isAuthenticated || !isTrackingEnabled) return;
+
     if (showLoader) setIsRefreshing(true);
+
     try {
-      // Check internet connection first
       const netInfo = await NetInfo.fetch();
       if (!netInfo.isConnected) {
         Alert.alert(
@@ -984,6 +1077,7 @@ const StepsScreen = () => {
         if (showLoader) setIsRefreshing(false);
         return;
       }
+
       const response = await fetch(`${API_BASE_URL}/current`, {
         method: 'GET',
         headers: {
@@ -991,11 +1085,13 @@ const StepsScreen = () => {
           'Content-Type': 'application/json',
         },
       });
+
       const result = await response.json();
+
       if (response.ok && result.success) {
         const backendData = result.data;
         const currentDate = getISTDate();
-        // Set backend data as baseline
+
         const newBaseline: BaselineData = {
           steps: backendData.currentSteps || 0,
           distance: backendData.currentDistance || 0,
@@ -1005,7 +1101,7 @@ const StepsScreen = () => {
         };
         setBaseline(newBaseline);
         await saveBaseline(newBaseline);
-        // Store the motion sensor values at the time of fetching as offset
+
         const newOffset = {
           steps: steps,
           distance: distance,
@@ -1014,7 +1110,7 @@ const StepsScreen = () => {
         };
         setMotionOffset(newOffset);
         await saveMotionOffset(newOffset);
-        // Update local data with baseline
+
         const newData: StepsData = {
           currentSteps: newBaseline.steps,
           currentDistance: newBaseline.distance,
@@ -1026,7 +1122,9 @@ const StepsScreen = () => {
         };
         setLocalStepsData(newData);
         await saveLocalData(newData);
+
         lastSyncedStepsRef.current = newBaseline.steps;
+
         if (showLoader) {
           Alert.alert(
             'Success',
@@ -1034,6 +1132,7 @@ const StepsScreen = () => {
             [{ text: 'OK' }]
           );
         }
+
         console.log('Fetched from backend - Baseline:', newBaseline, 'Offset:', newOffset);
       } else {
         throw new Error(result.message || 'Failed to fetch data');
@@ -1051,18 +1150,20 @@ const StepsScreen = () => {
       if (showLoader) setIsRefreshing(false);
     }
   };
+
   // Sync data to backend
   const syncToBackend = async () => {
-    if (!token || !isAuthenticated || isSyncing) return;
-    // Don't sync if steps haven't changed
+    if (!token || !isAuthenticated || isSyncing || !isTrackingEnabled) return;
+
     if (localStepsData.currentSteps === lastSyncedStepsRef.current) {
       return;
     }
+
     setIsSyncing(true);
+
     try {
       const netInfo = await NetInfo.fetch();
       if (!netInfo.isConnected) {
-        // Add to offline queue
         const entry: OfflineEntry = {
           steps: localStepsData.currentSteps,
           distance: localStepsData.currentDistance,
@@ -1076,11 +1177,11 @@ const StepsScreen = () => {
         console.log('No internet, added to offline queue');
         return;
       }
-      // Sync offline queue first if exists
+
       if (offlineQueue.length > 0) {
         await syncOfflineQueue();
       }
-      // Sync current data
+
       const response = await fetch(`${API_BASE_URL}/update`, {
         method: 'POST',
         headers: {
@@ -1095,7 +1196,9 @@ const StepsScreen = () => {
           timestamp: getISTTimestamp(),
         }),
       });
+
       const result = await response.json();
+
       if (response.ok && result.success) {
         await AsyncStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
         lastSyncedStepsRef.current = localStepsData.currentSteps;
@@ -1105,7 +1208,6 @@ const StepsScreen = () => {
       }
     } catch (error: any) {
       console.error('Sync to backend error:', error);
-      // Add to offline queue on error
       const entry: OfflineEntry = {
         steps: localStepsData.currentSteps,
         distance: localStepsData.currentDistance,
@@ -1120,9 +1222,11 @@ const StepsScreen = () => {
       setIsSyncing(false);
     }
   };
+
   // Sync offline queue
   const syncOfflineQueue = async () => {
-    if (!token || offlineQueue.length === 0) return;
+    if (!token || offlineQueue.length === 0 || !isTrackingEnabled) return;
+
     try {
       const response = await fetch(`${API_BASE_URL}/sync`, {
         method: 'POST',
@@ -1134,7 +1238,9 @@ const StepsScreen = () => {
           entries: offlineQueue,
         }),
       });
+
       const result = await response.json();
+
       if (response.ok && result.success) {
         setOfflineQueue([]);
         await AsyncStorage.removeItem(OFFLINE_QUEUE_KEY);
@@ -1144,11 +1250,13 @@ const StepsScreen = () => {
       console.error('Sync offline queue error:', error);
     }
   };
+
   // Calculate incremental steps from motion sensor
   useEffect(() => {
-    if (!isInitializedRef.current) return;
+    if (!isInitializedRef.current || !isTrackingEnabled) return;
+
     const currentDate = getISTDate();
-    // Reset if new day
+
     if (baseline.date !== currentDate) {
       const resetBaseline: BaselineData = {
         steps: 0,
@@ -1159,6 +1267,7 @@ const StepsScreen = () => {
       };
       setBaseline(resetBaseline);
       saveBaseline(resetBaseline);
+
       const resetOffset = {
         steps: steps,
         distance: distance,
@@ -1167,6 +1276,7 @@ const StepsScreen = () => {
       };
       setMotionOffset(resetOffset);
       saveMotionOffset(resetOffset);
+
       const resetData: StepsData = {
         currentSteps: 0,
         currentDistance: 0,
@@ -1181,16 +1291,17 @@ const StepsScreen = () => {
       lastSyncedStepsRef.current = 0;
       return;
     }
-    // Calculate increment from motion sensor since last offset
+
     const stepIncrement = Math.max(0, steps - motionOffset.steps);
     const distanceIncrement = Math.max(0, distance - motionOffset.distance);
     const caloriesIncrement = Math.max(0, calories - motionOffset.calories);
     const activeTimeIncrement = Math.max(0, activeTime - motionOffset.activeTime);
-    // Add increment to baseline
+
     const newSteps = baseline.steps + stepIncrement;
     const newDistance = baseline.distance + distanceIncrement;
     const newCalories = baseline.calories + caloriesIncrement;
     const newActiveTime = baseline.activeTime + activeTimeIncrement;
+
     const updatedData: StepsData = {
       currentSteps: newSteps,
       currentDistance: newDistance,
@@ -1200,18 +1311,21 @@ const StepsScreen = () => {
       lastUpdated: Date.now(),
       currentDate,
     };
+
     setLocalStepsData(updatedData);
     saveLocalData(updatedData);
+
     console.log('Motion update - Baseline:', baseline.steps, 'Increment:', stepIncrement, 'Total:', newSteps);
-  }, [steps, distance, calories, activeTime]);
+  }, [steps, distance, calories, activeTime, isTrackingEnabled]);
+
   // Initialize data on mount
   useEffect(() => {
     const initialize = async () => {
-      await Promise.all([loadLocalData(), loadBaseline()]);
+      await Promise.all([loadLocalData(), loadBaseline(), loadTrackingState()]);
+
       if (isAuthenticated && token) {
-        // Fetch from backend and set as baseline
         await fetchCurrentDataFromBackend(false);
-        // Check for offline queue to sync
+
         const queueStr = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
         if (queueStr) {
           const queue = JSON.parse(queueStr);
@@ -1220,31 +1334,35 @@ const StepsScreen = () => {
           }
         }
       }
+
       isInitializedRef.current = true;
     };
+
     initialize();
   }, []);
-  // Auto-sync when steps change (debounced)
+
+  // Auto-sync when steps change
   useEffect(() => {
-    if (!isAuthenticated || !token || !isInitializedRef.current) return;
-    // Sync whenever steps change (with debounce via interval)
+    if (!isAuthenticated || !token || !isInitializedRef.current || !isTrackingEnabled) return;
+
     const shouldSync = localStepsData.currentSteps !== lastSyncedStepsRef.current;
 
     if (shouldSync) {
       console.log('Steps changed, will sync:', localStepsData.currentSteps);
       syncToBackend();
     }
-  }, [localStepsData.currentSteps, isAuthenticated, token]);
-  // Setup 30-second sync interval for authenticated users
+  }, [localStepsData.currentSteps, isAuthenticated, token, isTrackingEnabled]);
+
+  // Setup 30-second sync interval
   useEffect(() => {
-    if (isAuthenticated && token && isInitializedRef.current) {
+    if (isAuthenticated && token && isInitializedRef.current && isTrackingEnabled) {
       console.log('Setting up 30-second sync interval');
 
-      // Setup 30-second sync interval
       syncIntervalRef.current = setInterval(() => {
         console.log('30-second interval fired, syncing...');
         syncToBackend();
       }, SYNC_INTERVAL);
+
       return () => {
         if (syncIntervalRef.current) {
           console.log('Clearing sync interval');
@@ -1252,29 +1370,68 @@ const StepsScreen = () => {
         }
       };
     } else {
-      // Clear interval if user logs out
       if (syncIntervalRef.current) {
-        console.log('User logged out, clearing interval');
+        console.log('Tracking disabled or logged out, clearing interval');
         clearInterval(syncIntervalRef.current);
         syncIntervalRef.current = null;
       }
     }
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, token, isTrackingEnabled]);
+
   // Handle manual refresh
   const handleRefresh = async () => {
-    if (isAuthenticated && token) {
+    if (isAuthenticated && token && isTrackingEnabled) {
       await fetchCurrentDataFromBackend(true);
+    } else if (!isTrackingEnabled) {
+      Alert.alert(
+        'Tracking Disabled',
+        'Step tracking is currently disabled. Enable it in settings to refresh data.',
+        [{ text: 'OK' }]
+      );
     } else {
       setIsRefreshing(true);
       await loadLocalData();
       setIsRefreshing(false);
     }
   };
+
   // Handle settings modal
   const handleOpenSettings = () => {
     setGoalInput(localStepsData.dailyGoal.toString());
     setSettingsVisible(true);
   };
+
+  // Handle toggle tracking
+  const handleToggleTracking = async (value: boolean) => {
+    setIsTrackingEnabled(value);
+    await saveTrackingState(value);
+
+    if (!value) {
+      // Clear sync interval when disabled
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
+
+      Alert.alert(
+        'Tracking Disabled',
+        'Step tracking has been disabled. No data will be recorded or synced until you enable it again.',
+        [{ text: 'OK' }]
+      );
+    } else {
+      Alert.alert(
+        'Tracking Enabled',
+        'Step tracking has been enabled. Data recording and syncing will resume.',
+        [{ text: 'OK' }]
+      );
+
+      // Refresh data from backend when re-enabled
+      if (isAuthenticated && token) {
+        await fetchCurrentDataFromBackend(false);
+      }
+    }
+  };
+
   // Update daily goal
   const handleUpdateGoal = async () => {
     const newGoal = parseInt(goalInput);
@@ -1287,10 +1444,11 @@ const StepsScreen = () => {
       );
       return;
     }
+
     setIsUpdatingGoal(true);
+
     try {
       if (isAuthenticated && token) {
-        // Check internet
         const netInfo = await NetInfo.fetch();
         if (!netInfo.isConnected) {
           Alert.alert(
@@ -1301,7 +1459,7 @@ const StepsScreen = () => {
           setIsUpdatingGoal(false);
           return;
         }
-        // Update on backend
+
         const response = await fetch(`${API_BASE_URL}/goal`, {
           method: 'PUT',
           headers: {
@@ -1310,17 +1468,20 @@ const StepsScreen = () => {
           },
           body: JSON.stringify({ dailyGoal: newGoal }),
         });
+
         const result = await response.json();
+
         if (!response.ok) {
           throw new Error(result.message || 'Failed to update goal');
         }
+
         Alert.alert(
           'Success',
           `Daily goal updated to ${newGoal.toLocaleString()} steps!`,
           [{ text: 'OK' }]
         );
       }
-      // Update locally
+
       const updatedData = {
         ...localStepsData,
         dailyGoal: newGoal,
@@ -1340,13 +1501,15 @@ const StepsScreen = () => {
       setIsUpdatingGoal(false);
     }
   };
+
   const percentage = (localStepsData.currentSteps / localStepsData.dailyGoal) * 100;
+
   return (
     <SafeAreaView style={stylesTheme.container}>
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          paddingBottom: 20, // Extra bottom padding for small devices
+          paddingBottom: 20,
         }}
       >
         <Header
@@ -1367,6 +1530,7 @@ const StepsScreen = () => {
         <StepsChart isAuthenticated={isAuthenticated} token={token} />
         <BMICards />
       </ScrollView>
+
       {/* Settings Modal */}
       <Modal
         visible={settingsVisible}
@@ -1389,7 +1553,32 @@ const StepsScreen = () => {
                 </Text>
               </TouchableOpacity>
             </View>
+
             <View style={styles.modalBody}>
+              {/* Tracking Toggle */}
+              <View style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <Text style={[styles.settingLabel, { color: theme.text }]}>
+                    Enable Step Tracking
+                  </Text>
+                  <Text style={[styles.settingHint, { color: theme.textSecondary, marginTop: 4 }]}>
+                    {isTrackingEnabled
+                      ? 'Currently recording and syncing steps'
+                      : 'Tracking is paused - no data will be recorded'}
+                  </Text>
+                </View>
+                <Switch
+                  value={isTrackingEnabled}
+                  onValueChange={handleToggleTracking}
+                  trackColor={{ false: '#767577', true: theme.primary + '80' }}
+                  thumbColor={isTrackingEnabled ? theme.primary : '#f4f3f4'}
+                />
+              </View>
+
+              {/* Divider */}
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+              {/* Daily Goal */}
               <Text style={[styles.settingLabel, { color: theme.text }]}>
                 Daily Step Goal
               </Text>
@@ -1412,6 +1601,7 @@ const StepsScreen = () => {
               <Text style={[styles.settingHint, { color: theme.textSecondary }]}>
                 Set a daily step goal between 1,000 and 100,000 steps
               </Text>
+
               <TouchableOpacity
                 style={[
                   styles.updateButton,
@@ -1434,6 +1624,7 @@ const StepsScreen = () => {
     </SafeAreaView>
   );
 };
+
 // ============ STYLES ============
 const styles = StyleSheet.create({
   headerWrapper: {
@@ -1639,7 +1830,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-  // Missing styles for Settings Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1680,10 +1870,25 @@ const styles = StyleSheet.create({
   modalBody: {
     padding: 20,
   },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  settingInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
   settingLabel: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 16,
   },
   goalInput: {
     borderWidth: 1,
@@ -1702,6 +1907,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
+    marginTop: 8,
   },
   updateButtonText: {
     color: '#fff',
@@ -1709,4 +1915,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
 export default StepsScreen;
