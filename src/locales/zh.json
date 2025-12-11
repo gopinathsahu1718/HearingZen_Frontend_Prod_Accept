@@ -10,9 +10,9 @@
     "Backup & Restore": "备份与恢复",
     "Reminder": "提醒",
     "Every day": "每天",
-    "Dark Mode": "暗模式",
+    "Dark Mode": "深色模式",
     "Language options": "语言选项",
-    "Instructions": "说明",
+    "Instructions": "使用说明",
     "Feedback": "反馈",
     "Privacy policy": "隐私政策",
     "Help": "帮助",
@@ -38,9 +38,587 @@
     "language.mr": "Marathi",
     "language.bho": "Bhojpuri",
     "language.sa": "Sanskrit",
-    "Home": "主页",
+    "Home": "首页",
     "Steps": "步数",
-    "Dummy2": "虚拟2",
-    "Dummy3": "虚拟3",
-    "Profile": "个人资料"
+    "Weather": "天气",
+    "LMS": "课程",
+    "Profile": "个人资料",
+    "changePassword": {
+        "header": "修改\n密码",
+        "title": "修改密码",
+        "subtitle": "请输入当前密码并设置新的安全密码",
+        "currentPassword": "当前密码",
+        "currentPlaceholder": "请输入当前密码",
+        "newPassword": "新密码",
+        "newPlaceholder": "请输入新密码",
+        "confirmPassword": "确认新密码",
+        "confirmPlaceholder": "再次输入新密码",
+        "hint": "密码至少8位，必须包含大写字母、小写字母、数字和特殊字符。",
+        "button": "修改密码",
+        "error": "错误",
+        "fillAllFields": "请填写所有必填字段",
+        "passwordsDoNotMatch": "两次输入的密码不一致",
+        "newPasswordDifferent": "新密码必须与当前密码不同",
+        "success": "成功",
+        "passwordChanged": "密码修改成功"
+    },
+    "common": {
+        "ok": "确定",
+        "success": "成功",
+        "error": "错误",
+        "cancel": "取消"
+    },
+    "courses": {
+        "myProgress": "我的进度",
+        "courseCount": "{{count}} 个课程",
+        "lessonProgress": "{{completed}}/{{total}} 课时 • {{percentage}}%",
+        "recentEnrolled": "最近报名课程",
+        "performance": "学习表现",
+        "categoriesTitle": "课程分类",
+        "noCategories": "暂无分类",
+        "seeMore": "查看更多...",
+        "comingSoon": "即将上线",
+        "unknownAuthor": "未知作者",
+        "courses": "课程",
+        "lessonsCount_one": "1 课时",
+        "lessonsCount_other": "{{count}} 课时",
+        "enrolled": "已报名",
+        "notEnrolled": "未报名",
+        "free": "免费",
+        "loadingEnrollment": "正在加载报名状态...",
+        "noCourses": "暂无课程",
+        "noCoursesSubtext": "新课程即将推出，敬请期待！",
+        "descriptionTitle": "课程简介",
+        "whatYouLearnTitle": "你将学到什么",
+        "instructorTitle": "讲师",
+        "contentTitle": "课程内容",
+        "locked": "已锁定",
+        "enrollFree": "免费报名",
+        "enrollNow": "立即报名",
+        "subscribe": "订阅",
+        "loginToEnroll": "登录后报名",
+        "checkingPayment": "正在验证支付...",
+        "checkingStatus": "正在检查状态...",
+        "authRequiredTitle": "需要登录",
+        "authRequiredMessage": "请登录后报名此课程",
+        "freeEnrollmentMessage": "您已成功报名该课程！",
+        "enrollmentRequiredTitle": "需要报名",
+        "enrollmentRequiredMessage": "观看课程前需要先报名",
+        "paymentProcessingTitle": "支付处理中",
+        "paymentProcessingMessage": "正在验证您的支付，请稍后再试。",
+        "enrollError": "报名失败",
+        "verificationPendingTitle": "支付验证中",
+        "verificationPendingMessage": "正在处理您的支付，报名确认后会通知您。",
+        "enrollmentSuccessfulTitle": "报名成功！ 🎉",
+        "enrollmentSuccessfulMessage": "支付已确认，报名完成！",
+        "enrollmentSuccessMessage": "报名成功！",
+        "enrolledMessage": "您已报名此课程",
+        "goToCourse": "进入课程",
+        "noLessons": "暂无课时",
+        "myEnrollments": "我的课程",
+        "loginToViewEnrollments": "请登录查看已报名的课程",
+        "enrollmentsLoadError": "加载报名列表失败",
+        "noEnrollments": "您还没有报名任何课程",
+        "startLearning": "报名课程，开始学习吧",
+        "browseCourses": "浏览课程",
+        "learningJourney": "您的学习之旅",
+        "enrolledCourses_one": "已报名 1 个课程",
+        "enrolledCourses_other": "已报名 {{count}} 个课程",
+        "enrolledOn": "报名日期",
+        "progressCompleted": "{{total}} 个中已完成 {{completed}} 个",
+        "complete": "完成",
+        "enrollmentStatus": {
+            "active": "进行中",
+            "completed": "已完成",
+            "pending": "待处理"
+        },
+        "courseLoadError": "课程加载失败",
+        "by": "作者：",
+        "lessons": "课时",
+        "courseLessons": "课程课时",
+        "completedOfTotal": "{{total}} 个中已完成 {{completed}} 个",
+        "notStarted": "未开始",
+        "completed": "已完成"
+    },
+    "lessonPlayer": {
+        "courseLessons": "课程课时",
+        "previous": "上一课",
+        "lessons": "课时",
+        "next": "下一课",
+        "alreadyCompletedTitle": "已完成",
+        "alreadyCompletedMessage": "此课时已被标记为已完成",
+        "authRequiredTitle": "需要登录",
+        "authRequiredMessage": "请登录后才能将课时标记为已完成",
+        "successMessage": "已成功标记为完成！",
+        "errorMessage": "标记失败",
+        "courseProgressTitle": "课程进度",
+        "progressText": "{{total}} 个中已完成 {{completed}} 个 ({{percentage}}%)",
+        "completed": "已完成",
+        "notStarted": "未开始",
+        "playing": "播放中",
+        "lessonNumber": "第 {{current}} / {{total}} 课",
+        "markAsComplete": "标记为已完成",
+        "invalidVideoUrl": "无效的视频链接",
+        "url": "链接",
+        "expectedFormat": "正确格式：\nhttps://youtu.be/VIDEO_ID\n或\nhttps://www.youtube.com/watch?v=VIDEO_ID",
+        "openInYouTube": "在 YouTube 中打开",
+        "videoPlaybackError": "视频播放错误：{{error}}",
+        "videoEmbeddingRestricted": "视频嵌入受限，正在使用完整 YouTube 视图。"
+    },
+    "about": {
+        "headerTitle": "关于 {{appName}}",
+        "version": "版本 {{appVersion}}",
+        "ourMission": "我们的使命",
+        "missionDescription": "{{appName}} 为您提供卓越的听力健康体验而设计。我们始终致力于品质、性能和用户满意度。一起重新定义听力健康。",
+        "whyChooseUs": "为什么选择我们",
+        "features": {
+            "securePrivate": {
+                "title": "安全私密",
+                "description": "您的数据采用行业标准加密技术保护"
+            },
+            "userFocused": {
+                "title": "以用户为中心",
+                "description": "为您量身打造 — 直观设计，无缝体验"
+            },
+            "alwaysImproving": {
+                "title": "持续改进",
+                "description": "根据您的反馈定期推出新功能和优化"
+            }
+        },
+        "getInTouch": "联系我们",
+        "contacts": {
+            "email": {
+                "title": "邮箱支持"
+            },
+            "website": {
+                "title": "官方网站"
+            }
+        },
+        "tipText": "您的声音很重要！每一条建议都在帮助我们改善世界聆听的方式。",
+        "footerThankYou": "感谢您选择 {{appName}}",
+        "footerSubtext": "一起重新定义听力健康 💙"
+    },
+    "feedback": {
+        "headerTitle": "您的反馈对我们非常宝贵",
+        "headerSubtitle": "帮助我们把 HearingZen 做得更好",
+        "yourName": "您的姓名",
+        "namePlaceholder": "请输入姓名",
+        "rateExperience": "给您的体验打分",
+        "yourFeedback": "您的反馈",
+        "feedbackPlaceholder": "告诉我们您的使用感受...",
+        "submitButton": "提交反馈",
+        "incompleteTitle": "未完成",
+        "incompleteMessage": "提交前请填写所有字段并评分",
+        "thankYouTitle": "感谢您 💙",
+        "successMessage": "反馈提交成功（评分：{{rating}}/5）！",
+        "tipText": "您的声音很重要！每一条建议都在帮助我们改善世界聆听的方式。",
+        "footerThankYou": "感谢您选择 HearingZen",
+        "footerSubtext": "一起重新定义听力健康 💙"
+    },
+    "help": {
+        "tagline": "您的专属听力健康助手",
+        "badge": "帮助与支持",
+        "welcomeTitle": "我们随时为您提供帮助！ 👋",
+        "welcomeText": "查找常见问题答案、联系支持团队或浏览帮助资源。我们 24/7 在线为您服务。",
+        "contactUs": "联系我们",
+        "quickActions": [
+            {
+                "icon": "messageCircle",
+                "title": "在线聊天",
+                "description": "与支持团队聊天",
+                "color": "#10B981",
+                "action": "Alert.alert('在线聊天', '在线聊天功能即将推出！');"
+            },
+            {
+                "icon": "mail",
+                "title": "邮箱支持",
+                "description": "support@hearingzen.com",
+                "color": "#3B82F6",
+                "action": "Linking.openURL('mailto:support@hearingzen.com');"
+            },
+            {
+                "icon": "phone",
+                "title": "电话联系",
+                "description": "+1 (800) 123-4567",
+                "color": "#8B5CF6",
+                "action": "Linking.openURL('tel:+18001234567');"
+            }
+        ],
+        "faqTitle": "常见问题",
+        "faqSubtitle": "快速解答常见疑问",
+        "faqs": [
+            {
+                "question": "如何开始听力测试？",
+                "answer": "进入「听力测试」页面 → 在安静环境中佩戴耳机 → 点击「开始测试」→ 仔细跟随屏幕提示，听到声音时点击即可。"
+            },
+            {
+                "question": "为什么测试结果不准确？",
+                "answer": "请确保在安静房间、耳机正确连接、音量舒适。避免在嘈杂环境或移动中测试。"
+            },
+            {
+                "question": "没有耳机能用 HearingZen 吗？",
+                "answer": "精确听力测试必须使用耳机。但「声音增强」功能可通过手机扬声器或助听器使用。"
+            },
+            {
+                "question": "听力测试多久做一次合适？",
+                "answer": "建议每月测试一次以追踪变化。如有突然变化，请及时就医。"
+            },
+            {
+                "question": "我的听力数据安全吗？",
+                "answer": "是的，所有听力数据均在您的设备本地加密存储，未经您明确同意绝不与第三方共享。"
+            },
+            {
+                "question": "测试结果怎么解读？",
+                "answer": "显示您在不同频率的听力敏感度。数值越低越好。颜色说明：绿色（正常）、黄色（轻度损失）、橙色（中度）、红色（重度）"
+            },
+            {
+                "question": "HearingZen 可以替代专业听力检查吗？",
+                "answer": "不可以。HearingZen 仅用于监测和追踪，不作为医疗诊断的补充。确诊请务必咨询专业听力师或医生。"
+            },
+            {
+                "question": "如何校准声音增强器？",
+                "answer": "设置 → 声音增强器 → 校准 → 根据喜好调节增益、低音、高音。从低值开始逐步调整。"
+            }
+        ],
+        "helpTopicsTitle": "帮助主题",
+        "helpTopics": [
+            {
+                "icon": "settings",
+                "title": "开始使用",
+                "description": "设置与初始配置",
+                "color": "#F59E0B"
+            },
+            {
+                "icon": "bookOpen",
+                "title": "用户手册",
+                "description": "完整应用文档",
+                "color": "#06B6D4"
+            },
+            {
+                "icon": "shield",
+                "title": "隐私与安全",
+                "description": "我们如何保护您数据的方式",
+                "color": "#EC4899"
+            },
+            {
+                "icon": "alertCircle",
+                "title": "故障排除",
+                "description": "常见问题与解决方案",
+                "color": "#EF4444"
+            }
+        ],
+        "emergencyTitle": "医疗急症？",
+        "emergencyText": "如突然听力下降或出现严重症状，请立即就医。",
+        "footerSubtext": "一起重新定义听力健康 💙"
+    },
+    "instructions": {
+        "tagline": "您的专属听力健康助手",
+        "badge": "用户指南",
+        "welcomeTitle": "欢迎使用！ 👋",
+        "welcomeText": "这份指南将帮助您充分发挥 HearingZen 的功能。请按照以下简单步骤操作，改善您的听觉体验。",
+        "stepNumber": "步骤 {{number}}",
+        "sections": [
+            {
+                "icon": "🚀",
+                "title": "开始使用",
+                "steps": [
+                    "打开 HearingZen 应用并授予麦克风和蓝牙权限",
+                    "确保您的助听器或耳机正确连接",
+                    "通过简单设置流程个性化您的听力档案"
+                ]
+            },
+            {
+                "icon": "🎧",
+                "title": "听力测试",
+                "steps": [
+                    "从主菜单进入听力测试区域",
+                    "在安静环境下仔细跟随屏幕语音提示",
+                    "应用将立即测量并显示您的听力敏感度结果"
+                ]
+            },
+            {
+                "icon": "🔊",
+                "title": "声音增强器",
+                "steps": [
+                    "进入声音增强器以放大周围声音",
+                    "使用音量滑块安全调节增益",
+                    "长时间使用最大音量可能损伤听力"
+                ]
+            },
+            {
+                "icon": "📊",
+                "title": "听力健康追踪器",
+                "steps": [
+                    "在「追踪器」标签查看您的听力趋势与进度",
+                    "通过详细分析跟踪随时间的变化",
+                    "获取每日护耳小贴士和洞察"
+                ]
+            },
+            {
+                "icon": "💬",
+                "title": "支持",
+                "steps": [
+                    "访问「帮助与支持」查看常见问题和指南",
+                    "需要个性化帮助可直接联系我们的团队",
+                    "随时可查看视频教程和文档"
+                ]
+            }
+        ],
+        "tipsIcon": "💡",
+        "tipsTitle": "专业小贴士",
+        "tipsList": [
+            "• 为获得最准确结果，请在安静环境中使用耳机",
+            "• 长时间使用时请定期休息",
+            "• 每月更新一次听力档案可获得最佳效果"
+        ],
+        "footerThankYou": "感谢您选择 HearingZen",
+        "footerSubtext": "一起重新定义听力健康 💙",
+        "versionText": "版本 1.0.0"
+    },
+    "privacyPolicy": {
+        "headerTitle": "隐私政策",
+        "headerSubtitle": "您的隐私与信任是我们最重视的。",
+        "sections": {
+            "introduction": {
+                "title": "1. 引言",
+                "description": "欢迎使用 HearingZen！我们高度重视您的隐私，并致力于在使用应用期间保护您的个人数据。本政策说明我们如何收集、使用和保护信息的方式。"
+            },
+            "informationCollected": {
+                "title": "2. 收集的信息",
+                "description": "为提升您的听觉体验，我们会收集以下信息：",
+                "bullets": {
+                    "audioInput": "设备麦克风音频输入",
+                    "bluetoothData": "蓝牙及助听器连接数据",
+                    "profileInfo": "您自愿提供的个人档案信息",
+                    "usageStats": "匿名化的基础应用使用统计"
+                }
+            },
+            "howWeUse": {
+                "title": "3. 信息使用方式",
+                "description": "我们仅将您的数据用于提升和个性化您的听觉体验，具体包括：",
+                "bullets": {
+                    "calibrateProfile": "校准您的个人听力档案",
+                    "improveSound": "提升声音放大与清晰度",
+                    "provideAnalytics": "提供听力健康追踪分析",
+                    "communicateUpdates": "发送更新与建议（可选）"
+                }
+            },
+            "dataSecurity": {
+                "title": "4. 数据安全",
+                "description": "我们采用高级加密和本地存储技术，确保您的数据始终安全私密。HearingZen 绝不售卖或未经许可向第三方分享您的个人数据。"
+            },
+            "yourControl": {
+                "title": "5. 您的控制权",
+                "description": "您可随时在应用设置中查看、编辑或删除数据，也可随时关闭麦克风/蓝牙权限而不影响账户使用。"
+            },
+            "thirdParty": {
+                "title": "6. 第三方服务",
+                "description": "HearingZen 可能与可信第三方服务集成用于分析或云同步，所有服务均符合 GDPR 和隐私标准。"
+            },
+            "updates": {
+                "title": "7. 政策更新",
+                "description": "我们可能会因新功能或法律要求而不时更新本政策。重大变更将在应用内通知您。"
+            },
+            "contactUs": {
+                "title": "8. 联系我们",
+                "description": "如对本隐私政策有任何疑问，请随时联系我们："
+            }
+        },
+        "footer": {
+            "rightsReserved": "保留所有权利",
+            "subtext": "一起重新定义听力健康 💙"
+        }
+    },
+    "termsAndConditions": {
+        "headerTitle": "服务条款",
+        "lastUpdated": "最后更新：{{lastUpdated}}",
+        "welcome": "欢迎使用 {{appName}}",
+        "introText": "请在使用前仔细阅读本服务条款。这些条款规定了您使用 {{appName}} 时的权利与义务。",
+        "sections": [
+            {
+                "id": 1,
+                "icon": "📋",
+                "title": "1. 引言",
+                "content": "欢迎使用 HearingZen。使用本应用即表示您同意本服务条款。"
+            },
+            {
+                "id": 2,
+                "icon": "✅",
+                "title": "2. 使用",
+                "content": "您同意仅将应用用于合法目的，且不侵犯他人权利。"
+            },
+            {
+                "id": 3,
+                "icon": "🔒",
+                "title": "3. 隐私",
+                "content": "我们尊重您的隐私。请阅读隐私政策以了解我们如何收集和使用数据。"
+            },
+            {
+                "id": 4,
+                "icon": "⚠️",
+                "title": "4. 责任限制",
+                "content": "我们不对因使用应用而导致的任何直接、间接或意外损害承担责任。"
+            },
+            {
+                "id": 5,
+                "icon": "🔄",
+                "title": "5. 更新",
+                "content": "条款可能随时更新。继续使用即表示接受更新后的条款。"
+            }
+        ],
+        "noticeIcon": "⚠️",
+        "noticeTitle": "重要提示",
+        "noticeText": "继续使用 {{appName}} 即表示您已阅读、理解并同意本服务条款。",
+        "agreementText": "本文件是您与 {{appName}} 之间的具有法律约束力的协议。如有疑问，请联系支持团队。",
+        "footerThankYou": "感谢您选择 {{appName}}",
+        "footerSubtext": "一起重新定义听力健康 💙"
+    },
+    "profile": {
+        "editProfile": "编辑资料",
+        "yourName": "您的姓名",
+        "username": "用户名",
+        "contactDetails": "联系方式",
+        "healthCard": "健康卡",
+        "fullName": "姓名",
+        "phone": "手机号码",
+        "email": "邮箱",
+        "location": "位置",
+        "height": "身高 (厘米或英尺)",
+        "heightPlaceholder": "例如 170 或 5.7",
+        "weight": "体重 (公斤)",
+        "weightPlaceholder": "例如 70",
+        "gender": "性别",
+        "genderMale": "男",
+        "genderFemale": "女",
+        "genderOther": "其他",
+        "genderSpecify": "请说明",
+        "genderSpecifyPlaceholder": "例如 非二元",
+        "age": "年龄",
+        "agePlaceholder": "例如 25",
+        "deafnessLevel": "听力损失程度",
+        "deafnessLevelPlaceholder": "例如 无、轻度、中度、重度",
+        "disabilityPercentage": "残疾百分比",
+        "disabilityPercentagePlaceholder": "例如 0-100",
+        "saveChanges": "保存更改",
+        "loadErrorTitle": "错误",
+        "loadErrorMessage": "加载资料失败",
+        "successTitle": "✅ 成功",
+        "successMessage": "资料更新成功！",
+        "saveError": "保存资料失败",
+        "myProfile": "我的资料",
+        "noName": "未填写姓名",
+        "notSet": "未设置",
+        "kg": "公斤",
+        "years": "岁",
+        "none": "none",
+        "loadError": "加载资料失败",
+        "retry": "重试",
+        "logout": "退出登录",
+        "logoutTitle": "退出",
+        "logoutMessage": "确定要退出登录吗？",
+        "logoutSuccess": "已成功退出",
+        "authRequiredTitle": "需要登录",
+        "authRequiredMessage": "请登录后使用此功能",
+        "googleAccount": "Google 账户",
+        "googleAccountDescription": "绑定 Google 账户实现快速登录",
+        "linked": "已绑定",
+        "notLinked": "未绑定",
+        "link": "绑定",
+        "unlink": "解除绑定",
+        "unlinkGoogleTitle": "解除 Google 绑定",
+        "unlinkGoogleMessage": "确定要解除 Google 账户绑定吗？",
+        "linkSuccess": "Google 账户绑定成功",
+        "unlinkSuccess": "已解除 Google 账户绑定",
+        "selectLanguage": "选择语言",
+        "version": "版本"
+    },
+    "login": {
+        "title": "登录",
+        "emailLabel": "邮箱",
+        "emailPlaceholder": "请输入您的邮箱",
+        "passwordLabel": "密码",
+        "passwordPlaceholder": "请输入您的密码",
+        "forgotPassword": "忘记密码？",
+        "loginButton": "登录",
+        "or": "或",
+        "signUpLink": "没有账户？立即注册",
+        "loginFailed": "登录失败",
+        "googleSignInFailed": "Google 登录失败"
+    },
+    "forgotPassword": {
+        "headerText": "忘记\n密码",
+        "title": "重置密码",
+        "subtitle": "输入您的邮箱，我们将发送验证码用于重置密码",
+        "emailPlaceholder": "邮箱",
+        "sendOTP": "发送验证码",
+        "backToLogin": "返回登录",
+        "error": "错误",
+        "enterEmail": "请输入邮箱"
+    },
+    "resetPassword": {
+        "headerText": "新\n密码",
+        "title": "创建新密码",
+        "subtitle": "新密码必须与旧密码不同",
+        "newPassword": "新密码",
+        "newPasswordPlaceholder": "输入新密码",
+        "confirmPassword": "确认密码",
+        "confirmPasswordPlaceholder": "再次输入新密码",
+        "hint": "至少8位，需包含大小写字母、数字、特殊字符",
+        "button": "重置密码",
+        "error": "错误",
+        "passwordsDoNotMatch": "两次密码不一致",
+        "passwordTooShort": "密码至少需8位",
+        "success": "成功",
+        "successMessage": "密码重置成功！"
+    },
+    "otp": {
+        "headerText": "验证",
+        "title": "输入验证码",
+        "subtitle": "我们已发送验证码\n到您的邮箱",
+        "verifyEmail": "验证邮箱",
+        "didntReceiveCode": "未收到验证码？",
+        "resendOTP": "重新发送验证码",
+        "resendCountdown": "{{countdown}} 秒后可重新发送",
+        "error": "错误",
+        "completeOTP": "请输入完整的验证码",
+        "success": "成功",
+        "successMessage": "邮箱验证成功！",
+        "verificationFailed": "验证失败",
+        "resendSuccess": "验证码重新发送成功！"
+    },
+    "resetPasswordOTP": {
+        "headerText": "重置\n密码",
+        "title": "输入验证码",
+        "subtitle": "我们已发送验证码\n到您的邮箱",
+        "verifyOTP": "验证验证码",
+        "didntReceiveCode": "未收到验证码？",
+        "resendOTP": "重新发送验证码",
+        "resendCountdown": "{{countdown}} 秒后可重新发送",
+        "error": "错误",
+        "completeOTP": "请输入完整的验证码",
+        "verificationFailed": "验证失败",
+        "success": "成功",
+        "resendSuccess": "验证码重新发送成功！"
+    },
+    "signup": {
+        "headerText": "注册",
+        "fullName": "姓名",
+        "fullNamePlaceholder": "姓名",
+        "email": "邮箱",
+        "emailPlaceholder": "邮箱",
+        "contact": "联系电话",
+        "contactPlaceholder": "联系电话",
+        "password": "密码",
+        "passwordPlaceholder": "密码",
+        "signUpButton": "注册",
+        "or": "或",
+        "loginLink": "已有账户？立即登录",
+        "verifyEmail": "已有账户？验证邮箱",
+        "verifyEmailTitle": "验证邮箱",
+        "verifyEmailPlaceholder": "输入您的邮箱",
+        "verify": "验证",
+        "registrationFailed": "注册失败",
+        "enterEmail": "请输入邮箱",
+        "googleSignInFailed": "Google 登录失败"
+    }
 }

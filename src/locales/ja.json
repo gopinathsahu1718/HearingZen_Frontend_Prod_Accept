@@ -1,18 +1,18 @@
 {
     "PROFILE": "プロフィール",
-    "Achievements": "実績",
+    "Achievements": "達成項目",
     "Login": "ログイン",
     "Signup": "サインアップ",
     "Personal information": "個人情報",
-    "Metric & Imperial Units, Step length, Gender": "メートル法とインペリアル単位、歩幅、性別",
+    "Metric & Imperial Units, Step length, Gender": "メートル法・ヤードポンド法、歩幅、性別",
     "Step Goal": "歩数目標",
-    "Daily step target": "毎日の歩数目標",
+    "Daily step target": "1日の歩数目標",
     "Backup & Restore": "バックアップと復元",
     "Reminder": "リマインダー",
     "Every day": "毎日",
     "Dark Mode": "ダークモード",
-    "Language options": "言語オプション",
-    "Instructions": "説明",
+    "Language options": "言語設定",
+    "Instructions": "使い方",
     "Feedback": "フィードバック",
     "Privacy policy": "プライバシーポリシー",
     "Help": "ヘルプ",
@@ -40,7 +40,585 @@
     "language.sa": "Sanskrit",
     "Home": "ホーム",
     "Steps": "歩数",
-    "Dummy2": "ダミー2",
-    "Dummy3": "ダミー3",
-    "Profile": "プロフィール"
+    "Weather": "天気",
+    "LMS": "コース",
+    "Profile": "プロフィール",
+    "changePassword": {
+        "header": "パスワードを変更",
+        "title": "パスワード変更",
+        "subtitle": "現在のパスワードを入力し、新しい安全なパスワードを選択してください",
+        "currentPassword": "現在のパスワード",
+        "currentPlaceholder": "現在のパスワードを入力",
+        "newPassword": "新しいパスワード",
+        "newPlaceholder": "新しいパスワードを入力",
+        "confirmPassword": "新しいパスワード（確認）",
+        "confirmPlaceholder": "新しいパスワードを再入力",
+        "hint": "パスワードは8文字以上で、大文字、小文字、数字、特殊文字を含める必要があります。",
+        "button": "パスワードを変更",
+        "error": "エラー",
+        "fillAllFields": "すべての必須項目を入力してください",
+        "passwordsDoNotMatch": "新しいパスワードと確認用パスワードが一致しません。",
+        "newPasswordDifferent": "新しいパスワードは現在のパスワードと異なる必要があります。",
+        "success": "成功",
+        "passwordChanged": "パスワードが正常に変更されました"
+    },
+    "common": {
+        "ok": "OK",
+        "success": "成功",
+        "error": "エラー",
+        "cancel": "キャンセル"
+    },
+    "courses": {
+        "myProgress": "マイプログレス",
+        "courseCount": "{{count}} コース",
+        "lessonProgress": "{{completed}}/{{total}} レッスン • {{percentage}}%",
+        "recentEnrolled": "最近登録したコース",
+        "performance": "パフォーマンス",
+        "categoriesTitle": "コースカテゴリ",
+        "noCategories": "カテゴリがありません。",
+        "seeMore": "もっと見る...",
+        "comingSoon": "近日公開",
+        "unknownAuthor": "不明な著者",
+        "courses": "コース",
+        "lessonsCount_one": "1レッスン",
+        "lessonsCount_other": "{{count}}レッスン",
+        "enrolled": "登録済み",
+        "notEnrolled": "未登録",
+        "free": "無料",
+        "loadingEnrollment": "登録状況を読み込んでいます...",
+        "noCourses": "まだコースがありません",
+        "noCoursesSubtext": "新しいコースを楽しみにお待ちください！",
+        "descriptionTitle": "コース概要",
+        "whatYouLearnTitle": "学べること",
+        "instructorTitle": "講師",
+        "contentTitle": "コース内容",
+        "locked": "ロック中",
+        "enrollFree": "無料登録",
+        "enrollNow": "今すぐ登録",
+        "subscribe": "購読する",
+        "loginToEnroll": "ログインして登録",
+        "checkingPayment": "支払いを確認中...",
+        "checkingStatus": "ステータスを確認中...",
+        "authRequiredTitle": "認証が必要です",
+        "authRequiredMessage": "このコースに登録するにはログインしてください",
+        "freeEnrollmentMessage": "このコースに登録されました！",
+        "enrollmentRequiredTitle": "登録が必要です",
+        "enrollmentRequiredMessage": "レッスンにアクセスするにはこのコースに登録する必要があります",
+        "paymentProcessingTitle": "支払い処理中",
+        "paymentProcessingMessage": "支払いを確認しています。しばらくしてから再度ご確認ください。",
+        "enrollError": "登録処理に失敗しました",
+        "verificationPendingTitle": "確認待ち",
+        "verificationPendingMessage": "支払いを処理中です。登録が確認され次第お知らせします。",
+        "enrollmentSuccessfulTitle": "登録完了！🎉",
+        "enrollmentSuccessfulMessage": "支払いが確認され、登録が完了しました！",
+        "enrollmentSuccessMessage": "登録が完了しました！",
+        "enrolledMessage": "このコースに登録されています",
+        "goToCourse": "コースへ移動",
+        "noLessons": "まだレッスンがありません",
+        "myEnrollments": "マイ登録コース",
+        "loginToViewEnrollments": "登録状況を見るにはログインしてください",
+        "enrollmentsLoadError": "登録情報の読み込みに失敗しました",
+        "noEnrollments": "まだ登録しているコースはありません",
+        "startLearning": "コースに登録して学習を始めましょう",
+        "browseCourses": "コースを閲覧",
+        "learningJourney": "あなたの学習の旅",
+        "enrolledCourses_one": "1コース登録済み",
+        "enrolledCourses_other": "{{count}}コース登録済み",
+        "enrolledOn": "登録日",
+        "progressCompleted": "{{total}}レッスン中{{completed}}完了",
+        "complete": "完了",
+        "enrollmentStatus": {
+            "active": "アクティブ",
+            "completed": "完了",
+            "pending": "保留中"
+        },
+        "courseLoadError": "コースの読み込みに失敗しました",
+        "by": "講師：",
+        "lessons": "レッスン",
+        "courseLessons": "コースレッスン",
+        "completedOfTotal": "{{total}}中{{completed}}完了",
+        "notStarted": "未開始",
+        "completed": "完了"
+    },
+    "lessonPlayer": {
+        "courseLessons": "コースレッスン",
+        "previous": "前へ",
+        "lessons": "レッスン",
+        "next": "次へ",
+        "alreadyCompletedTitle": "既に完了",
+        "alreadyCompletedMessage": "このレッスンは既に完了済みとしてマークされています",
+        "authRequiredTitle": "認証が必要です",
+        "authRequiredMessage": "レッスンを完了にするにはログインしてください",
+        "successMessage": "レッスンが完了としてマークされました！",
+        "errorMessage": "レッスンを完了にできませんでした",
+        "courseProgressTitle": "コース進捗",
+        "progressText": "{{total}}レッスン中{{completed}}完了（{{percentage}}%)",
+        "completed": "完了",
+        "notStarted": "未開始",
+        "playing": "再生中",
+        "lessonNumber": "{{total}}中{{current}}番目のレッスン",
+        "markAsComplete": "完了にする",
+        "invalidVideoUrl": "無効な動画URL",
+        "url": "URL",
+        "expectedFormat": "期待される形式：\nhttps://youtu.be/VIDEO_ID\nまたは\nhttps://www.youtube.com/watch?v=VIDEO_ID",
+        "openInYouTube": "YouTubeで開く",
+        "videoPlaybackError": "動画再生エラー: {{error}}",
+        "videoEmbeddingRestricted": "動画の埋め込みが制限されています。全画面YouTubeビューを使用します。"
+    },
+    "about": {
+        "headerTitle": "{{appName}} について",
+        "version": "バージョン {{appVersion}}",
+        "ourMission": "私たちのミッション",
+        "missionDescription": "{{appName}}は、優れた聴覚ウェルネス体験を提供するために設計されています。品質、パフォーマンス、ユーザー満足をあらゆる面でお届けすることをお約束します。一緒に、聴覚ウェルネスを再定義しましょう。",
+        "whyChooseUs": "私たちを選ぶ理由",
+        "features": {
+            "securePrivate": {
+                "title": "安全・プライベート",
+                "description": "データは業界標準のセキュリティ対策で暗号化・保護されています。"
+            },
+            "userFocused": {
+                "title": "ユーザー中心",
+                "description": "直感的なデザインとシームレスな機能であなたのために作られています。"
+            },
+            "alwaysImproving": {
+                "title": "常に改善中",
+                "description": "ご意見をもとに新しい機能や改善を定期的に提供します。"
+            }
+        },
+        "getInTouch": "お問い合わせ",
+        "contacts": {
+            "email": {
+                "title": "メールサポート"
+            },
+            "website": {
+                "title": "ウェブサイト"
+            }
+        },
+        "tipText": "あなたの声が大切です！世界の聞き方を改善するすべてのご提案が助けになります。🌍",
+        "footerThankYou": "{{appName}} をご利用いただきありがとうございます。",
+        "footerSubtext": "一緒に、聴覚ウェルネスを再定義しましょう。💙"
+    },
+    "feedback": {
+        "headerTitle": "ご意見をお聞かせください",
+        "headerSubtitle": "HearingZenをもっと良くするためにご協力ください。",
+        "yourName": "お名前",
+        "namePlaceholder": "お名前を入力",
+        "rateExperience": "体験を評価",
+        "yourFeedback": "ご意見",
+        "feedbackPlaceholder": "ご体験についてお聞かせください...",
+        "submitButton": "フィードバックを送信",
+        "incompleteTitle": "未完了",
+        "incompleteMessage": "送信前にすべての項目を入力し、評価をお願いします。",
+        "thankYouTitle": "ありがとうございます 💙",
+        "successMessage": "ご意見（評価: {{rating}}/5）を送信しました！",
+        "tipText": "あなたの声が大切です！世界の聞き方を改善するすべてのご提案が助けになります。🌍",
+        "footerThankYou": "HearingZenをご利用いただきありがとうございます。",
+        "footerSubtext": "一緒に、聴覚ウェルネスを再定義しましょう。💙"
+    },
+    "help": {
+        "tagline": "あなたの個人聴覚パートナー",
+        "badge": "ヘルプ＆サポート",
+        "welcomeTitle": "お困りごとはございませんか？👋",
+        "welcomeText": "よくある質問への回答やサポートチームへの連絡、ヘルプリソースをご覧いただけます。24時間365日対応しております。",
+        "contactUs": "お問い合わせ",
+        "quickActions": [
+            {
+                "icon": "messageCircle",
+                "title": "ライブチャット",
+                "description": "サポートチームとチャット",
+                "color": "#10B981",
+                "action": "Alert.alert('ライブチャット', 'ライブチャット機能は近日公開予定です！');"
+            },
+            {
+                "icon": "mail",
+                "title": "メールサポート",
+                "description": "support@hearingzen.com",
+                "color": "#3B82F6",
+                "action": "Linking.openURL('mailto:support@hearingzen.com');"
+            },
+            {
+                "icon": "phone",
+                "title": "電話する",
+                "description": "+1 (800) 123-4567",
+                "color": "#8B5CF6",
+                "action": "Linking.openURL('tel:+18001234567');"
+            }
+        ],
+        "faqTitle": "よくある質問",
+        "faqSubtitle": "一般的な質問へのクイック回答",
+        "faqs": [
+            {
+                "question": "聴力テストはどうやって始めますか？",
+                "answer": "聴力テストタブに移動し、静かな環境でヘッドホンを装着し、「テスト開始」をタップしてください。画面の指示に従い、音が聞こえたらタップしてください。"
+            },
+            {
+                "question": "正確な結果が出ません。",
+                "answer": "静かな部屋で、ヘッドホンが正しく接続され、快適な音量に設定されていることを確認してください。騒音のある場所や移動中はテストを避けてください。"
+            },
+            {
+                "question": "ヘッドホンなしでHearingZenは使えますか？",
+                "answer": "正確な聴力テストにはヘッドホンが必要です。ただし、サウンドアンプ機能は端末の内蔵スピーカーや補聴器でも使用可能です。"
+            },
+            {
+                "question": "聴力テストはどのくらいの頻度で受けるべきですか？",
+                "answer": "聴力の変化を追跡するため、月に1回のテストをお勧めします。急な変化を感じた場合は医療専門家にご相談ください。"
+            },
+            {
+                "question": "聴力データは安全ですか？",
+                "answer": "はい。すべての聴力データは暗号化され、端末内に安全に保存されます。明示的な同意なしに第三者に共有することはありません。"
+            },
+            {
+                "question": "テスト結果の見方は？",
+                "answer": "周波数ごとの聴覚感度を示します。数値が低いほど良好です。色分け：緑（正常）、黄（軽度）、橙（中度）、赤（重度）。"
+            },
+            {
+                "question": "HearingZenは専門の聴力検査の代わりになりますか？",
+                "answer": "いいえ。モニタリング・追跡用であり、医療診断ではありません。医療相談は必ず専門医へ。"
+            },
+            {
+                "question": "サウンドアンプのキャリブレーション方法は？",
+                "answer": "設定 → サウンドアンプ → キャリブレーションへ。ゲイン・低音・高音を好みに調整してください。低めから始めて徐々に上げてください。"
+            }
+        ],
+        "helpTopicsTitle": "ヘルプトピック",
+        "helpTopics": [
+            {
+                "icon": "settings",
+                "title": "はじめに",
+                "description": "セットアップと初期設定",
+                "color": "#F59E0B"
+            },
+            {
+                "icon": "bookOpen",
+                "title": "ユーザーガイド",
+                "description": "アプリ完全マニュアル",
+                "color": "#06B6D4"
+            },
+            {
+                "icon": "shield",
+                "title": "プライバシー＆セキュリティ",
+                "description": "データ保護について",
+                "color": "#EC4899"
+            },
+            {
+                "icon": "alertCircle",
+                "title": "トラブルシューティング",
+                "description": "よくある問題と解決法",
+                "color": "#EF4444"
+            }
+        ],
+        "emergencyTitle": "医療緊急時？",
+        "emergencyText": "急な聴力低下や重い症状がある場合は、すぐに医療機関へご連絡ください。",
+        "footerSubtext": "一緒に、聴覚ウェルネスを再定義しましょう。💙"
+    },
+    "instructions": {
+        "tagline": "あなたの個人聴覚パートナー",
+        "badge": "ユーザーガイド",
+        "welcomeTitle": "ようこそ！👋",
+        "welcomeText": "このガイドでHearingZenを最大限にご活用ください。簡単なステップで聴覚体験を向上させましょう。",
+        "stepNumber": "ステップ {{number}}",
+        "sections": [
+            {
+                "icon": "🚀",
+                "title": "はじめに",
+                "steps": [
+                    "HearingZenアプリを開き、マイクとBluetoothの権限を許可してください",
+                    "補聴器またはヘッドホンが正しく接続されていることを確認してください",
+                    "簡単なセットアップで聴覚プロファイルをパーソナライズします"
+                ]
+            },
+            {
+                "icon": "🎧",
+                "title": "聴力テスト",
+                "steps": [
+                    "メインメニューから聴力テストへ",
+                    "静かな環境で画面の音声指示に従ってください",
+                    "アプリが即座に感度を測定し結果を表示します"
+                ]
+            },
+            {
+                "icon": "🔊",
+                "title": "サウンドアンプ",
+                "steps": [
+                    "サウンドアンプにアクセスして周囲の音を増幅",
+                    "音量スライダーで安全に調整してください",
+                    "長時間の最大音量は耳を傷つける恐れがあります"
+                ]
+            },
+            {
+                "icon": "📊",
+                "title": "聴覚健康トラッカー",
+                "steps": [
+                    "トラッカータブで傾向と進捗を確認",
+                    "詳細な分析で経時的な改善を追跡",
+                    "耳の健康維持のための毎日のヒントを受け取れます"
+                ]
+            },
+            {
+                "icon": "💬",
+                "title": "サポート",
+                "steps": [
+                    "ヘルプ＆サポートでFAQやガイドをご覧ください",
+                    "個別サポートはチームへ直接お問い合わせ",
+                    "ビデオチュートリアルやドキュメントはいつでも参照可能"
+                ]
+            }
+        ],
+        "tipsIcon": "💡",
+        "tipsTitle": "プロのヒント",
+        "tipsList": [
+            "• 正確な結果を得るには静かな場所でヘッドホンを使用",
+            "• 長時間使用時は定期的に休憩を",
+            "• 最高の結果のために毎月プロファイルを更新"
+        ],
+        "footerThankYou": "HearingZenをご利用いただきありがとうございます",
+        "footerSubtext": "一緒に、聴覚ウェルネスを再定義しましょう。💙",
+        "versionText": "バージョン 1.0.0"
+    },
+    "privacyPolicy": {
+        "headerTitle": "プライバシーポリシー",
+        "headerSubtitle": "あなたのプライバシーと信頼が私たちの最優先事項です。",
+        "sections": {
+            "introduction": {
+                "title": "1. はじめに",
+                "description": "HearingZenへようこそ！私たちはあなたのプライバシーを大切にし、個人データの保護に全力を尽くしています。このポリシーでは、アプリ使用時に情報をどのように収集・利用・保護するかをご説明します。"
+            },
+            "informationCollected": {
+                "title": "2. 収集する情報",
+                "description": "聴覚体験向上のために以下の情報を収集します：",
+                "bullets": {
+                    "audioInput": "端末マイクからの音声入力",
+                    "bluetoothData": "Bluetoothおよび補聴器接続データ",
+                    "profileInfo": "任意で提供されたプロファイル情報",
+                    "usageStats": "基本的な匿名利用統計"
+                }
+            },
+            "howWeUse": {
+                "title": "3. 情報の利用方法",
+                "description": "データは聴覚体験の向上とパーソナライズにのみ使用されます。具体的には：",
+                "bullets": {
+                    "calibrateProfile": "個人聴覚プロファイルの調整",
+                    "improveSound": "音声増幅と明瞭度の向上",
+                    "provideAnalytics": "聴覚健康トラッキングのための分析",
+                    "communicateUpdates": "アップデートやヒントの通知（任意）"
+                }
+            },
+            "dataSecurity": {
+                "title": "4. データセキュリティ",
+                "description": "高度な暗号化とローカル保存により、情報は常に安全です。HearingZenは個人データを第三者に販売・共有しません。"
+            },
+            "yourControl": {
+                "title": "5. あなたのコントロール",
+                "description": "設定からいつでもデータの確認・編集・削除が可能です。マイク・Bluetooth権限も自由に無効化できます。"
+            },
+            "thirdParty": {
+                "title": "6. 第三者サービス",
+                "description": "分析やクラウド同期のために安全な第三者サービスと連携する場合があります（GDPR準拠）。"
+            },
+            "updates": {
+                "title": "7. ポリシーの更新",
+                "description": "新機能や法改正に伴いポリシーを更新する場合があります。変更時はアプリ内で通知します。"
+            },
+            "contactUs": {
+                "title": "8. お問い合わせ",
+                "description": "本ポリシーに関するご質問はこちらまで："
+            }
+        },
+        "footer": {
+            "rightsReserved": "全著作権所有。",
+            "subtext": "一緒に、聴覚ウェルネスを再定義しましょう。💙"
+        }
+    },
+    "termsAndConditions": {
+        "headerTitle": "利用規約",
+        "lastUpdated": "最終更新日: {{lastUpdated}}",
+        "welcome": "{{appName}} へようこそ",
+        "introText": "アプリご利用前に本利用規約をよくお読みください。これらの規約は{{appName}}ご利用時の権利と責任を定めています。",
+        "sections": [
+            {
+                "id": 1,
+                "icon": "📋",
+                "title": "1. はじめに",
+                "content": "HearingZenへようこそ。アプリのご利用により、本規約に同意したものとみなされます。"
+            },
+            {
+                "id": 2,
+                "icon": "✅",
+                "title": "2. 利用",
+                "content": "違法な目的や他者の権利を侵害する方法での利用は禁止されています。"
+            },
+            {
+                "id": 3,
+                "icon": "🔒",
+                "title": "3. プライバシー",
+                "content": "プライバシーを尊重します。データ収集・利用についてはプライバシーポリシーをご覧ください。"
+            },
+            {
+                "id": 4,
+                "icon": "⚠️",
+                "title": "4. 責任の制限",
+                "content": "アプリ利用により生じた直接・間接的な損害について当社は責任を負いません。"
+            },
+            {
+                "id": 5,
+                "icon": "🔄",
+                "title": "5. 更新",
+                "content": "規約は随時変更されることがあります。継続利用により変更に同意したものとみなされます。"
+            }
+        ],
+        "noticeIcon": "⚠️",
+        "noticeTitle": "重要なお知らせ",
+        "noticeText": "{{appName}}の継続利用により、本利用規約を読み、理解し、同意したものとみなされます。",
+        "agreementText": "本規約はあなたと{{appName}}との法的拘束力のある契約です。ご質問があればサポートチームまでお問い合わせください。",
+        "footerThankYou": "{{appName}} をご利用いただきありがとうございます。",
+        "footerSubtext": "一緒に、聴覚ウェルネスを再定義しましょう。💙"
+    },
+    "profile": {
+        "editProfile": "プロフィールを編集",
+        "yourName": "あなたの名前",
+        "username": "ユーザー名",
+        "contactDetails": "連絡先詳細",
+        "healthCard": "健康カード",
+        "fullName": "フルネーム",
+        "phone": "電話番号",
+        "email": "メールアドレス",
+        "location": "場所",
+        "height": "身長（cmまたはフィート）",
+        "heightPlaceholder": "例: 170 または 5.7",
+        "weight": "体重（kg）",
+        "weightPlaceholder": "例: 70",
+        "gender": "性別",
+        "genderMale": "男性",
+        "genderFemale": "女性",
+        "genderOther": "その他",
+        "genderSpecify": "指定してください",
+        "genderSpecifyPlaceholder": "例: ノンバイナリー",
+        "age": "年齢",
+        "agePlaceholder": "例: 25",
+        "deafnessLevel": "難聴レベル",
+        "deafnessLevelPlaceholder": "例: なし、軽度、中度、重度",
+        "disabilityPercentage": "障害割合",
+        "disabilityPercentagePlaceholder": "例: 0-100",
+        "saveChanges": "変更を保存",
+        "loadErrorTitle": "エラー",
+        "loadErrorMessage": "プロフィールデータの読み込みに失敗しました",
+        "successTitle": "✅ 成功",
+        "successMessage": "プロフィールが正常に更新されました！",
+        "saveError": "プロフィールの更新に失敗しました",
+        "myProfile": "マイプロフィール",
+        "noName": "名前なし",
+        "notSet": "未設定",
+        "kg": "kg",
+        "years": "歳",
+        "none": "なし",
+        "loadError": "プロフィールの読み込みに失敗",
+        "retry": "再試行",
+        "logout": "ログアウト",
+        "logoutTitle": "ログアウト",
+        "logoutMessage": "ログアウトしてもよろしいですか？",
+        "logoutSuccess": "ログアウトしました",
+        "authRequiredTitle": "認証が必要です",
+        "authRequiredMessage": "この機能を利用するにはログインしてください",
+        "googleAccount": "Googleアカウント",
+        "googleAccountDescription": "簡単サインインのためにGoogleアカウントを連携",
+        "linked": "連携済み",
+        "notLinked": "未連携",
+        "link": "連携",
+        "unlink": "連携解除",
+        "unlinkGoogleTitle": "Google連携解除",
+        "unlinkGoogleMessage": "Googleアカウントの連携を解除しますか？",
+        "linkSuccess": "Googleアカウントを連携しました",
+        "unlinkSuccess": "Googleアカウントの連携を解除しました",
+        "selectLanguage": "言語を選択",
+        "version": "バージョン"
+    },
+    "login": {
+        "title": "ログイン",
+        "emailLabel": "メールアドレス",
+        "emailPlaceholder": "メールアドレスを入力",
+        "passwordLabel": "パスワード",
+        "passwordPlaceholder": "パスワードを入力",
+        "forgotPassword": "パスワードを忘れた方",
+        "loginButton": "ログイン",
+        "or": "または",
+        "signUpLink": "アカウントをお持ちでない方はこちら",
+        "loginFailed": "ログインに失敗しました",
+        "googleSignInFailed": "Googleログインに失敗しました"
+    },
+    "forgotPassword": {
+        "headerText": "パスワードを\n忘れた場合",
+        "title": "パスワードリセット",
+        "subtitle": "メールアドレスを入力すると、パスワードリセット用のOTPを送信します",
+        "emailPlaceholder": "メールアドレス",
+        "sendOTP": "OTPを送信",
+        "backToLogin": "ログインに戻る",
+        "error": "エラー",
+        "enterEmail": "メールアドレスを入力してください"
+    },
+    "resetPassword": {
+        "headerText": "新しい\nパスワード",
+        "title": "新しいパスワードを作成",
+        "subtitle": "新しいパスワードは以前と異なるものにしてください",
+        "newPassword": "新しいパスワード",
+        "newPasswordPlaceholder": "新しいパスワードを入力",
+        "confirmPassword": "パスワード確認",
+        "confirmPasswordPlaceholder": "新しいパスワードを再入力",
+        "hint": "8文字以上で大文字・小文字・数字・特殊文字を含めてください",
+        "button": "パスワードをリセット",
+        "error": "エラー",
+        "passwordsDoNotMatch": "パスワードが一致しません",
+        "passwordTooShort": "パスワードは8文字以上である必要があります",
+        "success": "成功",
+        "successMessage": "パスワードが正常にリセットされました！"
+    },
+    "otp": {
+        "headerText": "認証",
+        "title": "OTPを入力",
+        "subtitle": "認証コードを送信しました\n",
+        "verifyEmail": "メール認証",
+        "didntReceiveCode": "コードが届かない場合",
+        "resendOTP": "OTPを再送信",
+        "resendCountdown": "{{countdown}}秒後に再送信",
+        "error": "エラー",
+        "completeOTP": "完全なOTPを入力してください",
+        "success": "成功",
+        "successMessage": "メールが正常に認証されました！",
+        "verificationFailed": "認証に失敗しました",
+        "resendSuccess": "OTPを再送信しました！"
+    },
+    "resetPasswordOTP": {
+        "headerText": "パスワード\nリセット",
+        "title": "OTPを入力",
+        "subtitle": "認証コードを送信しました\n",
+        "verifyOTP": "OTP認証",
+        "didntReceiveCode": "コードが届かない場合",
+        "resendOTP": "OTPを再送信",
+        "resendCountdown": "{{countdown}}秒後に再送信",
+        "error": "エラー",
+        "completeOTP": "完全なOTPを入力してください",
+        "verificationFailed": "認証に失敗しました",
+        "success": "成功",
+        "resendSuccess": "OTPを再送信しました！"
+    },
+    "signup": {
+        "headerText": "サインアップ",
+        "fullName": "フルネーム",
+        "fullNamePlaceholder": "フルネーム",
+        "email": "メールアドレス",
+        "emailPlaceholder": "メールアドレス",
+        "contact": "連絡先番号",
+        "contactPlaceholder": "連絡先番号",
+        "password": "パスワード",
+        "passwordPlaceholder": "パスワード",
+        "signUpButton": "サインアップ",
+        "or": "または",
+        "loginLink": "既に登録済みの方はこちら",
+        "verifyEmail": "既に登録済み？メール認証",
+        "verifyEmailTitle": "メール認証",
+        "verifyEmailPlaceholder": "メールアドレスを入力",
+        "verify": "認証",
+        "registrationFailed": "登録に失敗しました",
+        "enterEmail": "メールアドレスを入力してください",
+        "googleSignInFailed": "Googleログインに失敗しました"
+    }
 }

@@ -1,11 +1,11 @@
 {
-    "PROFILE": "PERFIL",
+    "PROFILE": "Perfil",
     "Achievements": "Logros",
     "Login": "Iniciar sesión",
     "Signup": "Registrarse",
     "Personal information": "Información personal",
-    "Metric & Imperial Units, Step length, Gender": "Unidades métricas e imperiales, longitud de paso, género",
-    "Step Goal": "Objetivo de pasos",
+    "Metric & Imperial Units, Step length, Gender": "Unidades Métricas e Imperiales, Longitud del paso, Género",
+    "Step Goal": "Meta de pasos",
     "Daily step target": "Objetivo diario de pasos",
     "Backup & Restore": "Copia de seguridad y restauración",
     "Reminder": "Recordatorio",
@@ -19,7 +19,7 @@
     "About Us": "Sobre nosotros",
     "Delete all data": "Eliminar todos los datos",
     "Version 1.0.0": "Versión 1.0.0",
-    "Select Step Goal": "Seleccionar objetivo de pasos",
+    "Select Step Goal": "Seleccionar meta de pasos",
     "Select Language": "Seleccionar idioma",
     "steps": "pasos",
     "language.en": "English",
@@ -40,7 +40,585 @@
     "language.sa": "Sanskrit",
     "Home": "Inicio",
     "Steps": "Pasos",
-    "Dummy2": "Dummy2",
-    "Dummy3": "Dummy3",
-    "Profile": "Perfil"
+    "Weather": "Clima",
+    "LMS": "Cursos",
+    "Profile": "Perfil",
+    "changePassword": {
+        "header": "Cambiar\nContraseña",
+        "title": "Cambiar contraseña",
+        "subtitle": "Ingresa tu contraseña actual y elige una nueva contraseña segura",
+        "currentPassword": "Contraseña actual",
+        "currentPlaceholder": "Ingresa la contraseña actual",
+        "newPassword": "Nueva contraseña",
+        "newPlaceholder": "Ingresa la nueva contraseña",
+        "confirmPassword": "Confirmar nueva contraseña",
+        "confirmPlaceholder": "Vuelve a ingresar la nueva contraseña",
+        "hint": "La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un carácter especial.",
+        "button": "Cambiar contraseña",
+        "error": "Error",
+        "fillAllFields": "Por favor completa todos los campos obligatorios",
+        "passwordsDoNotMatch": "La nueva contraseña y la confirmación no coinciden.",
+        "newPasswordDifferent": "La nueva contraseña debe ser diferente a la actual.",
+        "success": "Éxito",
+        "passwordChanged": "Contraseña cambiada exitosamente"
+    },
+    "common": {
+        "ok": "Aceptar",
+        "success": "Éxito",
+        "error": "Error",
+        "cancel": "Cancelar"
+    },
+    "courses": {
+        "myProgress": "Mi progreso",
+        "courseCount": "{{count}} Cursos",
+        "lessonProgress": "{{completed}}/{{total}} lecciones • {{percentage}}%",
+        "recentEnrolled": "Cursos inscritos recientemente",
+        "performance": "Rendimiento",
+        "categoriesTitle": "Categorías de cursos",
+        "noCategories": "No hay categorías disponibles.",
+        "seeMore": "Ver más...",
+        "comingSoon": "Próximamente",
+        "unknownAuthor": "Autor desconocido",
+        "courses": "Cursos",
+        "lessonsCount_one": "1 Lección",
+        "lessonsCount_other": "{{count}} Lecciones",
+        "enrolled": "Inscrito",
+        "notEnrolled": "No inscrito",
+        "free": "GRATIS",
+        "loadingEnrollment": "Cargando estado de inscripción...",
+        "noCourses": "Aún no hay cursos disponibles",
+        "noCoursesSubtext": "¡Vuelve pronto para ver nuevos cursos!",
+        "descriptionTitle": "Descripción del curso",
+        "whatYouLearnTitle": "Qué aprenderás",
+        "instructorTitle": "Instructor",
+        "contentTitle": "Contenido del curso",
+        "locked": "Bloqueado",
+        "enrollFree": "Inscribirse gratis",
+        "enrollNow": "Inscribirse ahora",
+        "subscribe": "SUSCRIBIRSE",
+        "loginToEnroll": "INICIAR SESIÓN PARA INSCRIBIRSE",
+        "checkingPayment": "VERIFICANDO PAGO...",
+        "checkingStatus": "VERIFICANDO ESTADO...",
+        "authRequiredTitle": "Autenticación requerida",
+        "authRequiredMessage": "Por favor inicia sesión para inscribirte en este curso",
+        "freeEnrollmentMessage": "¡Has sido inscrito en este curso!",
+        "enrollmentRequiredTitle": "Inscripción requerida",
+        "enrollmentRequiredMessage": "Necesitas inscribirte en este curso para acceder a las lecciones",
+        "paymentProcessingTitle": "Procesando pago",
+        "paymentProcessingMessage": "Estamos verificando tu pago. Vuelve en unos momentos.",
+        "enrollError": "Error al procesar la inscripción",
+        "verificationPendingTitle": "Verificación pendiente",
+        "verificationPendingMessage": "Estamos procesando tu pago. Te notificaremos cuando la inscripción esté confirmada.",
+        "enrollmentSuccessfulTitle": "¡Inscripción exitosa!",
+        "enrollmentSuccessfulMessage": "¡Tu pago ha sido verificado y la inscripción está completa!",
+        "enrollmentSuccessMessage": "¡Inscripción exitosa!",
+        "enrolledMessage": "Estás inscrito en este curso",
+        "goToCourse": "Ir al curso",
+        "noLessons": "Aún no hay lecciones disponibles",
+        "myEnrollments": "Mis inscripciones",
+        "loginToViewEnrollments": "Por favor inicia sesión para ver tus inscripciones",
+        "enrollmentsLoadError": "Error al cargar las inscripciones",
+        "noEnrollments": "Aún no tienes inscripciones",
+        "startLearning": "Comienza a aprender inscribiéndote en cursos",
+        "browseCourses": "Explorar cursos",
+        "learningJourney": "Tu viaje de aprendizaje",
+        "enrolledCourses_one": "1 curso inscrito",
+        "enrolledCourses_other": "{{count}} cursos inscritos",
+        "enrolledOn": "Inscrito el",
+        "progressCompleted": "{{completed}} de {{total}} lecciones completadas",
+        "complete": "Completar",
+        "enrollmentStatus": {
+            "active": "ACTIVO",
+            "completed": "COMPLETADO",
+            "pending": "PENDIENTE"
+        },
+        "courseLoadError": "Error al cargar el curso",
+        "by": "por",
+        "lessons": "Lecciones",
+        "courseLessons": "Lecciones del curso",
+        "completedOfTotal": "{{completed}} de {{total}} completadas",
+        "notStarted": "No iniciado",
+        "completed": "Completado"
+    },
+    "lessonPlayer": {
+        "courseLessons": "Lecciones del curso",
+        "previous": "Anterior",
+        "lessons": "Lecciones",
+        "next": "Siguiente",
+        "alreadyCompletedTitle": "Ya completado",
+        "alreadyCompletedMessage": "Esta lección ya está marcada como completada",
+        "authRequiredTitle": "Autenticación requerida",
+        "authRequiredMessage": "Por favor inicia sesión para marcar la lección como completada",
+        "successMessage": "¡Lección marcada como completada!",
+        "errorMessage": "Error al marcar la lección como completada",
+        "courseProgressTitle": "Progreso del curso",
+        "progressText": "Has completado {{completed}} de {{total}} lecciones ({{percentage}}%)",
+        "completed": "Completado",
+        "notStarted": "No iniciado",
+        "playing": "Reproduciendo",
+        "lessonNumber": "Lección {{current}} de {{total}}",
+        "markAsComplete": "Marcar como completada",
+        "invalidVideoUrl": "URL de video inválida",
+        "url": "URL",
+        "expectedFormat": "Formato esperado:\nhttps://youtu.be/VIDEO_ID\nor\nhttps://www.youtube.com/watch?v=VIDEO_ID",
+        "openInYouTube": "Abrir en YouTube",
+        "videoPlaybackError": "Error de reproducción de video: {{error}}",
+        "videoEmbeddingRestricted": "Reproducción incrustada restringida. Se usa vista completa de YouTube."
+    },
+    "about": {
+        "headerTitle": "Acerca de {{appName}}",
+        "version": "Versión {{appVersion}}",
+        "ourMission": "Nuestra misión",
+        "missionDescription": "{{appName}} está diseñado para ofrecerte una experiencia excepcional de bienestar auditivo. Nos comprometemos a brindar calidad, rendimiento y satisfacción del usuario en todo lo que hacemos. Juntos, estamos redefiniendo el bienestar auditivo.",
+        "whyChooseUs": "Por qué elegirnos",
+        "features": {
+            "securePrivate": {
+                "title": "Seguro y privado",
+                "description": "Tus datos están encriptados y protegidos con medidas de seguridad estándar de la industria."
+            },
+            "userFocused": {
+                "title": "Centrado en el usuario",
+                "description": "Diseñado pensando en ti, con un diseño intuitivo y funcionalidad fluida."
+            },
+            "alwaysImproving": {
+                "title": "Siempre mejorando",
+                "description": "Actualizaciones regulares con nuevas funciones y mejoras basadas en tus comentarios."
+            }
+        },
+        "getInTouch": "Contáctanos",
+        "contacts": {
+            "email": {
+                "title": "Soporte por correo"
+            },
+            "website": {
+                "title": "Sitio web"
+            }
+        },
+        "tipText": "¡Tu opinión importa! Cada sugerencia nos ayuda a mejorar la forma en que escuchas el mundo.",
+        "footerThankYou": "Gracias por ser parte de {{appName}}.",
+        "footerSubtext": "Juntos, estamos redefiniendo el bienestar auditivo. 💙"
+    },
+    "feedback": {
+        "headerTitle": "Valoramos tus comentarios",
+        "headerSubtitle": "Ayúdanos a hacer HearingZen aún mejor para ti.",
+        "yourName": "Tu nombre",
+        "namePlaceholder": "Ingresa tu nombre",
+        "rateExperience": "Califica tu experiencia",
+        "yourFeedback": "Tus comentarios",
+        "feedbackPlaceholder": "Cuéntanos sobre tu experiencia...",
+        "submitButton": "Enviar comentarios",
+        "incompleteTitle": "Incompleto",
+        "incompleteMessage": "Por favor completa todos los campos y proporciona una calificación antes de enviar.",
+        "thankYouTitle": "¡Gracias! 💙",
+        "successMessage": "Tus comentarios (calificación: {{rating}}/5) se han enviado correctamente!",
+        "tipText": "¡Tu voz importa! Cada sugerencia nos ayuda a mejorar la forma en que escuchas el mundo.",
+        "footerThankYou": "Gracias por ser parte de HearingZen.",
+        "footerSubtext": "Juntos, estamos redefiniendo el bienestar auditivo. 💙"
+    },
+    "help": {
+        "tagline": "Tu compañero personal de audición",
+        "badge": "Ayuda y soporte",
+        "welcomeTitle": "¡Estamos aquí para ayudarte 👋",
+        "welcomeText": "Encuentra respuestas a preguntas frecuentes, contacta a nuestro equipo de soporte o explora recursos de ayuda. Estamos disponibles 24/7.",
+        "contactUs": "Contáctanos",
+        "quickActions": [
+            {
+                "icon": "messageCircle",
+                "title": "Chat en vivo",
+                "description": "Chatea con nuestro equipo de soporte",
+                "color": "#10B981",
+                "action": "Alert.alert('Chat en vivo', '¡La función de chat en vivo llegará pronto!');"
+            },
+            {
+                "icon": "mail",
+                "title": "Soporte por correo",
+                "description": "support@hearingzen.com",
+                "color": "#3B82F6",
+                "action": "Linking.openURL('mailto:support@hearingzen.com');"
+            },
+            {
+                "icon": "phone",
+                "title": "Llámanos",
+                "description": "+1 (800) 123-4567",
+                "color": "#8B5CF6",
+                "action": "Linking.openURL('tel:+18001234567');"
+            }
+        ],
+        "faqTitle": "Preguntas frecuentes",
+        "faqSubtitle": "Respuestas rápidas a preguntas comunes",
+        "faqs": [
+            {
+                "question": "¿Cómo inicio una prueba de audición?",
+                "answer": "Ve a la pestaña Prueba de Audición, asegúrate de estar en un lugar silencioso, ponte los auriculares y pulsa \"Iniciar prueba\". Sigue las instrucciones en pantalla y pulsa cuando escuches un sonido."
+            },
+            {
+                "question": "¿Por qué no obtengo resultados precisos?",
+                "answer": "Asegúrate de estar en una habitación silenciosa, que los auriculares estén bien conectados y el volumen sea cómodo. Evita hacer la prueba en lugares ruidosos o en movimiento."
+            },
+            {
+                "question": "¿Puedo usar HearingZen sin auriculares?",
+                "answer": "Para pruebas de audición precisas se requieren auriculares. Sin embargo, puedes usar la función Amplificador de sonido con los altavoces del dispositivo o audífonos."
+            },
+            {
+                "question": "¿Cada cuánto debo hacer la prueba de audición?",
+                "answer": "Recomendamos hacerla una vez al mes para seguir los cambios en tu salud auditiva. Si notas cambios repentinos, consulta a un profesional."
+            },
+            {
+                "question": "¿Mis datos de audición son privados y seguros?",
+                "answer": "Sí, todos tus datos de audición están encriptados y almacenados de forma segura en tu dispositivo. Nunca compartimos tu información personal sin tu consentimiento explícito."
+            },
+            {
+                "question": "¿Qué significan los resultados de la prueba de audición?",
+                "answer": "Muestran tu sensibilidad auditiva en diferentes frecuencias. Números más bajos indican mejor audición. Los resultados están codificados por colores: Verde (Normal), Amarillo (Pérdida leve), Naranja (Moderada), Rojo (Significativa)."
+            },
+            {
+                "question": "¿Puede HearingZen reemplazar una prueba auditiva profesional?",
+                "answer": "No. HearingZen está pensado para monitoreo y seguimiento, no para diagnóstico médico. Siempre consulta a un audiólogo o profesional de la salud."
+            },
+            {
+                "question": "¿Cómo calibrar el Amplificador de sonido?",
+                "answer": "Ve a Ajustes > Amplificador de sonido > Calibración. Sigue los pasos para ajustar ganancia, graves y agudos a tu gusto. Comienza con valores bajos y aumenta gradualmente."
+            }
+        ],
+        "helpTopicsTitle": "Temas de ayuda",
+        "helpTopics": [
+            {
+                "icon": "settings",
+                "title": "Primeros pasos",
+                "description": "Configuración e inicio",
+                "color": "#F59E0B"
+            },
+            {
+                "icon": "bookOpen",
+                "title": "Guía de usuario",
+                "description": "Documentación completa de la app",
+                "color": "#06B6D4"
+            },
+            {
+                "icon": "shield",
+                "title": "Privacidad y seguridad",
+                "description": "Cómo protegemos tus datos",
+                "color": "#EC4899"
+            },
+            {
+                "icon": "alertCircle",
+                "title": "Solución de problemas",
+                "description": "Problemas comunes y soluciones",
+                "color": "#EF4444"
+            }
+        ],
+        "emergencyTitle": "¿Emergencia médica?",
+        "emergencyText": "Si experimentas pérdida auditiva repentina o síntomas graves, contacta inmediatamente a un profesional de la salud.",
+        "footerSubtext": "Juntos, estamos redefiniendo el bienestar auditivo. 💙"
+    },
+    "instructions": {
+        "tagline": "Tu compañero personal de audición",
+        "badge": "Guía de usuario",
+        "welcomeTitle": "¡Bienvenido! 👋",
+        "welcomeText": "Esta guía te ayudará a sacar el máximo provecho de HearingZen. Sigue estos sencillos pasos para mejorar tu experiencia auditiva.",
+        "stepNumber": "Paso {{number}}",
+        "sections": [
+            {
+                "icon": "🚀",
+                "title": "Primeros pasos",
+                "steps": [
+                    "Abre la app HearingZen y concede los permisos necesarios de micrófono y Bluetooth",
+                    "Asegúrate de que tus audífonos o auriculares estén correctamente conectados",
+                    "Serás guiado por una configuración sencilla para personalizar tu perfil auditivo"
+                ]
+            },
+            {
+                "icon": "🎧",
+                "title": "Prueba de audición",
+                "steps": [
+                    "Ve a la sección Prueba de Audición desde el menú principal",
+                    "Sigue cuidadosamente las instrucciones de audio en un entorno silencioso",
+                    "La app medirá tu sensibilidad auditiva y mostrará los resultados al instante"
+                ]
+            },
+            {
+                "icon": "🔊",
+                "title": "Amplificador de sonido",
+                "steps": [
+                    "Accede al Amplificador de sonido para realzar los sonidos ambientales",
+                    "Usa el deslizador de volumen para ajustar la amplificación de forma segura",
+                    "Evita usar el volumen máximo durante largos periodos para proteger tus oídos"
+                ]
+            },
+            {
+                "icon": "📊",
+                "title": "Seguimiento de salud auditiva",
+                "steps": [
+                    "Consulta tus tendencias y progreso en la pestaña Seguimiento",
+                    "Sigue las mejoras a lo largo del tiempo con análisis detallados",
+                    "Recibe consejos diarios y perspectivas para mantener la salud de tus oídos"
+                ]
+            },
+            {
+                "icon": "💬",
+                "title": "Soporte",
+                "steps": [
+                    "Visita la sección Ayuda y soporte para ver preguntas frecuentes y guías",
+                    "Contacta directamente a nuestro equipo para ayuda personalizada",
+                    "Accede a tutoriales en video y documentación en cualquier momento"
+                ]
+            }
+        ],
+        "tipsIcon": "💡",
+        "tipsTitle": "Consejos profesionales",
+        "tipsList": [
+            "• Usa auriculares en lugares silenciosos para obtener resultados precisos",
+            "• Toma descansos regulares durante usos prolongados",
+            "• Actualiza tu perfil auditivo mensualmente para obtener los mejores resultados"
+        ],
+        "footerThankYou": "Gracias por ser parte de HearingZen",
+        "footerSubtext": "Juntos, estamos redefiniendo el bienestar auditivo. 💙",
+        "versionText": "Versión 1.0.0"
+    },
+    "privacyPolicy": {
+        "headerTitle": "Política de privacidad",
+        "headerSubtitle": "Tu privacidad y confianza son nuestra máxima prioridad.",
+        "sections": {
+            "introduction": {
+                "title": "1. Introducción",
+                "description": "¡Bienvenido a HearingZen! Valoramos tu privacidad y estamos comprometidos a proteger tus datos personales. Esta política explica cómo recopilamos, usamos y protegemos tu información al usar nuestra app."
+            },
+            "informationCollected": {
+                "title": "2. Información que recopilamos",
+                "description": "Recopilamos los siguientes tipos de información para mejorar tu experiencia auditiva:",
+                "bullets": {
+                    "audioInput": "Entrada de audio desde el micrófono del dispositivo",
+                    "bluetoothData": "Datos de conexión Bluetooth y dispositivos auditivos",
+                    "profileInfo": "Información de perfil opcional que proporciones",
+                    "usageStats": "Estadísticas básicas de uso de la app (anónimas)"
+                }
+            },
+            "howWeUse": {
+                "title": "3. Cómo usamos tu información",
+                "description": "Tus datos se utilizan únicamente para mejorar y personalizar tu experiencia auditiva. Específicamente:",
+                "bullets": {
+                    "calibrateProfile": "Calibrar tu perfil auditivo personal",
+                    "improveSound": "Mejorar la amplificación y claridad del sonido",
+                    "provideAnalytics": "Proporcionar análisis para seguir tu salud auditiva",
+                    "communicateUpdates": "Comunicar actualizaciones y consejos (opcional)"
+                }
+            },
+            "dataSecurity": {
+                "title": "4. Seguridad de los datos",
+                "description": "Implementamos encriptación avanzada y almacenamiento local para garantizar que tu información permanezca privada y segura. HearingZen nunca vende ni comparte tus datos personales con terceros."
+            },
+            "yourControl": {
+                "title": "5. Tu control",
+                "description": "Puedes revisar, editar o eliminar tus datos en cualquier momento desde los ajustes de la app. También puedes desactivar permisos de micrófono o Bluetooth sin afectar tu cuenta."
+            },
+            "thirdParty": {
+                "title": "6. Servicios de terceros",
+                "description": "HearingZen puede integrar servicios de terceros seguros para análisis o sincronización en la nube. Todos cumplen con los estándares GDPR y de privacidad."
+            },
+            "updates": {
+                "title": "7. Actualizaciones de esta política",
+                "description": "Podemos actualizar esta Política de privacidad ocasionalmente para reflejar nuevas funciones o requisitos legales. Te notificaremos dentro de la app cuando haya cambios."
+            },
+            "contactUs": {
+                "title": "8. Contáctanos",
+                "description": "Si tienes preguntas sobre esta Política de privacidad, contáctanos en:"
+            }
+        },
+        "footer": {
+            "rightsReserved": "Todos los derechos reservados.",
+            "subtext": "Juntos, estamos redefiniendo el bienestar auditivo. 💙"
+        }
+    },
+    "termsAndConditions": {
+        "headerTitle": "Términos y Condiciones",
+        "lastUpdated": "Última actualización: {{lastUpdated}}",
+        "welcome": "Bienvenido a {{appName}}",
+        "introText": "Por favor lee atentamente estos Términos y Condiciones antes de usar nuestra aplicación. Estos términos describen tus derechos y responsabilidades al usar {{appName}}.",
+        "sections": [
+            {
+                "id": 1,
+                "icon": "📋",
+                "title": "1. Introducción",
+                "content": "Bienvenido a HearingZen. Al usar nuestra app aceptas estar vinculado por estos Términos y Condiciones."
+            },
+            {
+                "id": 2,
+                "icon": "✅",
+                "title": "2. Uso",
+                "content": "Aceptas usar la app solo con fines legales y de manera que no infrinja los derechos de terceros."
+            },
+            {
+                "id": 3,
+                "icon": "🔒",
+                "title": "3. Privacidad",
+                "content": "Respetamos tu privacidad. Lee nuestra Política de privacidad para entender cómo recopilamos y usamos tus datos."
+            },
+            {
+                "id": 4,
+                "icon": "⚠️",
+                "title": "4. Limitación de responsabilidad",
+                "content": "No somos responsables de daños directos, indirectos, incidentales ni consecuentes derivados del uso de la app."
+            },
+            {
+                "id": 5,
+                "icon": "🔄",
+                "title": "5. Actualizaciones",
+                "content": "Los términos pueden cambiar. El uso continuo de la app implica la aceptación de dichos cambios."
+            }
+        ],
+        "noticeIcon": "⚠️",
+        "noticeTitle": "Aviso importante",
+        "noticeText": "Al continuar usando {{appName}} reconoces haber leído, entendido y aceptado estos Términos y Condiciones.",
+        "agreementText": "Estos términos constituyen un acuerdo legalmente vinculante entre tú y {{appName}}. Si tienes preguntas, contacta a nuestro equipo de soporte.",
+        "footerThankYou": "Gracias por ser parte de {{appName}}.",
+        "footerSubtext": "Juntos, estamos redefiniendo el bienestar auditivo. 💙"
+    },
+    "profile": {
+        "editProfile": "Editar perfil",
+        "yourName": "Tu nombre",
+        "username": "nombre de usuario",
+        "contactDetails": "detalles de contacto",
+        "healthCard": "Tarjeta de salud",
+        "fullName": "Nombre completo",
+        "phone": "Teléfono",
+        "email": "Email",
+        "location": "Ubicación",
+        "height": "Altura (cm o pies)",
+        "heightPlaceholder": "ej. 170 o 5.7",
+        "weight": "Peso (kg)",
+        "weightPlaceholder": "ej. 70",
+        "gender": "Género",
+        "genderMale": "Masculino",
+        "genderFemale": "Femenino",
+        "genderOther": "Otro",
+        "genderSpecify": "Por favor especifica",
+        "genderSpecifyPlaceholder": "ej. No binario",
+        "age": "Edad",
+        "agePlaceholder": "ej. 25",
+        "deafnessLevel": "Nivel de sordera",
+        "deafnessLevelPlaceholder": "ej. ninguna, leve, moderada, severa",
+        "disabilityPercentage": "Porcentaje de discapacidad",
+        "disabilityPercentagePlaceholder": "ej. 0-100",
+        "saveChanges": "Guardar cambios",
+        "loadErrorTitle": "Error",
+        "loadErrorMessage": "Error al cargar los datos del perfil",
+        "successTitle": "✅ Éxito",
+        "successMessage": "¡Perfil actualizado correctamente!",
+        "saveError": "Error al guardar el perfil",
+        "myProfile": "Mi perfil",
+        "noName": "Sin nombre",
+        "notSet": "No establecido",
+        "kg": "kg",
+        "years": "años",
+        "none": "ninguno",
+        "loadError": "Error al cargar el perfil",
+        "retry": "Reintentar",
+        "logout": "Cerrar sesión",
+        "logoutTitle": "Cerrar sesión",
+        "logoutMessage": "¿Estás seguro de que deseas cerrar sesión?",
+        "logoutSuccess": "Sesión cerrada correctamente",
+        "authRequiredTitle": "Autenticación requerida",
+        "authRequiredMessage": "Por favor inicia sesión para acceder a esta función",
+        "googleAccount": "Cuenta de Google",
+        "googleAccountDescription": "Vincula tu cuenta de Google para un inicio de sesión más fácil",
+        "linked": "Vinculada",
+        "notLinked": "No vinculada",
+        "link": "Vincular",
+        "unlink": "Desvincular",
+        "unlinkGoogleTitle": "Desvincular Google",
+        "unlinkGoogleMessage": "¿Estás seguro de que deseas desvincular tu cuenta de Google?",
+        "linkSuccess": "Cuenta de Google vinculada",
+        "unlinkSuccess": "Cuenta de Google desvinculada",
+        "selectLanguage": "Seleccionar idioma",
+        "version": "Versión"
+    },
+    "login": {
+        "title": "Iniciar sesión",
+        "emailLabel": "Correo electrónico",
+        "emailPlaceholder": "Ingresa tu correo",
+        "passwordLabel": "Contraseña",
+        "passwordPlaceholder": "Ingresa tu contraseña",
+        "forgotPassword": "¿Olvidaste tu contraseña?",
+        "loginButton": "Iniciar sesión",
+        "or": "O",
+        "signUpLink": "¿No tienes cuenta? Regístrate aquí",
+        "loginFailed": "Error al iniciar sesión",
+        "googleSignInFailed": "Error al iniciar sesión con Google"
+    },
+    "forgotPassword": {
+        "headerText": "Olvidé mi\ncontraseña",
+        "title": "Restablecer contraseña",
+        "subtitle": "Ingresa tu correo y te enviaremos un OTP para restablecerla",
+        "emailPlaceholder": "Correo electrónico",
+        "sendOTP": "Enviar OTP",
+        "backToLogin": "Volver al inicio de sesión",
+        "error": "Error",
+        "enterEmail": "Por favor ingresa tu correo"
+    },
+    "resetPassword": {
+        "headerText": "Nueva\ncontraseña",
+        "title": "Crear nueva contraseña",
+        "subtitle": "Tu nueva contraseña debe ser diferente a las anteriores",
+        "newPassword": "Nueva contraseña",
+        "newPasswordPlaceholder": "Ingresa nueva contraseña",
+        "confirmPassword": "Confirmar contraseña",
+        "confirmPasswordPlaceholder": "Vuelve a ingresar la nueva contraseña",
+        "hint": "Mínimo 8 caracteres, con mayúscula, minúscula, número y carácter especial",
+        "button": "Restablecer contraseña",
+        "error": "Error",
+        "passwordsDoNotMatch": "Las contraseñas no coinciden",
+        "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+        "success": "Éxito",
+        "successMessage": "¡Contraseña restablecida correctamente!"
+    },
+    "otp": {
+        "headerText": "Verificación",
+        "title": "Ingresa el OTP",
+        "subtitle": "Hemos enviado el código de verificación a\n",
+        "verifyEmail": "Verificar correo",
+        "didntReceiveCode": "¿No recibiste el código?",
+        "resendOTP": "Reenviar OTP",
+        "resendCountdown": "Reenviar en {{countdown}}s",
+        "error": "Error",
+        "completeOTP": "Por favor ingresa el OTP completo",
+        "success": "Éxito",
+        "successMessage": "¡Correo verificado exitosamente!",
+        "verificationFailed": "Verificación fallida",
+        "resendSuccess": "¡OTP reenviado correctamente!"
+    },
+    "resetPasswordOTP": {
+        "headerText": "Restablecer\ncontraseña",
+        "title": "Ingresa el OTP",
+        "subtitle": "Hemos enviado el código de verificación a\n",
+        "verifyOTP": "Verificar OTP",
+        "didntReceiveCode": "¿No recibiste el código?",
+        "resendOTP": "Reenviar OTP",
+        "resendCountdown": "Reenviar en {{countdown}}s",
+        "error": "Error",
+        "completeOTP": "Por favor ingresa el OTP completo",
+        "verificationFailed": "Verificación fallida",
+        "success": "Éxito",
+        "resendSuccess": "¡OTP reenviado correctamente!"
+    },
+    "signup": {
+        "headerText": "Registrarse",
+        "fullName": "Nombre completo",
+        "fullNamePlaceholder": "Nombre completo",
+        "email": "Correo electrónico",
+        "emailPlaceholder": "Correo electrónico",
+        "contact": "Número de contacto",
+        "contactPlaceholder": "Número de contacto",
+        "password": "Contraseña",
+        "passwordPlaceholder": "Contraseña",
+        "signUpButton": "Registrarse",
+        "or": "O",
+        "loginLink": "¿Ya tienes cuenta? Inicia sesión aquí",
+        "verifyEmail": "¿Ya registrado? Verificar correo",
+        "verifyEmailTitle": "Verificar correo",
+        "verifyEmailPlaceholder": "Ingresa tu correo",
+        "verify": "Verificar",
+        "registrationFailed": "Registro fallido",
+        "enterEmail": "Por favor ingresa tu correo",
+        "googleSignInFailed": "Error al iniciar sesión con Google"
+    }
 }
