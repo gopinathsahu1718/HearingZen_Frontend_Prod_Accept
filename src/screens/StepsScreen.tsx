@@ -16,11 +16,11 @@ import {
   ScrollView,
   Animated,
   Dimensions,
-  Share,
   Alert,
   ActivityIndicator,
   TextInput,
   Switch,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
@@ -36,7 +36,6 @@ import Svg, {
   Stop,
   Text as SvgText,
   Line,
-  Rect,
   Circle,
   G,
 } from 'react-native-svg';
@@ -50,7 +49,8 @@ const RADIUS = (SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 const API_BASE_URL = 'http://13.200.222.176/api/steps';
-const SYNC_INTERVAL = 30000; // 30 seconds
+const SYNC_INTERVAL = 20000; // 20 seconds
+const REQUEST_TIMEOUT = 15000; // 15 seconds timeout for API requests
 
 // AsyncStorage keys
 const STEPS_DATA_KEY = '@steps_data';
@@ -58,7 +58,7 @@ const OFFLINE_QUEUE_KEY = '@steps_offline_queue';
 const LAST_SYNC_KEY = '@steps_last_sync';
 const BASELINE_KEY = '@steps_baseline';
 const MOTION_OFFSET_KEY = '@steps_motion_offset';
-const TRACKING_ENABLED_KEY = '@steps_tracking_enabled'; // NEW
+const TRACKING_ENABLED_KEY = '@steps_tracking_enabled';
 
 type Period = 'Month' | 'Week' | 'Day';
 type Point = { x: number; y: number; value?: number };
@@ -108,49 +108,77 @@ const getISTTimestamp = () => {
   return moment().tz('Asia/Kolkata').toISOString();
 };
 
+// Safe fetch with timeout
+const fetchWithTimeout = async (url: string, options: RequestInit, timeout: number = REQUEST_TIMEOUT) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout. Please check your internet connection.');
+    }
+    throw error;
+  }
+};
+
+// Check internet connectivity
+const checkConnectivity = async (): Promise<boolean> => {
+  try {
+    const netInfo = await NetInfo.fetch();
+    return netInfo.isConnected === true && netInfo.isInternetReachable !== false;
+  } catch (error) {
+    console.error('Connectivity check error:', error);
+    return false;
+  }
+};
+
 // ============ HEADER COMPONENT ============
 const Header: React.FC<{
   onRefresh?: () => void;
   isRefreshing?: boolean;
   onSettings?: () => void;
-}> = ({
-  onRefresh,
-  isRefreshing = false,
-  onSettings
-}) => {
-    const { theme } = useTheme();
-    return (
-      <View
-        style={[
-          styles.headerWrapper,
-          { backgroundColor: theme.background, justifyContent: 'space-between' },
-        ]}
+}> = ({ onRefresh, isRefreshing = false, onSettings }) => {
+  const { theme } = useTheme();
+  return (
+    <View
+      style={[
+        styles.headerWrapper,
+        { backgroundColor: theme.background, justifyContent: 'space-between' },
+      ]}
+    >
+      <TouchableOpacity
+        onPress={onRefresh}
+        style={styles.leftButton}
+        disabled={isRefreshing}
       >
-        <TouchableOpacity
-          onPress={onRefresh}
-          style={styles.leftButton}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? (
-            <ActivityIndicator size="small" color={theme.iconTint} />
-          ) : (
-            <Image
-              source={require('../assets/images/refresh.png')}
-              style={[styles.headerIcon, { tintColor: theme.iconTint }]}
-              resizeMode="contain"
-            />
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onSettings} style={styles.shareButton}>
+        {isRefreshing ? (
+          <ActivityIndicator size="small" color={theme.iconTint} />
+        ) : (
           <Image
-            source={require('../assets/images/settings.png')}
+            source={require('../assets/images/refresh.png')}
             style={[styles.headerIcon, { tintColor: theme.iconTint }]}
             resizeMode="contain"
           />
-        </TouchableOpacity>
-      </View>
-    );
-  };
+        )}
+      </TouchableOpacity>
+      <TouchableOpacity onPress={onSettings} style={styles.shareButton}>
+        <Image
+          source={require('../assets/images/settings.png')}
+          style={[styles.headerIcon, { tintColor: theme.iconTint }]}
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 // ============ STEP CIRCLE COMPONENT ============
 const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
@@ -158,7 +186,7 @@ const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
   goal = 10000,
 }) => {
   const { theme } = useTheme();
-  const progress = steps / goal;
+  const progress = Math.min(steps / goal, 1); // Cap at 100%
   const strokeDashoffset = CIRCUMFERENCE - CIRCUMFERENCE * progress;
   const progressColor = steps >= goal ? '#00FF7F' : '#00BFFF';
 
@@ -212,7 +240,7 @@ const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
         <Text
           style={[styles.steps, { fontSize: SIZE * 0.14, color: theme.text }]}
         >
-          {steps}
+          {steps.toLocaleString()}
         </Text>
         <Text
           style={[
@@ -220,7 +248,7 @@ const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
             { fontSize: SIZE * 0.07, color: theme.textSecondary },
           ]}
         >
-          Goal: {goal}
+          Goal: {goal.toLocaleString()}
         </Text>
       </View>
     </View>
@@ -256,7 +284,7 @@ const StatsPanel: React.FC<{
     },
     {
       label: 'Percentage',
-      value: `${Number(percentage).toFixed(2)} %`,
+      value: `${Math.min(Number(percentage), 999).toFixed(2)} %`,
       icon: require('../assets/stepIcons/footprint.png'),
       bg: theme.cardBackground,
     },
@@ -312,6 +340,7 @@ const StepsChart: React.FC<{
     labels: [],
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const animProgress = useRef(new Animated.Value(0)).current;
   const pointScale = useRef(new Animated.Value(0)).current;
@@ -344,21 +373,23 @@ const StepsChart: React.FC<{
   }, [selectedPeriod]);
 
   const fetchChartData = async (period: Period) => {
-    if (!isAuthenticated || !token) return;
+    if (!isAuthenticated || !token) {
+      setErrorMessage('Please login to view chart data');
+      return;
+    }
+
     setIsLoading(true);
+    setErrorMessage(null);
+
     try {
-      const netInfo = await NetInfo.fetch();
-      if (!netInfo.isConnected) {
-        Alert.alert(
-          'No Internet Connection',
-          'Please turn on your data to view the report chart.',
-          [{ text: 'OK' }]
-        );
+      const isConnected = await checkConnectivity();
+      if (!isConnected) {
+        setErrorMessage('No internet connection. Please check your network settings.');
         setIsLoading(false);
         return;
       }
 
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `${API_BASE_URL}/history?period=${period.toLowerCase()}`,
         {
           method: 'GET',
@@ -370,14 +401,23 @@ const StepsChart: React.FC<{
       );
 
       const data = await response.json();
+
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Session expired. Please login again.');
+        } else if (response.status === 403) {
+          throw new Error('Access denied. Please verify your account.');
+        } else if (response.status >= 500) {
+          throw new Error('Server error. Please try again later.');
+        }
         throw new Error(data.message || 'Failed to fetch chart data');
       }
 
-      processChartData(data.data.history || [], period);
+      processChartData(data.data?.history || [], period);
     } catch (error: any) {
       console.error('Fetch chart error:', error);
-      Alert.alert('Error', error.message || 'Failed to load chart data');
+      const errorMsg = error.message || 'Failed to load chart data. Please try again.';
+      setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -399,28 +439,32 @@ const StepsChart: React.FC<{
     const maxSteps = Math.max(...history.map((h: any) => h.totalSteps || 0), 1);
 
     history.forEach((entry: any, i: number) => {
-      if (period === 'Day') {
-        labels.push(moment(entry.date || entry.timestamp).format('h A'));
-      } else if (period === 'Week') {
-        labels.push(moment(entry.date).format('ddd'));
-      } else {
-        const start = moment(entry.weekStart).format('MMM D');
-        const end = moment(entry.weekEnd).format('MMM D');
-        labels.push(`${start}-${end}`);
-      }
+      try {
+        if (period === 'Day') {
+          labels.push(moment(entry.date || entry.timestamp).format('h A'));
+        } else if (period === 'Week') {
+          labels.push(moment(entry.date).format('ddd'));
+        } else {
+          const start = moment(entry.weekStart).format('MMM D');
+          const end = moment(entry.weekEnd).format('MMM D');
+          labels.push(`${start}-${end}`);
+        }
 
-      points.push({
-        x: i / Math.max(history.length - 1, 1),
-        y: chartHeight - ((entry.totalSteps || 0) / maxSteps) * chartHeight * 0.75,
-        value: entry.totalSteps || 0,
-      });
+        points.push({
+          x: i / Math.max(history.length - 1, 1),
+          y: chartHeight - ((entry.totalSteps || 0) / maxSteps) * chartHeight * 0.75,
+          value: entry.totalSteps || 0,
+        });
+      } catch (error) {
+        console.error('Error processing chart entry:', error);
+      }
     });
 
     setChartData({ points, labels });
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && token) {
       fetchChartData(selectedPeriod);
     }
   }, [selectedPeriod, isAuthenticated, token]);
@@ -628,10 +672,31 @@ const StepsChart: React.FC<{
       {isLoading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+            Loading chart data...
+          </Text>
         </View>
       )}
 
-      {!isLoading && insetPoints.length === 0 && (
+      {!isLoading && errorMessage && (
+        <View style={styles.errorContainer}>
+          <Image
+            source={require('../assets/stepIcons/footprint.png')}
+            style={[styles.errorIcon, { tintColor: theme.textSecondary }]}
+          />
+          <Text style={[styles.errorText, { color: theme.text }]}>
+            {errorMessage}
+          </Text>
+          <TouchableOpacity
+            style={[styles.retryButton, { backgroundColor: theme.primary }]}
+            onPress={() => fetchChartData(selectedPeriod)}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {!isLoading && !errorMessage && insetPoints.length === 0 && (
         <View style={styles.noDataContainer}>
           <Text style={[styles.noDataText, { color: theme.textSecondary }]}>
             No data available for this period
@@ -639,7 +704,7 @@ const StepsChart: React.FC<{
         </View>
       )}
 
-      {!isLoading && insetPoints.length > 0 && (
+      {!isLoading && !errorMessage && insetPoints.length > 0 && (
         <>
           {dropdownOpen && (
             <Modal
@@ -888,6 +953,7 @@ const StepsScreen = () => {
   const { token, isAuthenticated } = useAuth();
 
   const [isTrackingEnabled, setIsTrackingEnabled] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
 
   const [localStepsData, setLocalStepsData] = useState<StepsData>({
     currentSteps: 0,
@@ -924,6 +990,7 @@ const StepsScreen = () => {
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializedRef = useRef(false);
   const lastSyncedStepsRef = useRef(0);
+  const netInfoUnsubscribeRef = useRef<(() => void) | null>(null);
 
   const stylesTheme = useThemedStyles(theme =>
     StyleSheet.create({
@@ -933,6 +1000,27 @@ const StepsScreen = () => {
       },
     }),
   );
+
+  // Monitor network connectivity
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const connected = state.isConnected === true && state.isInternetReachable !== false;
+      setIsOnline(connected);
+
+      if (connected && offlineQueue.length > 0 && isAuthenticated && token) {
+        console.log('Network restored, syncing offline queue');
+        syncOfflineQueue();
+      }
+    });
+
+    netInfoUnsubscribeRef.current = unsubscribe;
+
+    return () => {
+      if (netInfoUnsubscribeRef.current) {
+        netInfoUnsubscribeRef.current();
+      }
+    };
+  }, [offlineQueue.length, isAuthenticated, token]);
 
   // Load tracking enabled state
   const loadTrackingState = async () => {
@@ -1067,28 +1155,44 @@ const StepsScreen = () => {
     if (showLoader) setIsRefreshing(true);
 
     try {
-      const netInfo = await NetInfo.fetch();
-      if (!netInfo.isConnected) {
-        Alert.alert(
-          'No Internet Connection',
-          'Please turn on your data to refresh step data from the server.',
-          [{ text: 'OK' }]
-        );
+      const isConnected = await checkConnectivity();
+      if (!isConnected) {
+        if (showLoader) {
+          Alert.alert(
+            'No Internet Connection',
+            'Unable to refresh data. Please check your internet connection and try again.',
+            [{ text: 'OK' }]
+          );
+        }
         if (showLoader) setIsRefreshing(false);
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/current`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/current`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       const result = await response.json();
 
-      if (response.ok && result.success) {
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Session expired. Please login again.');
+        } else if (response.status === 403) {
+          throw new Error('Access denied. Please verify your account.');
+        } else if (response.status >= 500) {
+          throw new Error('Server error. Please try again later.');
+        }
+        throw new Error(result.message || 'Failed to fetch data');
+      }
+
+      if (result.success) {
         const backendData = result.data;
         const currentDate = getISTDate();
 
@@ -1162,8 +1266,8 @@ const StepsScreen = () => {
     setIsSyncing(true);
 
     try {
-      const netInfo = await NetInfo.fetch();
-      if (!netInfo.isConnected) {
+      const isConnected = await checkConnectivity();
+      if (!isConnected) {
         const entry: OfflineEntry = {
           steps: localStepsData.currentSteps,
           distance: localStepsData.currentDistance,
@@ -1175,6 +1279,7 @@ const StepsScreen = () => {
         setOfflineQueue(newQueue);
         await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(newQueue));
         console.log('No internet, added to offline queue');
+        setIsSyncing(false);
         return;
       }
 
@@ -1182,20 +1287,23 @@ const StepsScreen = () => {
         await syncOfflineQueue();
       }
 
-      const response = await fetch(`${API_BASE_URL}/update`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          steps: localStepsData.currentSteps,
-          distance: localStepsData.currentDistance,
-          calories: localStepsData.currentCalories,
-          activeTime: localStepsData.currentActiveTime,
-          timestamp: getISTTimestamp(),
-        }),
-      });
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/update`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            steps: localStepsData.currentSteps,
+            distance: localStepsData.currentDistance,
+            calories: localStepsData.currentCalories,
+            activeTime: localStepsData.currentActiveTime,
+            timestamp: getISTTimestamp(),
+          }),
+        }
+      );
 
       const result = await response.json();
 
@@ -1204,6 +1312,11 @@ const StepsScreen = () => {
         lastSyncedStepsRef.current = localStepsData.currentSteps;
         console.log('Synced to backend:', localStepsData.currentSteps, 'steps');
       } else {
+        if (response.status === 401) {
+          console.error('Session expired during sync');
+        } else if (response.status >= 500) {
+          console.error('Server error during sync');
+        }
         throw new Error(result.message || 'Sync failed');
       }
     } catch (error: any) {
@@ -1228,16 +1341,25 @@ const StepsScreen = () => {
     if (!token || offlineQueue.length === 0 || !isTrackingEnabled) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/sync`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          entries: offlineQueue,
-        }),
-      });
+      const isConnected = await checkConnectivity();
+      if (!isConnected) {
+        console.log('No internet, cannot sync offline queue');
+        return;
+      }
+
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/sync`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            entries: offlineQueue,
+          }),
+        }
+      );
 
       const result = await response.json();
 
@@ -1245,6 +1367,8 @@ const StepsScreen = () => {
         setOfflineQueue([]);
         await AsyncStorage.removeItem(OFFLINE_QUEUE_KEY);
         console.log('Offline queue synced successfully');
+      } else {
+        console.error('Failed to sync offline queue:', result.message);
       }
     } catch (error) {
       console.error('Sync offline queue error:', error);
@@ -1321,21 +1445,29 @@ const StepsScreen = () => {
   // Initialize data on mount
   useEffect(() => {
     const initialize = async () => {
-      await Promise.all([loadLocalData(), loadBaseline(), loadTrackingState()]);
+      try {
+        await Promise.all([loadLocalData(), loadBaseline(), loadTrackingState()]);
 
-      if (isAuthenticated && token) {
-        await fetchCurrentDataFromBackend(false);
+        if (isAuthenticated && token) {
+          const isConnected = await checkConnectivity();
+          if (isConnected) {
+            await fetchCurrentDataFromBackend(false);
 
-        const queueStr = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
-        if (queueStr) {
-          const queue = JSON.parse(queueStr);
-          if (queue.length > 0) {
-            await syncOfflineQueue();
+            const queueStr = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
+            if (queueStr) {
+              const queue = JSON.parse(queueStr);
+              if (queue.length > 0) {
+                await syncOfflineQueue();
+              }
+            }
           }
         }
-      }
 
-      isInitializedRef.current = true;
+        isInitializedRef.current = true;
+      } catch (error) {
+        console.error('Initialization error:', error);
+        isInitializedRef.current = true;
+      }
     };
 
     initialize();
@@ -1380,14 +1512,26 @@ const StepsScreen = () => {
 
   // Handle manual refresh
   const handleRefresh = async () => {
-    if (isAuthenticated && token && isTrackingEnabled) {
-      await fetchCurrentDataFromBackend(true);
-    } else if (!isTrackingEnabled) {
+    if (!isTrackingEnabled) {
       Alert.alert(
         'Tracking Disabled',
         'Step tracking is currently disabled. Enable it in settings to refresh data.',
         [{ text: 'OK' }]
       );
+      return;
+    }
+
+    if (isAuthenticated && token) {
+      const isConnected = await checkConnectivity();
+      if (!isConnected) {
+        Alert.alert(
+          'No Internet Connection',
+          'Unable to refresh data. Please check your internet connection and try again.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      await fetchCurrentDataFromBackend(true);
     } else {
       setIsRefreshing(true);
       await loadLocalData();
@@ -1407,7 +1551,6 @@ const StepsScreen = () => {
     await saveTrackingState(value);
 
     if (!value) {
-      // Clear sync interval when disabled
       if (syncIntervalRef.current) {
         clearInterval(syncIntervalRef.current);
         syncIntervalRef.current = null;
@@ -1425,9 +1568,11 @@ const StepsScreen = () => {
         [{ text: 'OK' }]
       );
 
-      // Refresh data from backend when re-enabled
       if (isAuthenticated && token) {
-        await fetchCurrentDataFromBackend(false);
+        const isConnected = await checkConnectivity();
+        if (isConnected) {
+          await fetchCurrentDataFromBackend(false);
+        }
       }
     }
   };
@@ -1449,29 +1594,48 @@ const StepsScreen = () => {
 
     try {
       if (isAuthenticated && token) {
-        const netInfo = await NetInfo.fetch();
-        if (!netInfo.isConnected) {
+        const isConnected = await checkConnectivity();
+        if (!isConnected) {
           Alert.alert(
             'No Internet Connection',
-            'Please turn on your data to update your daily goal.',
-            [{ text: 'OK' }]
+            'Unable to update goal. Your goal will be updated locally and synced when connection is restored.',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => setIsUpdatingGoal(false) },
+              {
+                text: 'Update Locally',
+                onPress: async () => {
+                  const updatedData = { ...localStepsData, dailyGoal: newGoal };
+                  setLocalStepsData(updatedData);
+                  await saveLocalData(updatedData);
+                  setSettingsVisible(false);
+                  setIsUpdatingGoal(false);
+                }
+              }
+            ]
           );
-          setIsUpdatingGoal(false);
           return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/goal`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ dailyGoal: newGoal }),
-        });
+        const response = await fetchWithTimeout(
+          `${API_BASE_URL}/goal`,
+          {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ dailyGoal: newGoal }),
+          }
+        );
 
         const result = await response.json();
 
         if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('Session expired. Please login again.');
+          } else if (response.status >= 500) {
+            throw new Error('Server error. Please try again later.');
+          }
           throw new Error(result.message || 'Failed to update goal');
         }
 
@@ -1517,6 +1681,24 @@ const StepsScreen = () => {
           isRefreshing={isRefreshing}
           onSettings={handleOpenSettings}
         />
+
+        {!isOnline && (
+          <View style={[styles.offlineBanner, { backgroundColor: theme.error || '#ff4444' }]}>
+            <Text style={styles.offlineBannerText}>
+              📡 Offline - Data will sync when connection is restored
+            </Text>
+          </View>
+        )}
+
+        {offlineQueue.length > 0 && isOnline && (
+          <View style={[styles.syncBanner, { backgroundColor: theme.warning || '#ffaa00' }]}>
+            <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.syncBannerText}>
+              Syncing {offlineQueue.length} offline {offlineQueue.length === 1 ? 'entry' : 'entries'}...
+            </Text>
+          </View>
+        )}
+
         <StepCircle
           steps={localStepsData.currentSteps}
           goal={localStepsData.dailyGoal}
@@ -1821,6 +2003,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+  },
+  errorContainer: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorIcon: {
+    width: 50,
+    height: 50,
+    marginBottom: 12,
+    opacity: 0.5,
+  },
+  errorText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   noDataContainer: {
     paddingVertical: 60,
     alignItems: 'center',
@@ -1829,6 +2043,36 @@ const styles = StyleSheet.create({
   noDataText: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginTop: 10,
+    borderRadius: 8,
+  },
+  offlineBannerText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  syncBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginTop: 10,
+    borderRadius: 8,
+  },
+  syncBannerText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
