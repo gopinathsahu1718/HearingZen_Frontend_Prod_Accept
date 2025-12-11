@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Video from 'react-native-video';
 import LinearGradient from 'react-native-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -39,99 +40,14 @@ const Icon = ({ name, size = 24, color = '#000' }) => {
 };
 
 const HelpPage = () => {
+    const { t } = useTranslation();
     const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
 
-    const faqs = [
-        {
-            question: 'How do I start a hearing test?',
-            answer: 'Navigate to the Hearing Test tab, ensure you\'re in a quiet environment, put on your headphones, and tap "Start Test". Follow the on-screen instructions and tap when you hear a sound.',
-        },
-        {
-            question: 'Why am I not getting accurate results?',
-            answer: 'Make sure you\'re in a quiet room, your headphones are properly connected, and the volume is set to a comfortable level. Avoid taking the test in noisy environments or while moving.',
-        },
-        {
-            question: 'Can I use HearingZen without headphones?',
-            answer: 'For accurate hearing tests, headphones are required. However, you can use the Sound Amplifier feature with your device\'s built-in speakers or hearing aids.',
-        },
-        {
-            question: 'How often should I take the hearing test?',
-            answer: 'We recommend taking the hearing test once a month to track changes in your hearing health. If you notice sudden changes, consult with a healthcare professional.',
-        },
-        {
-            question: 'Is my hearing data private and secure?',
-            answer: 'Yes, all your hearing data is encrypted and stored securely on your device. We never share your personal health information with third parties without your explicit consent.',
-        },
-        {
-            question: 'What do the hearing test results mean?',
-            answer: 'Your results show your hearing sensitivity across different frequencies. Lower numbers indicate better hearing. Results are color-coded: Green (Normal), Yellow (Mild loss), Orange (Moderate), Red (Significant loss).',
-        },
-        {
-            question: 'Can HearingZen replace a professional hearing test?',
-            answer: 'No. HearingZen is designed for monitoring and tracking, not medical diagnosis. Always consult with an audiologist or healthcare professional for medical advice.',
-        },
-        {
-            question: 'How do I calibrate the Sound Amplifier?',
-            answer: 'Go to Settings > Sound Amplifier > Calibration. Follow the steps to adjust gain, bass, and treble to your preference. Start with low settings and gradually increase.',
-        },
-    ];
+    const faqs = t('help.faqs', { returnObjects: true });
 
-    const quickActions = [
-        {
-            icon: 'messageCircle',
-            title: 'Live Chat',
-            description: 'Chat with our support team',
-            color: '#10B981',
-            action: () => {
-                Alert.alert('Live Chat', 'Live chat feature coming soon!');
-            },
-        },
-        {
-            icon: 'mail',
-            title: 'Email Support',
-            description: 'support@hearingzen.com',
-            color: '#3B82F6',
-            action: () => {
-                Linking.openURL('mailto:support@hearingzen.com');
-            },
-        },
-        {
-            icon: 'phone',
-            title: 'Call Us',
-            description: '+1 (800) 123-4567',
-            color: '#8B5CF6',
-            action: () => {
-                Linking.openURL('tel:+18001234567');
-            },
-        },
-    ];
+    const quickActions = t('help.quickActions', { returnObjects: true });
 
-    const helpTopics = [
-        {
-            icon: 'settings',
-            title: 'Getting Started',
-            description: 'Setup and initial configuration',
-            color: '#F59E0B',
-        },
-        {
-            icon: 'bookOpen',
-            title: 'User Guide',
-            description: 'Complete app documentation',
-            color: '#06B6D4',
-        },
-        {
-            icon: 'shield',
-            title: 'Privacy & Security',
-            description: 'How we protect your data',
-            color: '#EC4899',
-        },
-        {
-            icon: 'alertCircle',
-            title: 'Troubleshooting',
-            description: 'Common issues and fixes',
-            color: '#EF4444',
-        },
-    ];
+    const helpTopics = t('help.helpTopics', { returnObjects: true });
 
     const toggleFAQ = (index: number) => {
         setExpandedFAQ(expandedFAQ === index ? null : index);
@@ -165,24 +81,24 @@ const HelpPage = () => {
 
                 {/* App Title */}
                 <Text style={styles.appName}>HearingZen</Text>
-                <Text style={styles.tagline}>Your Personal Hearing Companion</Text>
+                <Text style={styles.tagline}>{t('help.tagline')}</Text>
 
                 <View style={styles.badge}>
-                    <Text style={styles.badgeText}>Help & Support</Text>
+                    <Text style={styles.badgeText}>{t('help.badge')}</Text>
                 </View>
             </LinearGradient>
 
             {/* Welcome Message */}
             <View style={styles.welcomeCard}>
-                <Text style={styles.welcomeTitle}>We're here to help! 👋</Text>
+                <Text style={styles.welcomeTitle}>{t('help.welcomeTitle')}</Text>
                 <Text style={styles.welcomeText}>
-                    Find answers to common questions, contact our support team, or explore our help resources. We're available 24/7 to assist you.
+                    {t('help.welcomeText')}
                 </Text>
             </View>
 
             {/* Quick Actions */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Contact Us</Text>
+                <Text style={styles.sectionTitle}>{t('help.contactUs')}</Text>
                 <View style={styles.quickActionsGrid}>
                     {quickActions.map((action, index) => (
                         <TouchableOpacity
@@ -203,9 +119,9 @@ const HelpPage = () => {
 
             {/* FAQs */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+                <Text style={styles.sectionTitle}>{t('help.faqTitle')}</Text>
                 <Text style={styles.sectionSubtitle}>
-                    Find quick answers to common questions
+                    {t('help.faqSubtitle')}
                 </Text>
 
                 <View style={styles.faqContainer}>
@@ -241,7 +157,7 @@ const HelpPage = () => {
 
             {/* Help Topics */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Help Topics</Text>
+                <Text style={styles.sectionTitle}>{t('help.helpTopicsTitle')}</Text>
                 <View style={styles.topicsGrid}>
                     {helpTopics.map((topic, index) => (
                         <TouchableOpacity
@@ -266,9 +182,9 @@ const HelpPage = () => {
             <View style={styles.emergencyCard}>
                 <Icon name="alertCircle" size={24} color="#EF4444" />
                 <View style={styles.emergencyContent}>
-                    <Text style={styles.emergencyTitle}>Medical Emergency?</Text>
+                    <Text style={styles.emergencyTitle}>{t('help.emergencyTitle')}</Text>
                     <Text style={styles.emergencyText}>
-                        If you're experiencing sudden hearing loss or severe symptoms, please contact a healthcare professional immediately.
+                        {t('help.emergencyText')}
                     </Text>
                 </View>
             </View>
@@ -277,7 +193,7 @@ const HelpPage = () => {
             <View style={styles.footer}>
                 <View style={styles.divider} />
                 <Text style={styles.footerSubtext}>
-                    Together, we're redefining hearing wellness. 💙
+                    {t('help.footerSubtext')}
                 </Text>
                 <Text style={styles.footerVersion}>HearingZen v1.0.0</Text>
             </View>

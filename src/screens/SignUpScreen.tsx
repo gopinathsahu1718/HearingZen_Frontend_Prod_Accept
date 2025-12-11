@@ -23,10 +23,12 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
 import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
+import { useTranslation } from 'react-i18next';
 
 type SignupScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SignUp'>;
 
 const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }) => {
+    const { t } = useTranslation();
     const { theme, isDarkMode } = useTheme();
     const { register, getVerificationToken, googleSignIn } = useAuth();
 
@@ -277,7 +279,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
             const tempToken = await register(username, contact, email, password);
             navigation.navigate('OTPScreen', { tempToken, email, fromSignup: true });
         } catch (error: any) {
-            Alert.alert('Registration Failed', error.message);
+            Alert.alert(t('signup.registrationFailed'), error.message);
         } finally {
             setLoading(false);
         }
@@ -285,7 +287,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
 
     const handleVerifyEmail = async () => {
         if (!verifyEmail.trim()) {
-            Alert.alert('Error', 'Please enter your email');
+            Alert.alert(t('common.error'), t('signup.enterEmail'));
             return;
         }
 
@@ -296,9 +298,26 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
             setVerifyEmail('');
             navigation.navigate('OTPScreen', { tempToken, email: verifyEmail.toLowerCase(), fromSignup: false });
         } catch (error: any) {
-            Alert.alert('Error', error.message);
+            Alert.alert(t('common.error'), error.message);
         } finally {
             setVerifyLoading(false);
+        }
+    };
+
+    const handleGoogleSignIn = async () => {
+        setGoogleLoading(true);
+        try {
+            await googleSignIn();
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'HomeTabs' }],
+                })
+            );
+        } catch (error: any) {
+            Alert.alert(t('signup.googleSignInFailed'), error.message);
+        } finally {
+            setGoogleLoading(false);
         }
     };
 
@@ -317,7 +336,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                     >
                         <View style={styles.container}>
                             <View style={styles.header}>
-                                <Text style={styles.headerText}>Sign Up</Text>
+                                <Text style={styles.headerText}>{t('signup.headerText')}</Text>
                             </View>
 
                             <View style={styles.content}>
@@ -333,7 +352,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                                 {/* FULL NAME */}
                                 <View style={styles.inputContainer}>
                                     <Text style={styles.fieldLabel}>
-                                        Full Name
+                                        {t('signup.fullName')}
                                         {showErrors && !username && <Text style={styles.star}> *</Text>}
                                     </Text>
 
@@ -345,7 +364,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                                     >
                                         <TextInput
                                             style={styles.input}
-                                            placeholder="Full Name"
+                                            placeholder={t('signup.fullNamePlaceholder')}
                                             placeholderTextColor={theme.textSecondary}
                                             value={username}
                                             onChangeText={setUsername}
@@ -357,7 +376,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                                 {/* EMAIL */}
                                 <View style={styles.inputContainer}>
                                     <Text style={styles.fieldLabel}>
-                                        Email
+                                        {t('signup.email')}
                                         {showErrors && !email && <Text style={styles.star}> *</Text>}
                                     </Text>
 
@@ -369,7 +388,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                                     >
                                         <TextInput
                                             style={styles.input}
-                                            placeholder="Email"
+                                            placeholder={t('signup.emailPlaceholder')}
                                             placeholderTextColor={theme.textSecondary}
                                             value={email}
                                             onChangeText={setEmail}
@@ -382,7 +401,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                                 {/* CONTACT */}
                                 <View style={styles.inputContainer}>
                                     <Text style={styles.fieldLabel}>
-                                        Contact Number
+                                        {t('signup.contact')}
                                         {showErrors && !contact && <Text style={styles.star}> *</Text>}
                                     </Text>
 
@@ -394,7 +413,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                                     >
                                         <TextInput
                                             style={styles.input}
-                                            placeholder="Contact Number"
+                                            placeholder={t('signup.contactPlaceholder')}
                                             placeholderTextColor={theme.textSecondary}
                                             value={contact}
                                             onChangeText={setContact}
@@ -406,7 +425,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                                 {/* PASSWORD */}
                                 <View style={styles.inputContainer}>
                                     <Text style={styles.fieldLabel}>
-                                        Password
+                                        {t('signup.password')}
                                         {showErrors && !password && <Text style={styles.star}> *</Text>}
                                     </Text>
 
@@ -418,7 +437,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                                     >
                                         <TextInput
                                             style={styles.input}
-                                            placeholder="Password"
+                                            placeholder={t('signup.passwordPlaceholder')}
                                             placeholderTextColor={theme.textSecondary}
                                             secureTextEntry={!showPassword}
                                             value={password}
@@ -447,12 +466,12 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                                     onPress={handleSignUp}
                                     disabled={loading}
                                 >
-                                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign Up</Text>}
+                                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('signup.signUpButton')}</Text>}
                                 </TouchableOpacity>
 
                                 <View style={styles.dividerContainer}>
                                     <View style={styles.dividerLine} />
-                                    <Text style={styles.orText}>Or</Text>
+                                    <Text style={styles.orText}>{t('signup.or')}</Text>
                                     <View style={styles.dividerLine} />
                                 </View>
 
@@ -460,18 +479,19 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                                     style={styles.googleButton}
                                     size={GoogleSigninButton.Size.Wide}
                                     color={isDarkMode ? GoogleSigninButton.Color.Dark : GoogleSigninButton.Color.Light}
-                                    onPress={googleSignIn}
+                                    onPress={handleGoogleSignIn}
+                                    disabled={googleLoading}
                                 />
 
                                 <View style={styles.linkContainer}>
                                     <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                                        <Text style={styles.link}>Already Registered? Log in here</Text>
+                                        <Text style={styles.link}>{t('signup.loginLink')}</Text>
                                     </TouchableOpacity>
                                 </View>
 
                                 <View style={styles.verifyButton}>
                                     <TouchableOpacity onPress={() => setShowVerifyModal(true)}>
-                                        <Text style={styles.verifyText}>Already registered? Verify Email</Text>
+                                        <Text style={styles.verifyText}>{t('signup.verifyEmail')}</Text>
                                     </TouchableOpacity>
                                 </View>
 
@@ -492,12 +512,12 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                     <View style={styles.modalOverlay}>
                         <TouchableWithoutFeedback>
                             <View style={styles.modalContent}>
-                                <Text style={styles.modalTitle}>Verify Email</Text>
+                                <Text style={styles.modalTitle}>{t('signup.verifyEmailTitle')}</Text>
 
                                 <View style={styles.modalInputWrapper}>
                                     <TextInput
                                         style={styles.modalInput}
-                                        placeholder="Enter your email"
+                                        placeholder={t('signup.verifyEmailPlaceholder')}
                                         placeholderTextColor={theme.textSecondary}
                                         value={verifyEmail}
                                         onChangeText={setVerifyEmail}
@@ -514,7 +534,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                                             setVerifyEmail('');
                                         }}
                                     >
-                                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                                        <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
@@ -525,7 +545,7 @@ const SignUpScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                                         {verifyLoading ? (
                                             <ActivityIndicator color="#fff" />
                                         ) : (
-                                            <Text style={styles.confirmButtonText}>Verify</Text>
+                                            <Text style={styles.confirmButtonText}>{t('signup.verify')}</Text>
                                         )}
                                     </TouchableOpacity>
                                 </View>

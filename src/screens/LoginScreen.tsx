@@ -24,10 +24,12 @@ import { useThemedStyles } from '../hooks/useThemedStyles';
 import {
     GoogleSigninButton,
 } from '@react-native-google-signin/google-signin';
+import { useTranslation } from 'react-i18next';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
 const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) => {
+    const { t } = useTranslation();
     const { theme, isDarkMode } = useTheme();
     const { login, googleSignIn } = useAuth();
 
@@ -224,7 +226,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                 })
             );
         } catch (error: any) {
-            Alert.alert('Login Failed', error.message);
+            Alert.alert(t('login.loginFailed'), error.message);
         } finally {
             setLoading(false);
         }
@@ -241,7 +243,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                 })
             );
         } catch (error: any) {
-            Alert.alert('Google Sign In Failed', error.message);
+            Alert.alert(t('login.googleSignInFailed'), error.message);
         } finally {
             setLoading(false);
         }
@@ -262,7 +264,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                     >
                         <View style={styles.container}>
                             <View style={styles.header}>
-                                <Text style={styles.headerText}>Login</Text>
+                                <Text style={styles.headerText}>{t('login.title')}</Text>
                             </View>
 
                             <View style={styles.content}>
@@ -278,14 +280,14 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                                 {/* EMAIL */}
                                 <View style={styles.inputContainer}>
                                     <View style={styles.inputLabelRow}>
-                                        <Text style={styles.inputLabel}>Email</Text>
+                                        <Text style={styles.inputLabel}>{t('login.emailLabel')}</Text>
                                         <Text style={styles.requiredStar}>*</Text>
                                     </View>
 
                                     <View style={styles.inputWrapper}>
                                         <TextInput
                                             style={styles.input}
-                                            placeholder="Enter your email"
+                                            placeholder={t('login.emailPlaceholder')}
                                             placeholderTextColor={theme.textSecondary}
                                             value={email}
                                             onChangeText={setEmail}
@@ -298,14 +300,14 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                                 {/* PASSWORD */}
                                 <View style={styles.inputContainer}>
                                     <View style={styles.inputLabelRow}>
-                                        <Text style={styles.inputLabel}>Password</Text>
+                                        <Text style={styles.inputLabel}>{t('login.passwordLabel')}</Text>
                                         <Text style={styles.requiredStar}>*</Text>
                                     </View>
 
                                     <View style={styles.inputWrapper}>
                                         <TextInput
                                             style={styles.input}
-                                            placeholder="Enter your password"
+                                            placeholder={t('login.passwordPlaceholder')}
                                             placeholderTextColor={theme.textSecondary}
                                             secureTextEntry={!showPassword}
                                             value={password}
@@ -335,7 +337,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                                         onPress={() => navigation.navigate('ForgotPassword')}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                                        <Text style={styles.forgotPasswordText}>{t('login.forgotPassword')}</Text>
                                     </TouchableOpacity>
                                 </View>
 
@@ -349,13 +351,13 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                                     {loading ? (
                                         <ActivityIndicator color="#fff" size="small" />
                                     ) : (
-                                        <Text style={styles.buttonText}>Login</Text>
+                                        <Text style={styles.buttonText}>{t('login.loginButton')}</Text>
                                     )}
                                 </TouchableOpacity>
 
                                 <View style={styles.dividerContainer}>
                                     <View style={styles.dividerLine} />
-                                    <Text style={styles.orText}>Or</Text>
+                                    <Text style={styles.orText}>{t('login.or')}</Text>
                                     <View style={styles.dividerLine} />
                                 </View>
 
@@ -372,7 +374,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                                         onPress={() => navigation.navigate('SignUp')}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={styles.link}>Don't have an account? Sign up here</Text>
+                                        <Text style={styles.link}>{t('login.signUpLink')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>

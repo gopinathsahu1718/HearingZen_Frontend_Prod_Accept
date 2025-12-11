@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../i18n';
+import { ActivityIndicator, View } from 'react-native';
+import { useTheme } from './ThemeContext';
 
 interface LanguageContextType {
     language: string;
@@ -12,6 +14,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [language, setLanguageState] = useState('en');
     const [isReady, setIsReady] = useState(false);
+    const { theme } = useTheme();
 
     useEffect(() => {
         const loadLanguage = async () => {
@@ -46,13 +49,13 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
     };
 
-    if (!isReady) {
-        return null; // Or a loading component
-    }
-
     return (
         <LanguageContext.Provider value={{ language, setLanguage }}>
-            {children}
+            {isReady ? children : (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }}>
+                    <ActivityIndicator size="large" color={theme.primary} />
+                </View>
+            )}
         </LanguageContext.Provider>
     );
 };

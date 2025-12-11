@@ -10,8 +10,10 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Video from 'react-native-video';
+import { useTranslation } from 'react-i18next';
 
 export default function AboutApp() {
+  const { t } = useTranslation();
   const appVersion = '1.0.0';
   const appName = 'HearingZen';
 
@@ -41,35 +43,33 @@ export default function AboutApp() {
             paused={false}
           />
         </View>
-        <Text style={styles.headerTitle}>About {appName}</Text>
+        <Text style={styles.headerTitle}>{t('about.headerTitle', { appName })}</Text>
         <Text style={styles.headerSubtitle}>
-          Version {appVersion}
+          {/* Version {appVersion} */}
         </Text>
       </LinearGradient>
 
       {/* Description Card */}
       <View style={styles.descriptionCard}>
-        <Text style={styles.cardTitle}>Our Mission</Text>
+        <Text style={styles.cardTitle}>{t('about.ourMission')}</Text>
         <Text style={styles.description}>
-          {appName} is designed to provide you with an exceptional hearing wellness experience.
-          We're committed to delivering quality, performance, and user satisfaction in everything we do.
-          Together, we're redefining hearing wellness.
+          {t('about.missionDescription', { appName })}
         </Text>
       </View>
 
       {/* Features Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Why Choose Us</Text>
+        <Text style={styles.sectionTitle}>{t('about.whyChooseUs')}</Text>
 
         <View style={styles.featureCard}>
           <View style={styles.featureHeader}>
             <View style={[styles.iconCircle, { backgroundColor: 'rgba(24, 116, 237, 0.2)' }]}>
               <Text style={styles.iconEmoji}>🔒</Text>
             </View>
-            <Text style={styles.featureTitle}>Secure & Private</Text>
+            <Text style={styles.featureTitle}>{t('about.features.securePrivate.title')}</Text>
           </View>
           <Text style={styles.featureText}>
-            Your data is encrypted and protected with industry-standard security measures.
+            {t('about.features.securePrivate.description')}
           </Text>
         </View>
 
@@ -78,10 +78,10 @@ export default function AboutApp() {
             <View style={[styles.iconCircle, { backgroundColor: 'rgba(24, 116, 237, 0.2)' }]}>
               <Text style={styles.iconEmoji}>❤️</Text>
             </View>
-            <Text style={styles.featureTitle}>User-Focused</Text>
+            <Text style={styles.featureTitle}>{t('about.features.userFocused.title')}</Text>
           </View>
           <Text style={styles.featureText}>
-            Built with you in mind, featuring intuitive design and seamless functionality.
+            {t('about.features.userFocused.description')}
           </Text>
         </View>
 
@@ -90,17 +90,17 @@ export default function AboutApp() {
             <View style={[styles.iconCircle, { backgroundColor: 'rgba(24, 116, 237, 0.2)' }]}>
               <Text style={styles.iconEmoji}>🌐</Text>
             </View>
-            <Text style={styles.featureTitle}>Always Improving</Text>
+            <Text style={styles.featureTitle}>{t('about.features.alwaysImproving.title')}</Text>
           </View>
           <Text style={styles.featureText}>
-            Regular updates bring new features and improvements based on your feedback.
+            {t('about.features.alwaysImproving.description')}
           </Text>
         </View>
       </View>
 
       {/* Contact Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Get In Touch</Text>
+        <Text style={styles.sectionTitle}>{t('about.getInTouch')}</Text>
 
         <TouchableOpacity
           style={styles.contactCard}
@@ -111,7 +111,7 @@ export default function AboutApp() {
             <Text style={styles.contactEmoji}>📧</Text>
           </View>
           <View style={styles.contactInfo}>
-            <Text style={styles.contactTitle}>Email Support</Text>
+            <Text style={styles.contactTitle}>{t('about.contacts.email.title')}</Text>
             <Text style={styles.contactSubtitle}>support@hearingzen.com</Text>
           </View>
         </TouchableOpacity>
@@ -125,7 +125,7 @@ export default function AboutApp() {
             <Text style={styles.contactEmoji}>🌍</Text>
           </View>
           <View style={styles.contactInfo}>
-            <Text style={styles.contactTitle}>Website</Text>
+            <Text style={styles.contactTitle}>{t('about.contacts.website.title')}</Text>
             <Text style={styles.contactSubtitle}>www.hearingzen.com</Text>
           </View>
         </TouchableOpacity>
@@ -135,8 +135,7 @@ export default function AboutApp() {
       <View style={styles.tipCard}>
         <Text style={styles.tipIcon}>💡</Text>
         <Text style={styles.tipText}>
-          Your voice matters! Every suggestion helps us improve the way you hear
-          the world. Share your feedback to help us grow. 🌍
+          {t('about.tipText')}
         </Text>
       </View>
 
@@ -144,10 +143,10 @@ export default function AboutApp() {
       <View style={styles.footer}>
         <View style={styles.divider} />
         <Text style={styles.footerText}>
-          Thank you for being part of {appName}.
+          {t('about.footerThankYou', { appName })}
         </Text>
         <Text style={styles.footerSubtext}>
-          Together, we're redefining hearing wellness. 💙
+          {t('about.footerSubtext')}
         </Text>
       </View>
     </ScrollView>

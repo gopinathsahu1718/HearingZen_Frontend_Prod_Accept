@@ -272,14 +272,14 @@ const ProfileScreen = ({
     };
 
     const handleLogout = () => {
-        Alert.alert('Logout', 'Are you sure you want to logout?', [
-            { text: 'Cancel', style: 'cancel' },
+        Alert.alert(t('profile.logoutTitle'), t('profile.logoutMessage'), [
+            { text: t('common.cancel'), style: 'cancel' },
             {
-                text: 'Logout',
+                text: t('profile.logout'),
                 style: 'destructive',
                 onPress: async () => {
                     await logout();
-                    Alert.alert('Success', 'Logged out successfully');
+                    Alert.alert(t('common.success'), t('profile.logoutSuccess'));
                 },
             },
         ]);
@@ -288,20 +288,20 @@ const ProfileScreen = ({
     const handleGoogleAction = async () => {
         if (isGoogleLinked) {
             Alert.alert(
-                'Unlink Google',
-                'Are you sure you want to unlink your Google account?',
+                t('profile.unlinkGoogleTitle'),
+                t('profile.unlinkGoogleMessage'),
                 [
-                    { text: 'Cancel', style: 'cancel' },
+                    { text: t('common.cancel'), style: 'cancel' },
                     {
-                        text: 'Unlink',
+                        text: t('profile.unlink'),
                         style: 'destructive',
                         onPress: async () => {
                             setGoogleLoading(true);
                             try {
                                 await unlinkGoogle();
-                                Alert.alert('Success', 'Google account unlinked');
+                                Alert.alert(t('common.success'), t('profile.unlinkSuccess'));
                             } catch (error: any) {
-                                Alert.alert('Error', error.message);
+                                Alert.alert(t('common.error'), error.message);
                             } finally {
                                 setGoogleLoading(false);
                             }
@@ -313,9 +313,9 @@ const ProfileScreen = ({
             setGoogleLoading(true);
             try {
                 await linkGoogle();
-                Alert.alert('Success', 'Google account linked');
+                Alert.alert(t('common.success'), t('profile.linkSuccess'));
             } catch (error: any) {
-                Alert.alert('Error', error.message);
+                Alert.alert(t('common.error'), error.message);
             } finally {
                 setGoogleLoading(false);
             }
@@ -335,7 +335,7 @@ const ProfileScreen = ({
                 onPress={() => setShowLanguagePicker(false)}
             >
                 <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>{t('Select Language')}</Text>
+                    <Text style={styles.modalTitle}>{t('profile.selectLanguage')}</Text>
                     <FlatList
                         data={languageOptions}
                         keyExtractor={item => item.code}
@@ -424,7 +424,7 @@ const ProfileScreen = ({
                                         style={[styles.icon, { tintColor: theme.primary }]}
                                     />
                                     <View style={styles.sectionContent}>
-                                        <Text style={styles.sectionTitle}>My Enrollments</Text>
+                                        <Text style={styles.sectionTitle}>{t('courses.myEnrollments')}</Text>
                                     </View>
                                     <Text style={styles.menuArrow}>›</Text>
                                 </TouchableOpacity>
@@ -437,7 +437,7 @@ const ProfileScreen = ({
                                         style={styles.icon}
                                     />
                                     <View style={styles.sectionContent}>
-                                        <Text style={styles.sectionTitle}>{t('Logout')}</Text>
+                                        <Text style={styles.sectionTitle}>{t('profile.logout')}</Text>
                                     </View>
                                 </TouchableOpacity>
                             </>
@@ -453,8 +453,8 @@ const ProfileScreen = ({
                                     navigation.navigate('PersonalInfo');
                                 } else {
                                     Alert.alert(
-                                        'Authentication Required',
-                                        'Please login to access this feature',
+                                        t('profile.authRequiredTitle'),
+                                        t('profile.authRequiredMessage'),
                                     );
                                 }
                             }}
@@ -479,14 +479,14 @@ const ProfileScreen = ({
                                     style={styles.icon}
                                 />
                                 <View style={styles.sectionContent}>
-                                    <Text style={styles.sectionTitle}>Google Account</Text>
+                                    <Text style={styles.sectionTitle}>{t('profile.googleAccount')}</Text>
                                     <Text style={styles.sectionSubtext}>
-                                        Link your Google account for easier sign-in
+                                        {t('profile.googleAccountDescription')}
                                     </Text>
                                 </View>
                                 <View style={styles.googleSection}>
                                     <Text style={styles.googleStatus}>
-                                        {isGoogleLinked ? 'Linked' : 'Not linked'}
+                                        {isGoogleLinked ? t('profile.linked') : t('profile.notLinked')}
                                     </Text>
                                     <TouchableOpacity
                                         style={styles.googleActionButton}
@@ -497,8 +497,8 @@ const ProfileScreen = ({
                                             {googleLoading
                                                 ? '...'
                                                 : isGoogleLinked
-                                                    ? 'Unlink'
-                                                    : 'Link'}
+                                                    ? t('profile.unlink')
+                                                    : t('profile.link')}
                                         </Text>
                                     </TouchableOpacity>
                                 </View>
@@ -519,7 +519,7 @@ const ProfileScreen = ({
                                 />
                                 <View style={styles.sectionContent}>
                                     <Text style={styles.sectionTitle}>
-                                        {t('Change Password')}
+                                        {t('changePassword.title')}
                                     </Text>
                                 </View>
                             </TouchableOpacity>
@@ -636,7 +636,7 @@ const ProfileScreen = ({
                             />
                             <View style={styles.sectionContent}>
                                 <Text style={styles.sectionTitle}>
-                                    {t('Terms and Conditions')}
+                                    {t('termsAndConditions.headerTitle')}
                                 </Text>
                             </View>
                         </TouchableOpacity>
@@ -645,7 +645,7 @@ const ProfileScreen = ({
                     {/* Version Information */}
                     <View style={styles.versionContainer}>
                         <Text style={styles.versionText}>
-                            {t('Version')} {version}
+                            {t('profile.version')} {version}
                         </Text>
                     </View>
                 </View>

@@ -11,8 +11,10 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Video from 'react-native-video';
+import { useTranslation } from 'react-i18next';
 
 const FeedbackPage = () => {
+    const { t } = useTranslation();
     const [name, setName] = useState('');
     const [rating, setRating] = useState(0);
     const [feedback, setFeedback] = useState('');
@@ -20,15 +22,15 @@ const FeedbackPage = () => {
     const handleSubmit = () => {
         if (!name.trim() || !feedback.trim() || rating <= 0) {
             Alert.alert(
-                'Incomplete',
-                'Please fill in all fields and provide a rating before submitting.',
+                t('feedback.incompleteTitle'),
+                t('feedback.incompleteMessage'),
             );
             return;
         }
 
         Alert.alert(
-            'Thank You 💙',
-            `Your feedback (rating: ${rating}/5) has been submitted successfully!`,
+            t('feedback.thankYouTitle'),
+            t('feedback.successMessage', { rating }),
         );
         setName('');
         setRating(0);
@@ -57,24 +59,24 @@ const FeedbackPage = () => {
                         paused={false}
                     />
                 </View>
-                <Text style={styles.headerTitle}>We Value Your Feedback</Text>
+                <Text style={styles.headerTitle}>{t('feedback.headerTitle')}</Text>
                 <Text style={styles.headerSubtitle}>
-                    Help us make HearingZen even better for you.
+                    {t('feedback.headerSubtitle')}
                 </Text>
             </LinearGradient>
 
             {/* Feedback Form */}
             <View style={styles.formCard}>
-                <Text style={styles.label}>Your Name</Text>
+                <Text style={styles.label}>{t('feedback.yourName')}</Text>
                 <TextInput
                     value={name}
                     onChangeText={setName}
-                    placeholder="Enter your name"
+                    placeholder={t('feedback.namePlaceholder')}
                     placeholderTextColor="#777"
                     style={styles.input}
                 />
 
-                <Text style={styles.label}>Rate Your Experience</Text>
+                <Text style={styles.label}>{t('feedback.rateExperience')}</Text>
                 <View style={styles.ratingRow} accessibilityRole="radiogroup">
                     {[1, 2, 3, 4, 5].map(star => (
                         <TouchableOpacity
@@ -98,11 +100,11 @@ const FeedbackPage = () => {
                     ))}
                 </View>
 
-                <Text style={styles.label}>Your Feedback</Text>
+                <Text style={styles.label}>{t('feedback.yourFeedback')}</Text>
                 <TextInput
                     value={feedback}
                     onChangeText={setFeedback}
-                    placeholder="Tell us about your experience..."
+                    placeholder={t('feedback.feedbackPlaceholder')}
                     placeholderTextColor="#777"
                     style={[styles.input, styles.textArea]}
                     multiline
@@ -115,7 +117,7 @@ const FeedbackPage = () => {
                         colors={['#1874ed', '#0a4a9e']}
                         style={styles.submitButton}
                     >
-                        <Text style={styles.submitText}>Submit Feedback</Text>
+                        <Text style={styles.submitText}>{t('feedback.submitButton')}</Text>
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
@@ -124,8 +126,7 @@ const FeedbackPage = () => {
             <View style={styles.tipCard}>
                 <Text style={styles.tipIcon}>💡</Text>
                 <Text style={styles.tipText}>
-                    Your voice matters! Every suggestion helps us improve the way you hear
-                    the world. 🌍
+                    {t('feedback.tipText')}
                 </Text>
             </View>
 
@@ -133,10 +134,10 @@ const FeedbackPage = () => {
             <View style={styles.footer}>
                 <View style={styles.divider} />
                 <Text style={styles.footerText}>
-                    Thank you for being part of HearingZen.
+                    {t('feedback.footerThankYou')}
                 </Text>
                 <Text style={styles.footerSubtext}>
-                    Together, we’re redefining hearing wellness. 💙
+                    {t('feedback.footerSubtext')}
                 </Text>
             </View>
         </ScrollView>

@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Video from 'react-native-video';
+import { useTranslation } from 'react-i18next';
 
 export default function TermsAndConditions() {
+  const { t } = useTranslation();
   const [expandedSection, setExpandedSection] = useState(null);
   const appName = 'HearingZen';
   const lastUpdated = 'November 21, 2025';
@@ -19,38 +21,7 @@ export default function TermsAndConditions() {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  const termsData = [
-    {
-      id: 1,
-      icon: '📋',
-      title: '1. Introduction',
-      content: 'Welcome to HearingZen. By using our app, you agree to be bound by these Terms and Conditions.'
-    },
-    {
-      id: 2,
-      icon: '✅',
-      title: '2. Usage',
-      content: 'You agree to use the app only for lawful purposes and in a way that does not infringe the rights of others.'
-    },
-    {
-      id: 3,
-      icon: '🔒',
-      title: '3. Privacy',
-      content: 'We respect your privacy. Please read our Privacy Policy to understand how we collect and use your data.'
-    },
-    {
-      id: 4,
-      icon: '⚠️',
-      title: '4. Limitation of Liability',
-      content: 'We are not liable for any direct, indirect, incidental, or consequential damages arising out of your use of the app.'
-    },
-    {
-      id: 5,
-      icon: '🔄',
-      title: '5. Updates',
-      content: 'Terms may change from time to time. Continued use of the app means you accept those changes.'
-    }
-  ];
+  const termsData = t('termsAndConditions.sections', { returnObjects: true });
 
   return (
     <ScrollView
@@ -74,18 +45,17 @@ export default function TermsAndConditions() {
             paused={false}
           />
         </View>
-        <Text style={styles.headerTitle}>Terms & Conditions</Text>
-        <Text style={styles.headerSubtitle}>
-          Last Updated: {lastUpdated}
-        </Text>
+        <Text style={styles.headerTitle}>{t('termsAndConditions.headerTitle')}</Text>
+        {/* <Text style={styles.headerSubtitle}>
+          {t('termsAndConditions.lastUpdated', { lastUpdated })}
+        </Text> */}
       </LinearGradient>
 
       {/* Introduction Card */}
       <View style={styles.introCard}>
-        <Text style={styles.cardTitle}>Welcome to {appName}</Text>
+        <Text style={styles.cardTitle}>{t('termsAndConditions.welcome', { appName })}</Text>
         <Text style={styles.introText}>
-          Please read these Terms and Conditions carefully before using our application.
-          These terms outline your rights and responsibilities when using {appName}.
+          {t('termsAndConditions.introText', { appName })}
         </Text>
       </View>
 
@@ -116,19 +86,17 @@ export default function TermsAndConditions() {
 
       {/* Important Notice */}
       <View style={styles.noticeCard}>
-        <Text style={styles.noticeIcon}>⚠️</Text>
-        <Text style={styles.noticeTitle}>Important Notice</Text>
+        <Text style={styles.noticeIcon}>{t('termsAndConditions.noticeIcon')}</Text>
+        <Text style={styles.noticeTitle}>{t('termsAndConditions.noticeTitle')}</Text>
         <Text style={styles.noticeText}>
-          By continuing to use {appName}, you acknowledge that you have read,
-          understood, and agree to be bound by these Terms and Conditions.
+          {t('termsAndConditions.noticeText', { appName })}
         </Text>
       </View>
 
       {/* Agreement Card */}
       <View style={styles.agreementCard}>
         <Text style={styles.agreementText}>
-          These terms constitute a legally binding agreement between you and {appName}.
-          If you have any questions or concerns, please contact our support team.
+          {t('termsAndConditions.agreementText', { appName })}
         </Text>
       </View>
 
@@ -136,10 +104,10 @@ export default function TermsAndConditions() {
       <View style={styles.footer}>
         <View style={styles.divider} />
         <Text style={styles.footerText}>
-          Thank you for being part of {appName}.
+          {t('termsAndConditions.footerThankYou', { appName })}
         </Text>
         <Text style={styles.footerSubtext}>
-          Together, we're redefining hearing wellness. 💙
+          {t('termsAndConditions.footerSubtext')}
         </Text>
       </View>
     </ScrollView>

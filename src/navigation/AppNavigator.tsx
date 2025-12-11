@@ -14,7 +14,6 @@ import VideoSplashScreen from '../screens/VideoSplashScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import OnboardingCheckScreen from '../screens/OnboardingCheckScreen';
 
-import SplashScreen from '../screens/SplashScreen';
 import HomeScreen from '../screens/HomeScreen';
 import StepsScreen from '../screens/StepsScreen';
 import HomeWeatherScreen from '../screens/HomeWeatherScreen';
@@ -74,6 +73,7 @@ const HomeTabs = () => {
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: false,
+
                 tabBarIcon: ({ color, size }) => (
                     <Image
                         source={tabIcons[route.name] || tabIcons.Home}
@@ -159,7 +159,6 @@ const AppNavigator = () => {
                 />
 
                 {/* Existing Screens */}
-                <Stack.Screen name="Splash" component={SplashScreen} />
                 <Stack.Screen
                     name="HomeTabs"
                     component={HomeTabs}

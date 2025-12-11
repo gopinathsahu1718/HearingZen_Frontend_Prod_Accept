@@ -20,10 +20,12 @@ import { RootStackParamList } from '../types/types';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
+import { useTranslation } from 'react-i18next';
 
 type ForgotPasswordScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ForgotPassword'>;
 
 const ForgotPasswordScreen = ({ navigation }: { navigation: ForgotPasswordScreenNavigationProp }) => {
+    const { t } = useTranslation();
     const { theme, isDarkMode } = useTheme();
     const { forgotPassword } = useAuth();
 
@@ -147,7 +149,7 @@ const ForgotPasswordScreen = ({ navigation }: { navigation: ForgotPasswordScreen
         Keyboard.dismiss();
 
         if (!email) {
-            Alert.alert('Error', 'Please enter your email');
+            Alert.alert(t('forgotPassword.error'), t('forgotPassword.enterEmail'));
             return;
         }
 
@@ -156,7 +158,7 @@ const ForgotPasswordScreen = ({ navigation }: { navigation: ForgotPasswordScreen
             const resetInitToken = await forgotPassword(email.toLowerCase());
             navigation.navigate('ResetPasswordOTP', { resetInitToken, email: email.toLowerCase() });
         } catch (error: any) {
-            Alert.alert('Error', error.message);
+            Alert.alert(t('forgotPassword.error'), error.message);
         } finally {
             setLoading(false);
         }
@@ -178,7 +180,7 @@ const ForgotPasswordScreen = ({ navigation }: { navigation: ForgotPasswordScreen
                     >
                         <View style={styles.container}>
                             <View style={styles.header}>
-                                <Text style={styles.headerText}>Forgot{'\n'}Password</Text>
+                                <Text style={styles.headerText}>{t('forgotPassword.headerText')}</Text>
                             </View>
 
                             <View style={styles.content}>
@@ -191,16 +193,16 @@ const ForgotPasswordScreen = ({ navigation }: { navigation: ForgotPasswordScreen
                                     style={styles.logo}
                                 />
 
-                                <Text style={styles.title}>Reset Password</Text>
+                                <Text style={styles.title}>{t('forgotPassword.title')}</Text>
                                 <Text style={styles.subtitle}>
-                                    Enter your email address and we'll send you an OTP to reset your password
+                                    {t('forgotPassword.subtitle')}
                                 </Text>
 
                                 <View style={styles.inputContainer}>
                                     <View style={styles.inputWrapper}>
                                         <TextInput
                                             style={styles.input}
-                                            placeholder="Email"
+                                            placeholder={t('forgotPassword.emailPlaceholder')}
                                             placeholderTextColor={theme.textSecondary}
                                             value={email}
                                             onChangeText={setEmail}
@@ -220,7 +222,7 @@ const ForgotPasswordScreen = ({ navigation }: { navigation: ForgotPasswordScreen
                                     {loading ? (
                                         <ActivityIndicator color="#fff" size="small" />
                                     ) : (
-                                        <Text style={styles.buttonText}>Send OTP</Text>
+                                        <Text style={styles.buttonText}>{t('forgotPassword.sendOTP')}</Text>
                                     )}
                                 </TouchableOpacity>
 
@@ -229,7 +231,7 @@ const ForgotPasswordScreen = ({ navigation }: { navigation: ForgotPasswordScreen
                                         onPress={() => navigation.goBack()}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={styles.backButtonText}>Back to Login</Text>
+                                        <Text style={styles.backButtonText}>{t('forgotPassword.backToLogin')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>

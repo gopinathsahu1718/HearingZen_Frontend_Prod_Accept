@@ -22,6 +22,7 @@ import { RootStackParamList } from '../types/types';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
+import { useTranslation } from 'react-i18next';
 
 type NewPasswordScreenNavigationProp = StackNavigationProp<RootStackParamList, 'NewPassword'>;
 type NewPasswordScreenRouteProp = RouteProp<RootStackParamList, 'NewPassword'>;
@@ -32,6 +33,7 @@ interface Props {
 }
 
 const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
+    const { t } = useTranslation();
     const { theme, isDarkMode } = useTheme();
     const { resetPassword } = useAuth();
     const { resetToken } = route.params;
@@ -206,21 +208,21 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
         }
 
         if (newPassword !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
+            Alert.alert(t('resetPassword.error'), t('resetPassword.passwordsDoNotMatch'));
             return;
         }
 
         if (newPassword.length < 8) {
-            Alert.alert('Error', 'Password must be at least 8 characters long');
+            Alert.alert(t('resetPassword.error'), t('resetPassword.passwordTooShort'));
             return;
         }
 
         setLoading(true);
         try {
             await resetPassword(resetToken, newPassword, confirmPassword);
-            Alert.alert('Success', 'Password reset successfully!', [
+            Alert.alert(t('resetPassword.success'), t('resetPassword.successMessage'), [
                 {
-                    text: 'OK',
+                    text: t('common.ok'),
                     onPress: () => {
                         navigation.dispatch(
                             CommonActions.reset({
@@ -232,7 +234,7 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                 },
             ]);
         } catch (error: any) {
-            Alert.alert('Error', error.message);
+            Alert.alert(t('resetPassword.error'), error.message);
         } finally {
             setLoading(false);
         }
@@ -253,7 +255,7 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                     >
                         <View style={styles.container}>
                             <View style={styles.header}>
-                                <Text style={styles.headerText}>New{'\n'}Password</Text>
+                                <Text style={styles.headerText}>{t('resetPassword.headerText')}</Text>
                             </View>
 
                             <View style={styles.content}>
@@ -266,22 +268,22 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                                     style={styles.logo}
                                 />
 
-                                <Text style={styles.title}>Create New Password</Text>
+                                <Text style={styles.title}>{t('resetPassword.title')}</Text>
                                 <Text style={styles.subtitle}>
-                                    Your new password must be different from previously used passwords
+                                    {t('resetPassword.subtitle')}
                                 </Text>
 
                                 {/* ⭐ New Password */}
                                 <View style={styles.inputContainer}>
                                     <View style={styles.labelRow}>
-                                        <Text style={styles.label}>New Password</Text>
+                                        <Text style={styles.label}>{t('resetPassword.newPassword')}</Text>
                                         <Text style={styles.star}>*</Text>
                                     </View>
 
                                     <View style={styles.inputWrapper}>
                                         <TextInput
                                             style={styles.input}
-                                            placeholder="Enter new password"
+                                            placeholder={t('resetPassword.newPasswordPlaceholder')}
                                             placeholderTextColor={theme.textSecondary}
                                             secureTextEntry={!showNewPassword}
                                             value={newPassword}
@@ -310,14 +312,14 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                                 {/* ⭐ Confirm Password */}
                                 <View style={styles.inputContainer}>
                                     <View style={styles.labelRow}>
-                                        <Text style={styles.label}>Confirm Password</Text>
+                                        <Text style={styles.label}>{t('resetPassword.confirmPassword')}</Text>
                                         <Text style={styles.star}>*</Text>
                                     </View>
 
                                     <View style={styles.inputWrapper}>
                                         <TextInput
                                             style={styles.input}
-                                            placeholder="Re-enter new password"
+                                            placeholder={t('resetPassword.confirmPasswordPlaceholder')}
                                             placeholderTextColor={theme.textSecondary}
                                             secureTextEntry={!showConfirmPassword}
                                             value={confirmPassword}
@@ -344,8 +346,7 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                                 </View>
 
                                 <Text style={styles.hint}>
-                                    Password must be at least 8 characters long, include an uppercase
-                                    letter, lowercase letter, number, and special character
+                                    {t('resetPassword.hint')}
                                 </Text>
 
                                 <TouchableOpacity
@@ -356,7 +357,7 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                                     {loading ? (
                                         <ActivityIndicator color="#fff" size="small" />
                                     ) : (
-                                        <Text style={styles.buttonText}>Reset Password</Text>
+                                        <Text style={styles.buttonText}>{t('resetPassword.button')}</Text>
                                     )}
                                 </TouchableOpacity>
                             </View>

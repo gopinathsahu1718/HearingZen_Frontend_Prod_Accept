@@ -12,8 +12,10 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function EditProfileScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { getUserProfile, updateProfile } = useAuth();
 
@@ -66,7 +68,7 @@ export default function EditProfileScreen() {
       setDisabilityPercentage(data.disabilityPercentage?.toString() || '');
     } catch (error: any) {
       console.error('Error loading profile:', error);
-      Alert.alert('Error', 'Failed to load profile data');
+      Alert.alert(t('profile.loadErrorTitle'), t('profile.loadErrorMessage'));
     } finally {
       setLoading(false);
     }
@@ -87,7 +89,7 @@ export default function EditProfileScreen() {
       if (height) profileData.height = parseFloat(height);
       if (weight) profileData.weight = parseFloat(weight);
       if (gender) {
-        if (gender === 'Other') {
+        if (gender === 'other') {
           profileData.gender = genderOther || 'Other';
         } else {
           profileData.gender = gender;
@@ -100,11 +102,11 @@ export default function EditProfileScreen() {
 
       await updateProfile(profileData);
 
-      Alert.alert('✅ Success', 'Profile updated successfully!');
+      Alert.alert(t('profile.successTitle'), t('profile.successMessage'));
       navigation.goBack();
     } catch (error: any) {
       console.error('Error saving profile:', error);
-      Alert.alert('Error', error.message || 'Failed to update profile');
+      Alert.alert(t('common.error'), error.message || t('profile.saveError'));
     } finally {
       setSaving(false);
     }
@@ -131,7 +133,7 @@ export default function EditProfileScreen() {
             style={styles.backIcon}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <Text style={styles.headerTitle}>{t('profile.editProfile')}</Text>
       </View>
 
       {/* Profile Picture */}
@@ -142,9 +144,9 @@ export default function EditProfileScreen() {
             style={styles.topProfilePic}
           />
         </View>
-        <Text style={styles.profileName}>{username || 'Your Name'}</Text>
+        <Text style={styles.profileName}>{username || t('profile.yourName')}</Text>
         <Text style={styles.profileSubText}>
-          @{username?.toLowerCase().replace(/\s+/g, '') || 'username'}
+          @{username?.toLowerCase().replace(/\s+/g, '') || t('profile.username')}
         </Text>
       </View>
 
@@ -163,7 +165,7 @@ export default function EditProfileScreen() {
               selectedTab === 'info' && styles.activeButtonText,
             ]}
           >
-            contact details
+            {t('profile.contactDetails')}
           </Text>
         </TouchableOpacity>
 
@@ -180,7 +182,7 @@ export default function EditProfileScreen() {
               selectedTab === 'health' && styles.activeButtonText,
             ]}
           >
-            Health card
+            {t('profile.healthCard')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -190,24 +192,24 @@ export default function EditProfileScreen() {
         {selectedTab === 'info' ? (
           <>
             <InputField
-              label="Full Name"
+              label={t('profile.fullName')}
               value={username}
               onChangeText={setUsername}
             />
             <InputField
-              label="Phone"
+              label={t('profile.phone')}
               value={contact}
               onChangeText={setContact}
               keyboardType="phone-pad"
             />
             <InputField
-              label="Email"
+              label={t('profile.email')}
               value={email}
               onChangeText={setEmail}
               editable={false}
             />
             <InputField
-              label="Location"
+              label={t('profile.location')}
               value={currentLocation}
               onChangeText={setCurrentLocation}
             />
@@ -215,21 +217,21 @@ export default function EditProfileScreen() {
         ) : (
           <>
             <InputField
-              label="Height (in cm or feet)"
+              label={t('profile.height')}
               value={height}
               onChangeText={setHeight}
               keyboardType="numeric"
-              placeholder="e.g., 170 or 5.7"
+              placeholder={t('profile.heightPlaceholder')}
             />
             <InputField
-              label="Weight (kg)"
+              label={t('profile.weight')}
               value={weight}
               onChangeText={setWeight}
               keyboardType="numeric"
-              placeholder="e.g., 70"
+              placeholder={t('profile.weightPlaceholder')}
             />
             <View style={styles.radioGroup}>
-              <Text style={styles.label}>Gender</Text>
+              <Text style={styles.label}>{t('profile.gender')}</Text>
               <View style={styles.radioOptions}>
                 <TouchableOpacity
                   style={styles.radioOption}
@@ -241,7 +243,7 @@ export default function EditProfileScreen() {
                   <View style={styles.radioOuter}>
                     {gender === 'male' && <View style={styles.radioInner} />}
                   </View>
-                  <Text style={styles.radioLabel}>Male</Text>
+                  <Text style={styles.radioLabel}>{t('profile.genderMale')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -254,7 +256,7 @@ export default function EditProfileScreen() {
                   <View style={styles.radioOuter}>
                     {gender === 'female' && <View style={styles.radioInner} />}
                   </View>
-                  <Text style={styles.radioLabel}>Female</Text>
+                  <Text style={styles.radioLabel}>{t('profile.genderFemale')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -264,38 +266,38 @@ export default function EditProfileScreen() {
                   <View style={styles.radioOuter}>
                     {gender === 'other' && <View style={styles.radioInner} />}
                   </View>
-                  <Text style={styles.radioLabel}>Other</Text>
+                  <Text style={styles.radioLabel}>{t('profile.genderOther')}</Text>
                 </TouchableOpacity>
               </View>
 
-              {gender === 'Other' && (
+              {gender === 'other' && (
                 <InputField
-                  label="Please specify"
+                  label={t('profile.genderSpecify')}
                   value={genderOther}
                   onChangeText={setGenderOther}
-                  placeholder="e.g., Non-binary"
+                  placeholder={t('profile.genderSpecifyPlaceholder')}
                 />
               )}
             </View>
             <InputField
-              label="Age"
+              label={t('profile.age')}
               value={age}
               onChangeText={setAge}
               keyboardType="numeric"
-              placeholder="e.g., 25"
+              placeholder={t('profile.agePlaceholder')}
             />
             <InputField
-              label="Deafness Level"
+              label={t('profile.deafnessLevel')}
               value={deafnessLevel}
               onChangeText={setDeafnessLevel}
-              placeholder="e.g., none, mild, moderate, severe"
+              placeholder={t('profile.deafnessLevelPlaceholder')}
             />
             <InputField
-              label="Disability Percentage"
+              label={t('profile.disabilityPercentage')}
               value={disabilityPercentage}
               onChangeText={setDisabilityPercentage}
               keyboardType="numeric"
-              placeholder="e.g., 0-100"
+              placeholder={t('profile.disabilityPercentagePlaceholder')}
             />
           </>
         )}
@@ -311,7 +313,7 @@ export default function EditProfileScreen() {
           {saving ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.saveButtonText}>Save Changes</Text>
+            <Text style={styles.saveButtonText}>{t('profile.saveChanges')}</Text>
           )}
         </TouchableOpacity>
       </View>

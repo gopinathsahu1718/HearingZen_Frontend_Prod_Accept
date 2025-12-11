@@ -22,6 +22,7 @@ import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/nativ
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/types';
+import { useTranslation } from 'react-i18next';
 
 type CourseDetailRouteProp = RouteProp<RootStackParamList, 'CourseDetail'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -48,6 +49,7 @@ const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_INTERVAL = 5000; // 5 seconds
 
 const CourseDetailScreen = () => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { token, isAuthenticated } = useAuth();
   const navigation = useNavigation<NavigationProp>();
@@ -221,11 +223,11 @@ const CourseDetailScreen = () => {
 
             // Show alert only once
             Alert.alert(
-              'Enrollment Successful! 🎉',
-              'Your payment has been verified and enrollment is complete!',
+              t('courses.enrollmentSuccessfulTitle'),
+              t('courses.enrollmentSuccessfulMessage'),
               [
                 {
-                  text: 'OK',
+                  text: t('common.ok'),
                   onPress: () => {
                     // Just dismiss - user stays on screen
                   },
@@ -279,12 +281,12 @@ const CourseDetailScreen = () => {
   const handleEnrollPress = async () => {
     if (!isAuthenticated || !token) {
       Alert.alert(
-        'Authentication Required',
-        'Please login to enroll in this course',
+        t('courses.authRequiredTitle'),
+        t('courses.authRequiredMessage'),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Login',
+            text: t('common.login'),
             onPress: () => navigation.navigate('Login'),
           },
         ]
@@ -313,9 +315,9 @@ const CourseDetailScreen = () => {
 
       // Handle free courses
       if (orderData.enrollment_id) {
-        Alert.alert('Success', 'You have been enrolled in this course!', [
+        Alert.alert(t('common.success'), t('courses.freeEnrollmentMessage'), [
           {
-            text: 'OK',
+            text: t('common.ok'),
             onPress: () => {
               setIsEnrolled(true);
               navigation.navigate('MyEnrollments');
@@ -356,11 +358,11 @@ const CourseDetailScreen = () => {
           } else {
             // Payment might have succeeded but verification failed
             Alert.alert(
-              'Payment Processing',
-              'We are verifying your payment. Please check back in a few moments.',
+              t('courses.paymentProcessingTitle'),
+              t('courses.paymentProcessingMessage'),
               [
                 {
-                  text: 'OK',
+                  text: t('common.ok'),
                   onPress: () => checkPendingPaymentsForCourse(),
                 },
               ]
@@ -368,7 +370,7 @@ const CourseDetailScreen = () => {
           }
         });
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to process enrollment');
+      Alert.alert(t('common.error'), error.message || t('courses.enrollError'));
       setEnrolling(false);
     }
   };
@@ -402,9 +404,9 @@ const CourseDetailScreen = () => {
         setIsEnrolled(true);
         setHasShownEnrollmentAlert(true);
 
-        Alert.alert('Success! 🎉', 'Enrollment successful!', [
+        Alert.alert(t('courses.enrollmentSuccessfulTitle'), t('courses.enrollmentSuccessMessage'), [
           {
-            text: 'OK',
+            text: t('common.ok'),
             onPress: () => {
               // User stays on screen to view details
             },
@@ -418,11 +420,11 @@ const CourseDetailScreen = () => {
 
       // Don't remove pending payment - let webhook handle it
       Alert.alert(
-        'Verification Pending',
-        'We are processing your payment. You will be notified once enrollment is confirmed.',
+        t('courses.verificationPendingTitle'),
+        t('courses.verificationPendingMessage'),
         [
           {
-            text: 'OK',
+            text: t('common.ok'),
             onPress: () => {
               // Schedule a check after a few seconds
               setTimeout(() => checkPendingPaymentsForCourse(), 3000);
@@ -442,12 +444,12 @@ const CourseDetailScreen = () => {
   const handleLessonPress = (lesson: Lesson, index: number) => {
     if (!isEnrolled) {
       Alert.alert(
-        'Enrollment Required',
-        'You need to enroll in this course to access the lessons',
+        t('courses.enrollmentRequiredTitle'),
+        t('courses.enrollmentRequiredMessage'),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Enroll Now',
+            text: t('courses.enrollNow'),
             onPress: handleEnrollPress,
           },
         ]
@@ -469,8 +471,8 @@ const CourseDetailScreen = () => {
       return (
         <View style={[styles.subscribeContainer, { backgroundColor: theme.primary }]}>
           <ActivityIndicator size="large" color="#FFFFFF" />
-          <Text style={[styles.subscribeLabel, { marginTop: 10 }]}>
-            {checkingPendingPayment ? 'CHECKING PAYMENT...' : 'CHECKING STATUS...'}
+          <Text style={[styles.subscribeLabel, { marginTop: 10, color: '#FFFFFF' }]}>
+            {checkingPendingPayment ? t('courses.checkingPayment') : t('courses.checkingStatus')}
           </Text>
         </View>
       );
@@ -479,9 +481,9 @@ const CourseDetailScreen = () => {
     if (!isAuthenticated) {
       return (
         <View style={[styles.subscribeContainer, { backgroundColor: theme.primary }]}>
-          <Text style={styles.subscribeLabel}>LOGIN TO ENROLL</Text>
+          <Text style={styles.subscribeLabel}>{t('courses.loginToEnroll')}</Text>
           <TouchableOpacity style={styles.enrollButton} onPress={handleEnrollPress}>
-            <Text style={styles.enrollButtonText}>Login</Text>
+            <Text style={styles.enrollButtonText}>{t('common.login')}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -490,12 +492,12 @@ const CourseDetailScreen = () => {
     if (isEnrolled) {
       return (
         <View style={[styles.subscribeContainer, { backgroundColor: '#10B981' }]}>
-          <Text style={styles.subscribeLabel}>✓ ENROLLED</Text>
+          <Text style={styles.subscribeLabel}>✓ {t('courses.enrolled')}</Text>
           <Text style={styles.enrolledMessage}>
-            You are enrolled in this course
+            {t('courses.enrolledMessage')}
           </Text>
           <TouchableOpacity style={styles.enrollButton} onPress={handleGoToCourse}>
-            <Text style={styles.enrollButtonText}>Go to Course</Text>
+            <Text style={styles.enrollButtonText}>{t('courses.goToCourse')}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -503,9 +505,9 @@ const CourseDetailScreen = () => {
 
     return (
       <View style={[styles.subscribeContainer, { backgroundColor: theme.primary }]}>
-        <Text style={styles.subscribeLabel}>SUBSCRIBE</Text>
+        <Text style={styles.subscribeLabel}>{t('courses.subscribe')}</Text>
         <Text style={styles.priceText}>
-          ₹ {course.price === 0 ? 'Free' : course.price}
+          ₹ {course.price === 0 ? t('courses.free') : course.price}
         </Text>
         {course.actual_price > course.price && course.price !== 0 && (
           <Text style={styles.actualPrice}>₹ {course.actual_price}</Text>
@@ -519,7 +521,7 @@ const CourseDetailScreen = () => {
             <ActivityIndicator size="small" color="#3B82F6" />
           ) : (
             <Text style={styles.enrollButtonText}>
-              {course.price === 0 ? 'Enroll Free' : 'Enroll Now'}
+              {course.price === 0 ? t('courses.enrollFree') : t('courses.enrollNow')}
             </Text>
           )}
         </TouchableOpacity>
@@ -554,7 +556,7 @@ const CourseDetailScreen = () => {
           </Text>
           {isEnrolled && (
             <View style={styles.enrolledBadge}>
-              <Text style={styles.enrolledBadgeText}>✓ Enrolled</Text>
+              <Text style={styles.enrolledBadgeText}>✓ {t('courses.enrolled')}</Text>
             </View>
           )}
         </View>
@@ -562,7 +564,7 @@ const CourseDetailScreen = () => {
         {/* Course Description */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Course Description
+            {t('courses.descriptionTitle')}
           </Text>
           <Text style={[styles.description, { color: theme.textSecondary }]}>
             {course.description}
@@ -572,7 +574,7 @@ const CourseDetailScreen = () => {
         {/* What You'll Learn */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            What You'll Learn
+            {t('courses.whatYouLearnTitle')}
           </Text>
           {course.what_you_learn.map((item, index) => (
             <View key={index} style={styles.learningItem}>
@@ -589,7 +591,7 @@ const CourseDetailScreen = () => {
         {/* Instructor */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Instructor
+            {t('courses.instructorTitle')}
           </Text>
           <Text style={[styles.instructorName, { color: theme.text }]}>
             {course.author_name}
@@ -600,17 +602,17 @@ const CourseDetailScreen = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Course Content
+              {t('courses.contentTitle')}
             </Text>
             {!isEnrolled && (
               <View style={[styles.lockBadge, { backgroundColor: theme.primary + '20' }]}>
                 <Text style={[styles.lockIcon, { color: theme.primary }]}>🔒</Text>
-                <Text style={[styles.lockText, { color: theme.primary }]}>Locked</Text>
+                <Text style={[styles.lockText, { color: theme.primary }]}>{t('courses.locked')}</Text>
               </View>
             )}
           </View>
           <Text style={[styles.lessonSubtitle, { color: theme.textSecondary }]}>
-            {allLessons.length} Lessons
+            {t('courses.lessonsCount', { count: allLessons.length })}
           </Text>
 
           {allLessons.length > 0 ? (
@@ -641,7 +643,7 @@ const CourseDetailScreen = () => {
                   {!isEnrolled && (
                     <View style={styles.lockedLabel}>
                       <Text style={[styles.lockIconSmall, { color: theme.textSecondary }]}>🔒</Text>
-                      <Text style={[styles.lockedText, { color: theme.textSecondary }]}>Locked</Text>
+                      <Text style={[styles.lockedText, { color: theme.textSecondary }]}>{t('courses.locked')}</Text>
                     </View>
                   )}
                 </View>
@@ -652,7 +654,7 @@ const CourseDetailScreen = () => {
             ))
           ) : (
             <Text style={[styles.noLessonsText, { color: theme.textSecondary }]}>
-              No lessons available yet
+              {t('courses.noLessons')}
             </Text>
           )}
         </View>

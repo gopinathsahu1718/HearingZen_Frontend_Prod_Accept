@@ -17,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/types';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -76,6 +77,7 @@ const ENROLLED_PROGRESS_URL = `${BASE_URL}/api/course/enrolled-with-progress`;
 const RECENT_COURSES_URL = `${BASE_URL}/api/course/recent-enrolled`;
 
 const CourseCategoriesScreen = () => {
+    const { t, i18n } = useTranslation();
     const { theme } = useTheme();
     const { token, isAuthenticated } = useAuth();
     const navigation = useNavigation<NavigationProp>();
@@ -216,10 +218,10 @@ const CourseCategoriesScreen = () => {
             <View style={[styles.performanceCard, { backgroundColor: theme.cardBackground }]}>
                 <View style={styles.performanceHeader}>
                     <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                        My Progress
+                        {t('courses.myProgress')}
                     </Text>
                     <Text style={[styles.updatedText, { color: theme.primary }]}>
-                        {enrolledCourses.length} Course{enrolledCourses.length !== 1 ? 's' : ''}
+                        {t('courses.courseCount', { count: enrolledCourses.length })}
                     </Text>
                 </View>
 
@@ -258,7 +260,11 @@ const CourseCategoriesScreen = () => {
                                                 {course.title}
                                             </Text>
                                             <Text style={[styles.subjectPercentage, { color: theme.textSecondary }]}>
-                                                {course.progress.completed}/{course.progress.total} lessons • {course.progress.percentage}%
+                                                {t('courses.lessonProgress', {
+                                                    completed: course.progress.completed,
+                                                    total: course.progress.total,
+                                                    percentage: course.progress.percentage,
+                                                })}
                                             </Text>
                                         </View>
                                     </View>
@@ -287,7 +293,9 @@ const CourseCategoriesScreen = () => {
 
         return (
             <View style={styles.recentCoursesSection}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent Enrolled Courses</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                    {t('courses.recentEnrolled')}
+                </Text>
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -316,7 +324,7 @@ const CourseCategoriesScreen = () => {
                                 </Text>
                                 <View style={styles.authorContainer}>
                                     <Text style={[styles.authorText, { color: theme.textSecondary }]} numberOfLines={1}>
-                                        {course.author_name || 'Unknown Author'}
+                                        {course.author_name || t('courses.unknownAuthor')}
                                     </Text>
                                 </View>
                             </View>
@@ -351,7 +359,7 @@ const CourseCategoriesScreen = () => {
                         onPress={() => handleCategoryPress(item)}
                     >
                         <Text style={styles.buttonText}>
-                            {courseCount > 0 ? `See more...` : 'Coming Soon'}
+                            {courseCount > 0 ? t('courses.seeMore') : t('courses.comingSoon')}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -385,20 +393,20 @@ const CourseCategoriesScreen = () => {
                 }
             >
                 {isAuthenticated && enrolledCourses.length > 0 && (
-                    <Text style={[styles.mainTitle, { color: theme.text }]}>Performance</Text>
+                    <Text style={[styles.mainTitle, { color: theme.text }]}>{t('courses.performance')}</Text>
                 )}
 
                 {renderPerformanceSection()}
                 {renderRecentCourses()}
 
                 <Text style={[styles.mainTitle, { color: theme.text, marginTop: 10 }]}>
-                    Course Categories
+                    {t('courses.categoriesTitle')}
                 </Text>
 
                 <View style={styles.categoriesContainer}>
                     {categories.length === 0 ? (
                         <Text style={[styles.noCategoriesText, { color: theme.textSecondary }]}>
-                            No categories available.
+                            {t('courses.noCategories')}
                         </Text>
                     ) : (
                         categories.map((item) => (

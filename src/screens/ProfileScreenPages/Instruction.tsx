@@ -2,57 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, Platform } from 'react-native';
 import Video from 'react-native-video';
 import LinearGradient from 'react-native-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
 const InstructionPage = () => {
-    const instructions = [
-        {
-            icon: '🚀',
-            title: 'Getting Started',
-            steps: [
-                'Open the HearingZen app and grant the required microphone and Bluetooth permissions',
-                'Ensure your hearing device or headphones are connected properly',
-                'Youll be guided through a simple setup to personalize your hearing profile'
-            ]
-        },
-        {
-            icon: '🎧',
-            title: 'Hearing Test',
-            steps: [
-                'Go to the Hearing Test section from the main menu',
-                'Follow the on-screen audio instructions carefully in a quiet environment',
-                'The app will measure your hearing sensitivity and provide results instantly'
-            ]
-        },
-        {
-            icon: '🔊',
-            title: 'Sound Amplifier',
-            steps: [
-                'Access the Sound Amplifier to enhance ambient sounds',
-                'Use the volume slider to adjust amplification safely',
-                'Avoid using maximum volume for long periods to protect your ears'
-            ]
-        },
-        {
-            icon: '📊',
-            title: 'Hearing Health Tracker',
-            steps: [
-                'View your hearing trends and progress in the Tracker tab',
-                'Track improvements over time with detailed analytics',
-                'Get daily tips and insights to maintain ear health'
-            ]
-        },
-        {
-            icon: '💬',
-            title: 'Support',
-            steps: [
-                'Visit the Help & Support section for FAQs and guides',
-                'Contact our team directly for personalized assistance',
-                'Access video tutorials and documentation anytime'
-            ]
-        }
-    ];
+    const { t } = useTranslation();
+
+    const instructions = t('instructions.sections', { returnObjects: true });
 
     return (
         <ScrollView
@@ -81,18 +38,18 @@ const InstructionPage = () => {
 
                 {/* App Title */}
                 <Text style={styles.appName}>HearingZen</Text>
-                <Text style={styles.tagline}>Your Personal Hearing Companion</Text>
+                <Text style={styles.tagline}>{t('instructions.tagline')}</Text>
 
                 <View style={styles.badge}>
-                    <Text style={styles.badgeText}>User Guide</Text>
+                    <Text style={styles.badgeText}>{t('instructions.badge')}</Text>
                 </View>
             </LinearGradient>
 
             {/* Welcome Message */}
             <View style={styles.welcomeCard}>
-                <Text style={styles.welcomeTitle}>Welcome! 👋</Text>
+                <Text style={styles.welcomeTitle}>{t('instructions.welcomeTitle')}</Text>
                 <Text style={styles.welcomeText}>
-                    This guide will help you get the most out of HearingZen. Follow these simple steps to enhance your hearing experience.
+                    {t('instructions.welcomeText')}
                 </Text>
             </View>
 
@@ -106,7 +63,7 @@ const InstructionPage = () => {
                                 <Text style={styles.icon}>{section.icon}</Text>
                             </View>
                             <View style={styles.titleContainer}>
-                                <Text style={styles.stepNumber}>Step {index + 1}</Text>
+                                <Text style={styles.stepNumber}>{t('instructions.stepNumber', { number: index + 1 })}</Text>
                                 <Text style={styles.sectionTitle}>{section.title}</Text>
                             </View>
                         </View>
@@ -129,12 +86,12 @@ const InstructionPage = () => {
 
             {/* Tips Section */}
             <View style={styles.tipsCard}>
-                <Text style={styles.tipsIcon}>💡</Text>
-                <Text style={styles.tipsTitle}>Pro Tips</Text>
+                <Text style={styles.tipsIcon}>{t('instructions.tipsIcon')}</Text>
+                <Text style={styles.tipsTitle}>{t('instructions.tipsTitle')}</Text>
                 <View style={styles.tipsList}>
-                    <Text style={styles.tipItem}>• Use headphones in quiet spaces for accurate test results</Text>
-                    <Text style={styles.tipItem}>• Take regular breaks during extended use</Text>
-                    <Text style={styles.tipItem}>• Update your hearing profile monthly for best results</Text>
+                    {t('instructions.tipsList', { returnObjects: true }).map((tip, index) => (
+                        <Text key={index} style={styles.tipItem}>{tip}</Text>
+                    ))}
                 </View>
             </View>
 
@@ -142,12 +99,12 @@ const InstructionPage = () => {
             <View style={styles.footer}>
                 <View style={styles.divider} />
                 <Text style={styles.footerText}>
-                    Thank you for being part of HearingZen
+                    {t('instructions.footerThankYou')}
                 </Text>
                 <Text style={styles.footerSubtext}>
-                    Together, we're redefining hearing wellness. 💙
+                    {t('instructions.footerSubtext')}
                 </Text>
-                <Text style={styles.versionText}>Version 1.0.0</Text>
+                <Text style={styles.versionText}>{t('instructions.versionText')}</Text>
             </View>
         </ScrollView>
     );

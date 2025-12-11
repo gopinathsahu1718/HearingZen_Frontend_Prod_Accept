@@ -11,10 +11,12 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = StackNavigationProp<any>;
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const { getUserProfile } = useAuth();
   const [selectedTab, setSelectedTab] = useState<'info' | 'health'>('info');
@@ -51,9 +53,9 @@ export default function ProfileScreen() {
   if (!profileData) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorText}>Failed to load profile</Text>
+        <Text style={styles.errorText}>{t('profile.loadError')}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={loadProfile}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={styles.retryButtonText}>{t('profile.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -72,7 +74,7 @@ export default function ProfileScreen() {
             style={styles.backIcon}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Profile</Text>
+        <Text style={styles.headerTitle}>{t('profile.myProfile')}</Text>
       </View>
 
       {/* Profile Section */}
@@ -86,12 +88,11 @@ export default function ProfileScreen() {
           style={styles.topProfilePic}
         />
         <Text style={styles.profileName}>
-          {profileData.username || 'No Name'}
+          {profileData.username || t('profile.noName')}
         </Text>
         <Text style={styles.profileSubText}>
-          @
-          {profileData.username?.toLowerCase().replace(/\s+/g, '') ||
-            'username'}
+          @{profileData.username?.toLowerCase().replace(/\s+/g, '') ||
+            t('profile.username')}
         </Text>
       </View>
 
@@ -101,7 +102,7 @@ export default function ProfileScreen() {
           style={styles.editButton}
           onPress={() => navigation.navigate('EditProfile')}
         >
-          <Text style={styles.editButtonText}>Edit Profile</Text>
+          <Text style={styles.editButtonText}>{t('profile.editProfile')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -123,7 +124,7 @@ export default function ProfileScreen() {
               selectedTab === 'info' && styles.activeButtonText,
             ]}
           >
-            contact details
+            {t('profile.contactDetails')}
           </Text>
         </TouchableOpacity>
 
@@ -140,7 +141,7 @@ export default function ProfileScreen() {
               selectedTab === 'health' && styles.activeButtonText,
             ]}
           >
-            Health card
+            {t('profile.healthCard')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -150,39 +151,39 @@ export default function ProfileScreen() {
         {selectedTab === 'info' ? (
           <>
             <InfoRow
-              label="Full Name"
-              value={profileData.username || 'Not set'}
+              label={t('profile.fullName')}
+              value={profileData.username || t('profile.notSet')}
             />
-            <InfoRow label="Email" value={profileData.email || 'Not set'} />
-            <InfoRow label="Phone" value={profileData.contact || 'Not set'} />
+            <InfoRow label={t('profile.email')} value={profileData.email || t('profile.notSet')} />
+            <InfoRow label={t('profile.phone')} value={profileData.contact || t('profile.notSet')} />
             <InfoRow
-              label="Location"
-              value={profileData.currentLocation || 'Not set'}
+              label={t('profile.location')}
+              value={profileData.currentLocation || t('profile.notSet')}
             />
           </>
         ) : (
           <>
             <InfoRow
-              label="Height"
-              value={profileData.height ? `${profileData.height}` : 'Not set'}
+              label={t('profile.height')}
+              value={profileData.height ? `${profileData.height}` : t('profile.notSet')}
             />
             <InfoRow
-              label="Weight"
+              label={t('profile.weight')}
               value={
-                profileData.weight ? `${profileData.weight} kg` : 'Not set'
+                profileData.weight ? `${profileData.weight} ${t('profile.kg')}` : t('profile.notSet')
               }
             />
-            <InfoRow label="Gender" value={profileData.gender || 'Not set'} />
+            <InfoRow label={t('profile.gender')} value={profileData.gender || t('profile.notSet')} />
             <InfoRow
-              label="Age"
-              value={profileData.age ? `${profileData.age} years` : 'Not set'}
+              label={t('profile.age')}
+              value={profileData.age ? `${profileData.age} ${t('profile.years')}` : t('profile.notSet')}
             />
             <InfoRow
-              label="Deafness Level"
-              value={profileData.deafnessLevel || 'none'}
+              label={t('profile.deafnessLevel')}
+              value={profileData.deafnessLevel || t('profile.none')}
             />
             <InfoRow
-              label="Disability %"
+              label={t('profile.disabilityPercentage')}
               value={`${profileData.disabilityPercentage || 0}%`}
             />
           </>

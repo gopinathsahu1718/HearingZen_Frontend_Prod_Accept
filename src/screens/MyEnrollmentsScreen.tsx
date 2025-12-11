@@ -17,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/types';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -75,6 +76,7 @@ interface ProgressData {
 const BASE_URL = 'https://api.hearingzen.in';
 
 const MyEnrollmentsScreen = () => {
+    const { t } = useTranslation();
     const { theme } = useTheme();
     const { token, isAuthenticated } = useAuth();
     const navigation = useNavigation<NavigationProp>();
@@ -106,11 +108,11 @@ const MyEnrollmentsScreen = () => {
                 // Fetch progress for each enrollment
                 await fetchAllProgress(data.data);
             } else {
-                Alert.alert('Error', data.message || 'Failed to load enrollments');
+                Alert.alert(t('common.error'), data.message || t('courses.enrollmentsLoadError'));
             }
         } catch (error) {
             console.error('Error fetching enrollments:', error);
-            Alert.alert('Error', 'Failed to load enrollments');
+            Alert.alert(t('common.error'), t('courses.enrollmentsLoadError'));
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -176,6 +178,11 @@ const MyEnrollmentsScreen = () => {
             }
         };
 
+        const statusKey = `courses.enrollmentStatus.${enrollment.status.toLowerCase()}`;
+        const statusText = t(statusKey) || enrollment.status.toUpperCase();
+
+        const enrollmentDate = new Date(enrollment.start_date).toLocaleDateString('en-GB');
+
         return (
             <TouchableOpacity
                 key={enrollment._id}
@@ -185,24 +192,24 @@ const MyEnrollmentsScreen = () => {
             >
                 <View style={styles.cardHeader}>
                     <View style={[styles.statusBadge, { backgroundColor: getStatusColor(enrollment.status) }]}>
-                        <Text style={styles.statusText}>{enrollment.status.toUpperCase()}</Text>
+                        <Text style={styles.statusText}>{statusText}</Text>
                     </View>
                 </View>
                 <Text style={[styles.enrollmentTitle, { color: theme.text }]} numberOfLines={2}>
                     {course.title}
                 </Text>
                 <Text style={[styles.enrollmentMeta, { color: theme.textSecondary }]}>
-                    {lessonCount} Lesson{lessonCount !== 1 ? 's' : ''} • {course.author_name}
+                    {t('courses.lessonsCount', { count: lessonCount })} • {course.author_name}
                 </Text>
                 <Text style={[styles.enrollmentDate, { color: theme.textSecondary }]}>
-                    Enrolled: {new Date(enrollment.start_date).toLocaleDateString()}
+                    {t('courses.enrolledOn')} {enrollmentDate}
                 </Text>
 
                 {progress && (
                     <>
                         <View style={styles.progressStats}>
                             <Text style={[styles.progressStatsText, { color: theme.textSecondary }]}>
-                                {progress.completed} of {progress.totalLessons} lessons completed
+                                {t('courses.progressCompleted', { completed: progress.completed, total: progress.totalLessons })}
                             </Text>
                         </View>
                         <View style={styles.progressContainer}>
@@ -215,7 +222,7 @@ const MyEnrollmentsScreen = () => {
                                 />
                             </View>
                             <Text style={[styles.progressText, { color: theme.primary }]}>
-                                {Math.round(progressPercentage)}% Complete
+                                {Math.round(progressPercentage)}% {t('courses.complete')}
                             </Text>
                         </View>
                     </>
@@ -235,17 +242,17 @@ const MyEnrollmentsScreen = () => {
                     >
                         <Text style={styles.backButtonText}>←</Text>
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>My Enrollments</Text>
+                    <Text style={styles.headerTitle}>{t('courses.myEnrollments')}</Text>
                 </View>
                 <View style={styles.emptyState}>
                     <Text style={[styles.emptyText, { color: theme.text }]}>
-                        Please login to view your enrollments
+                        {t('courses.loginToViewEnrollments')}
                     </Text>
                     <TouchableOpacity
                         style={[styles.actionButton, { backgroundColor: theme.primary }]}
                         onPress={() => navigation.navigate('Login')}
                     >
-                        <Text style={styles.actionButtonText}>Login</Text>
+                        <Text style={styles.actionButtonText}>{t('common.login')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -271,7 +278,7 @@ const MyEnrollmentsScreen = () => {
                 >
                     <Text style={styles.backButtonText}>←</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Enrollments</Text>
+                <Text style={styles.headerTitle}>{t('courses.myEnrollments')}</Text>
             </View>
 
             <ScrollView
@@ -289,26 +296,26 @@ const MyEnrollmentsScreen = () => {
                 {enrollments.length === 0 ? (
                     <View style={styles.emptyState}>
                         <Text style={[styles.emptyText, { color: theme.text }]}>
-                            No enrollments yet
+                            {t('courses.noEnrollments')}
                         </Text>
                         <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>
-                            Start learning by enrolling in courses
+                            {t('courses.startLearning')}
                         </Text>
                         <TouchableOpacity
                             style={[styles.actionButton, { backgroundColor: theme.primary }]}
                             onPress={handleBrowseCourses}
                         >
-                            <Text style={styles.actionButtonText}>Browse Courses</Text>
+                            <Text style={styles.actionButtonText}>{t('courses.browseCourses')}</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
                     <>
                         <View style={styles.summaryCard}>
                             <Text style={[styles.summaryTitle, { color: theme.text }]}>
-                                Your Learning Journey
+                                {t('courses.learningJourney')}
                             </Text>
                             <Text style={[styles.summaryText, { color: theme.textSecondary }]}>
-                                {enrollments.length} Course{enrollments.length !== 1 ? 's' : ''} Enrolled
+                                {t('courses.enrolledCourses', { count: enrollments.length })}
                             </Text>
                         </View>
                         {enrollments.map(renderEnrollmentCard)}

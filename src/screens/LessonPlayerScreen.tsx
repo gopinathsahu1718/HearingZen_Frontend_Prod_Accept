@@ -23,6 +23,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/types';
+import { useTranslation } from 'react-i18next';
 
 type LessonPlayerRouteProp = RouteProp<RootStackParamList, 'LessonPlayer'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -61,6 +62,7 @@ const { width } = Dimensions.get('window');
 const BASE_URL = 'http://13.200.222.176';
 
 const LessonPlayerScreen = () => {
+    const { t } = useTranslation();
     const { theme } = useTheme();
     const { token } = useAuth();
     const navigation = useNavigation<NavigationProp>();
@@ -143,12 +145,12 @@ const LessonPlayerScreen = () => {
 
     const handleMarkComplete = async () => {
         if (isCurrentLessonCompleted) {
-            Alert.alert('Already Completed', 'This lesson is already marked as complete');
+            Alert.alert(t('lessonPlayer.alreadyCompletedTitle'), t('lessonPlayer.alreadyCompletedMessage'));
             return;
         }
 
         if (!token) {
-            Alert.alert('Authentication Required', 'Please login to mark lesson as complete');
+            Alert.alert(t('lessonPlayer.authRequiredTitle'), t('lessonPlayer.authRequiredMessage'));
             return;
         }
 
@@ -165,14 +167,14 @@ const LessonPlayerScreen = () => {
 
             const data = await response.json();
             if (data.success) {
-                Alert.alert('Success', 'Lesson marked as complete!');
+                Alert.alert(t('common.success'), t('lessonPlayer.successMessage'));
                 fetchLessonDetails();
                 fetchProgress();
             } else {
                 throw new Error(data.message || 'Failed to mark lesson as complete');
             }
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to mark lesson as complete');
+            Alert.alert(t('common.error'), error.message || t('lessonPlayer.errorMessage'));
         } finally {
             setMarkingComplete(false);
         }
@@ -266,10 +268,10 @@ const LessonPlayerScreen = () => {
     const onError = useCallback((error: string) => {
         console.error('YouTube player error:', error);
         if (error === 'embed_not_allowed') {
-            setVideoError('Video embedding restricted. Using full YouTube view.');
+            setVideoError(t('lessonPlayer.videoEmbeddingRestricted'));
             setUseWebViewFallback(true); // Switch to WebView fallback
         } else {
-            setVideoError(`Video playback error: ${error}`);
+            setVideoError(t('lessonPlayer.videoPlaybackError', { error }));
         }
     }, []);
 
@@ -283,19 +285,16 @@ const LessonPlayerScreen = () => {
         if (!videoId) {
             return (
                 <View style={[styles.videoContainer, styles.errorContainer]}>
-                    <Text style={styles.errorText}>❌ Invalid video URL</Text>
-                    <Text style={styles.errorSubtext}>URL: {currentLesson.video_url}</Text>
+                    <Text style={styles.errorText}>❌ {t('lessonPlayer.invalidVideoUrl')}</Text>
+                    <Text style={styles.errorSubtext}>{t('lessonPlayer.url')}: {currentLesson.video_url}</Text>
                     <Text style={styles.errorHelp}>
-                        Expected format:{'\n'}
-                        https://youtu.be/VIDEO_ID{'\n'}
-                        or{'\n'}
-                        https://www.youtube.com/watch?v=VIDEO_ID
+                        {t('lessonPlayer.expectedFormat')}
                     </Text>
                     <TouchableOpacity
                         style={styles.openButton}
                         onPress={handleOpenInYouTube}
                     >
-                        <Text style={styles.openButtonText}>Open in YouTube</Text>
+                        <Text style={styles.openButtonText}>{t('lessonPlayer.openInYouTube')}</Text>
                     </TouchableOpacity>
                 </View>
             );
@@ -309,7 +308,7 @@ const LessonPlayerScreen = () => {
                         style={styles.openButton}
                         onPress={handleOpenInYouTube}
                     >
-                        <Text style={styles.openButtonText}>Open in YouTube</Text>
+                        <Text style={styles.openButtonText}>{t('lessonPlayer.openInYouTube')}</Text>
                     </TouchableOpacity>
                 </View>
             );
@@ -400,7 +399,7 @@ const LessonPlayerScreen = () => {
                 <View style={[styles.lessonNavContainer, { backgroundColor: theme.background }]}>
                     <View style={[styles.lessonNavHeader, { borderBottomColor: theme.border }]}>
                         <Text style={[styles.lessonNavTitle, { color: theme.text }]}>
-                            Course Lessons
+                            {t('lessonPlayer.courseLessons')}
                         </Text>
                         <TouchableOpacity onPress={() => setShowLessonNav(false)}>
                             <Text style={[styles.closeButton, { color: theme.primary }]}>✕</Text>
@@ -435,12 +434,12 @@ const LessonPlayerScreen = () => {
                                             {item.title}
                                         </Text>
                                         <Text style={[styles.lessonNavStatus, { color: completed ? '#10B981' : theme.textSecondary }]}>
-                                            {completed ? 'Completed' : 'Not Started'}
+                                            {completed ? t('lessonPlayer.completed') : t('lessonPlayer.notStarted')}
                                         </Text>
                                     </View>
                                     {isCurrent && (
                                         <View style={[styles.currentBadge, { backgroundColor: theme.primary }]}>
-                                            <Text style={styles.currentBadgeText}>Playing</Text>
+                                            <Text style={styles.currentBadgeText}>{t('lessonPlayer.playing')}</Text>
                                         </View>
                                     )}
                                 </TouchableOpacity>
@@ -469,7 +468,7 @@ const LessonPlayerScreen = () => {
                         {courseTitle}
                     </Text>
                     <Text style={styles.headerTitle} numberOfLines={1}>
-                        Lesson {currentIndex + 1} of {allLessons.length}
+                        {t('lessonPlayer.lessonNumber', { current: currentIndex + 1, total: allLessons.length })}
                     </Text>
                 </View>
                 <TouchableOpacity
@@ -499,7 +498,7 @@ const LessonPlayerScreen = () => {
                             ←
                         </Text>
                         <Text style={[styles.navButtonText, { color: currentIndex === 0 ? theme.textSecondary : theme.text }]}>
-                            Previous
+                            {t('lessonPlayer.previous')}
                         </Text>
                     </TouchableOpacity>
 
@@ -508,7 +507,7 @@ const LessonPlayerScreen = () => {
                         onPress={() => setShowLessonNav(true)}
                     >
                         <Text style={[styles.navButtonIcon, { color: theme.primary }]}>☰</Text>
-                        <Text style={[styles.navButtonText, { color: theme.text }]}>Lessons</Text>
+                        <Text style={[styles.navButtonText, { color: theme.text }]}>{t('lessonPlayer.lessons')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -521,7 +520,7 @@ const LessonPlayerScreen = () => {
                         disabled={currentIndex === allLessons.length - 1}
                     >
                         <Text style={[styles.navButtonText, { color: currentIndex === allLessons.length - 1 ? theme.textSecondary : theme.text }]}>
-                            Next
+                            {t('lessonPlayer.next')}
                         </Text>
                         <Text style={[styles.navButtonIcon, { color: currentIndex === allLessons.length - 1 ? theme.textSecondary : theme.primary }]}>
                             →
@@ -542,7 +541,7 @@ const LessonPlayerScreen = () => {
                         </View>
                     ) : isCurrentLessonCompleted ? (
                         <View style={styles.completedBadge}>
-                            <Text style={styles.completedText}>✓ Completed</Text>
+                            <Text style={styles.completedText}>✓ {t('lessonPlayer.completed')}</Text>
                         </View>
                     ) : (
                         <TouchableOpacity
@@ -553,7 +552,7 @@ const LessonPlayerScreen = () => {
                             {markingComplete ? (
                                 <ActivityIndicator size="small" color="#FFFFFF" />
                             ) : (
-                                <Text style={styles.completeButtonText}>Mark as Complete</Text>
+                                <Text style={styles.completeButtonText}>{t('lessonPlayer.markAsComplete')}</Text>
                             )}
                         </TouchableOpacity>
                     )}
@@ -562,10 +561,10 @@ const LessonPlayerScreen = () => {
                     {progressData && (
                         <View style={[styles.infoCard, { backgroundColor: theme.cardBackground }]}>
                             <Text style={[styles.infoTitle, { color: theme.text }]}>
-                                Course Progress
+                                {t('lessonPlayer.courseProgressTitle')}
                             </Text>
                             <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-                                You've completed {progressData.completed} out of {progressData.totalLessons} lessons ({progressData.percentage}%)
+                                {t('lessonPlayer.progressText', { completed: progressData.completed, total: progressData.totalLessons, percentage: progressData.percentage })}
                             </Text>
                             <View style={[styles.progressBar, { backgroundColor: theme.border }]}>
                                 <View

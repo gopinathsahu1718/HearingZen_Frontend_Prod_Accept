@@ -143,15 +143,15 @@ import AppNavigator from './navigation/AppNavigator';
 
 const App = () => {
   return (
-    <I18nextProvider i18n={i18n}>
-      <LanguageProvider>
-        <ThemeProvider>
+    <ThemeProvider>
+      <I18nextProvider i18n={i18n}>
+        <LanguageProvider>
           <AuthProvider>
             <AppNavigator />
           </AuthProvider>
-        </ThemeProvider>
-      </LanguageProvider>
-    </I18nextProvider>
+        </LanguageProvider>
+      </I18nextProvider>
+    </ThemeProvider>
   );
 };
 

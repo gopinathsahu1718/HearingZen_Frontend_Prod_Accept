@@ -20,6 +20,7 @@ import { RootStackParamList } from '../types/types';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
+import { useTranslation } from 'react-i18next';
 
 type ChangePasswordScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -27,6 +28,7 @@ type ChangePasswordScreenNavigationProp = StackNavigationProp<
 >;
 
 const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreenNavigationProp }) => {
+  const { t, i18n } = useTranslation();
   const { theme, isDarkMode } = useTheme();
   const { changePassword } = useAuth();
 
@@ -185,26 +187,26 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
     setSubmitted(true); // show validation UI only after submit
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Error', 'Please fill out all the mandatory fields');
+      Alert.alert(t('changePassword.error'), t('changePassword.fillAllFields'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'New password and confirm password do not match.');
+      Alert.alert(t('changePassword.error'), t('changePassword.passwordsDoNotMatch'));
       return;
     }
 
     if (currentPassword === newPassword) {
-      Alert.alert('Error', 'New password must be different from current password.');
+      Alert.alert(t('changePassword.error'), t('changePassword.newPasswordDifferent'));
       return;
     }
 
     setLoading(true);
     try {
       await changePassword(currentPassword, newPassword);
-      Alert.alert('Success', 'Password changed successfully', [
+      Alert.alert(t('changePassword.success'), t('changePassword.passwordChanged'), [
         {
-          text: 'OK',
+          text: t('common.ok'),
           onPress: () => navigation.goBack(),
         },
       ]);
@@ -213,7 +215,7 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
       setConfirmPassword('');
       setSubmitted(false);
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert(t('changePassword.error'), error.message);
     } finally {
       setLoading(false);
     }
@@ -237,7 +239,7 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
             <View style={styles.container}>
 
               <View style={styles.header}>
-                <Text style={styles.headerText}>Change{'\n'}Password</Text>
+                <Text style={styles.headerText}>{t('changePassword.header')}</Text>
               </View>
 
               <TouchableOpacity
@@ -252,15 +254,15 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
               </TouchableOpacity>
 
               <View style={styles.content}>
-                <Text style={styles.title}>Change Password</Text>
+                <Text style={styles.title}>{t('changePassword.title')}</Text>
                 <Text style={styles.subtitle}>
-                  Enter your current password and choose a new secure password
+                  {t('changePassword.subtitle')}
                 </Text>
 
                 {/* CURRENT PASSWORD */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>
-                    Current Password
+                    {t('changePassword.currentPassword')}
                     {isEmpty(currentPassword) && (
                       <Text style={styles.requiredStar}> *</Text>
                     )}
@@ -274,7 +276,7 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                   >
                     <TextInput
                       style={styles.input}
-                      placeholder="Enter current password"
+                      placeholder={t('changePassword.currentPlaceholder')}
                       placeholderTextColor={theme.textSecondary}
                       secureTextEntry={!showCurrentPassword}
                       value={currentPassword}
@@ -299,7 +301,7 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                 {/* NEW PASSWORD */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>
-                    New Password
+                    {t('changePassword.newPassword')}
                     {isEmpty(newPassword) && (
                       <Text style={styles.requiredStar}> *</Text>
                     )}
@@ -313,7 +315,7 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                   >
                     <TextInput
                       style={styles.input}
-                      placeholder="Enter new password"
+                      placeholder={t('changePassword.newPlaceholder')}
                       placeholderTextColor={theme.textSecondary}
                       secureTextEntry={!showNewPassword}
                       value={newPassword}
@@ -338,7 +340,7 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                 {/* CONFIRM PASSWORD */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>
-                    Confirm New Password
+                    {t('changePassword.confirmPassword')}
                     {isEmpty(confirmPassword) && (
                       <Text style={styles.requiredStar}> *</Text>
                     )}
@@ -352,7 +354,7 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                   >
                     <TextInput
                       style={styles.input}
-                      placeholder="Re-enter new password"
+                      placeholder={t('changePassword.confirmPlaceholder')}
                       placeholderTextColor={theme.textSecondary}
                       secureTextEntry={!showConfirmPassword}
                       value={confirmPassword}
@@ -374,8 +376,7 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                   </View>
 
                   <Text style={styles.hint}>
-                    Password must be at least 8 characters long, include an uppercase
-                    letter, lowercase letter, number, and special character.
+                    {t('changePassword.hint')}
                   </Text>
                 </View>
 
@@ -388,7 +389,7 @@ const ChangePasswordScreen = ({ navigation }: { navigation: ChangePasswordScreen
                   {loading ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={styles.buttonText}>Change Password</Text>
+                    <Text style={styles.buttonText}>{t('changePassword.button')}</Text>
                   )}
                 </TouchableOpacity>
 

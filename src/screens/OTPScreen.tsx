@@ -21,6 +21,7 @@ import { RootStackParamList } from '../types/types';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
+import { useTranslation } from 'react-i18next';
 
 type OTPScreenNavigationProp = StackNavigationProp<RootStackParamList, 'OTPScreen'>;
 type OTPScreenRouteProp = RouteProp<RootStackParamList, 'OTPScreen'>;
@@ -31,6 +32,7 @@ interface Props {
 }
 
 const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
+    const { t } = useTranslation();
     const { theme, isDarkMode } = useTheme();
     const { verifyEmail, resendOTP } = useAuth();
     const { tempToken: initialTempToken, email, fromSignup } = route.params;
@@ -204,16 +206,16 @@ const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
 
         const otpCode = otp.join('');
         if (otpCode.length !== 6) {
-            Alert.alert('Error', 'Please enter complete OTP');
+            Alert.alert(t('otp.error'), t('otp.completeOTP'));
             return;
         }
 
         setLoading(true);
         try {
             await verifyEmail(tempToken, otpCode);
-            Alert.alert('Success', 'Email verified successfully!', [
+            Alert.alert(t('otp.success'), t('otp.successMessage'), [
                 {
-                    text: 'OK',
+                    text: t('common.ok'),
                     onPress: () => {
                         navigation.dispatch(
                             CommonActions.reset({
@@ -225,7 +227,7 @@ const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
                 },
             ]);
         } catch (error: any) {
-            Alert.alert('Verification Failed', error.message);
+            Alert.alert(t('otp.verificationFailed'), error.message);
         } finally {
             setLoading(false);
         }
@@ -241,10 +243,10 @@ const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
             setOtp(['', '', '', '', '', '']);
             setCountdown(60);
             setCanResend(false);
-            Alert.alert('Success', 'OTP resent successfully!');
+            Alert.alert(t('otp.success'), t('otp.resendSuccess'));
             inputRefs.current[0]?.focus();
         } catch (error: any) {
-            Alert.alert('Error', error.message);
+            Alert.alert(t('otp.error'), error.message);
         } finally {
             setResendLoading(false);
         }
@@ -266,13 +268,13 @@ const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
                     >
                         <View style={styles.container}>
                             <View style={styles.header}>
-                                <Text style={styles.headerText}>Verify</Text>
+                                <Text style={styles.headerText}>{t('otp.headerText')}</Text>
                             </View>
 
                             <View style={styles.content}>
-                                <Text style={styles.title}>Enter OTP</Text>
+                                <Text style={styles.title}>{t('otp.title')}</Text>
                                 <Text style={styles.subtitle}>
-                                    We've sent a verification code to{'\n'}
+                                    {t('otp.subtitle')}
                                     <Text style={styles.email}>{email}</Text>
                                 </Text>
 
@@ -304,12 +306,12 @@ const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
                                     {loading ? (
                                         <ActivityIndicator color="#fff" size="small" />
                                     ) : (
-                                        <Text style={styles.buttonText}>Verify Email</Text>
+                                        <Text style={styles.buttonText}>{t('otp.verifyEmail')}</Text>
                                     )}
                                 </TouchableOpacity>
 
                                 <View style={styles.resendContainer}>
-                                    <Text style={styles.resendText}>Didn't receive the code?</Text>
+                                    <Text style={styles.resendText}>{t('otp.didntReceiveCode')}</Text>
                                     <TouchableOpacity
                                         style={styles.resendButton}
                                         onPress={handleResend}
@@ -325,7 +327,7 @@ const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
                                                     canResend ? styles.resendButtonEnabled : styles.resendButtonDisabled,
                                                 ]}
                                             >
-                                                {canResend ? 'Resend OTP' : `Resend in ${countdown}s`}
+                                                {canResend ? t('otp.resendOTP') : t('otp.resendCountdown', { countdown })}
                                             </Text>
                                         )}
                                     </TouchableOpacity>

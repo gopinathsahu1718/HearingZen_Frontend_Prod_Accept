@@ -20,6 +20,7 @@ import { RootStackParamList } from '../types/types';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
+import { useTranslation } from 'react-i18next';
 
 type ResetPasswordOTPScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ResetPasswordOTP'>;
 type ResetPasswordOTPScreenRouteProp = RouteProp<RootStackParamList, 'ResetPasswordOTP'>;
@@ -30,6 +31,7 @@ interface Props {
 }
 
 const ResetPasswordOTPScreen: React.FC<Props> = ({ navigation, route }) => {
+    const { t } = useTranslation();
     const { theme, isDarkMode } = useTheme();
     const { verifyResetOtp, forgotPassword } = useAuth();
     const { resetInitToken: initialResetInitToken, email } = route.params;
@@ -201,7 +203,7 @@ const ResetPasswordOTPScreen: React.FC<Props> = ({ navigation, route }) => {
 
         const otpCode = otp.join('');
         if (otpCode.length !== 6) {
-            Alert.alert('Error', 'Please enter complete OTP');
+            Alert.alert(t('resetPasswordOTP.error'), t('resetPasswordOTP.completeOTP'));
             return;
         }
 
@@ -210,7 +212,7 @@ const ResetPasswordOTPScreen: React.FC<Props> = ({ navigation, route }) => {
             const resetToken = await verifyResetOtp(otpCode, resetInitToken);
             navigation.navigate('NewPassword', { resetToken });
         } catch (error: any) {
-            Alert.alert('Verification Failed', error.message);
+            Alert.alert(t('resetPasswordOTP.verificationFailed'), error.message);
         } finally {
             setLoading(false);
         }
@@ -226,10 +228,10 @@ const ResetPasswordOTPScreen: React.FC<Props> = ({ navigation, route }) => {
             setOtp(['', '', '', '', '', '']);
             setCountdown(60);
             setCanResend(false);
-            Alert.alert('Success', 'OTP resent successfully!');
+            Alert.alert(t('resetPasswordOTP.success'), t('resetPasswordOTP.resendSuccess'));
             inputRefs.current[0]?.focus();
         } catch (error: any) {
-            Alert.alert('Error', error.message);
+            Alert.alert(t('resetPasswordOTP.error'), error.message);
         } finally {
             setResendLoading(false);
         }
@@ -250,13 +252,13 @@ const ResetPasswordOTPScreen: React.FC<Props> = ({ navigation, route }) => {
                     >
                         <View style={styles.container}>
                             <View style={styles.header}>
-                                <Text style={styles.headerText}>Reset{'\n'}Password</Text>
+                                <Text style={styles.headerText}>{t('resetPasswordOTP.headerText')}</Text>
                             </View>
 
                             <View style={styles.content}>
-                                <Text style={styles.title}>Enter OTP</Text>
+                                <Text style={styles.title}>{t('resetPasswordOTP.title')}</Text>
                                 <Text style={styles.subtitle}>
-                                    We've sent a verification code to{'\n'}
+                                    {t('resetPasswordOTP.subtitle')}
                                     <Text style={styles.email}>{email}</Text>
                                 </Text>
 
@@ -290,12 +292,12 @@ const ResetPasswordOTPScreen: React.FC<Props> = ({ navigation, route }) => {
                                     {loading ? (
                                         <ActivityIndicator color="#fff" size="small" />
                                     ) : (
-                                        <Text style={styles.buttonText}>Verify OTP</Text>
+                                        <Text style={styles.buttonText}>{t('resetPasswordOTP.verifyOTP')}</Text>
                                     )}
                                 </TouchableOpacity>
 
                                 <View style={styles.resendContainer}>
-                                    <Text style={styles.resendText}>Didn't receive the code?</Text>
+                                    <Text style={styles.resendText}>{t('resetPasswordOTP.didntReceiveCode')}</Text>
                                     <TouchableOpacity
                                         style={styles.resendButton}
                                         onPress={handleResend}
@@ -311,7 +313,7 @@ const ResetPasswordOTPScreen: React.FC<Props> = ({ navigation, route }) => {
                                                     canResend ? styles.resendButtonEnabled : styles.resendButtonDisabled,
                                                 ]}
                                             >
-                                                {canResend ? 'Resend OTP' : `Resend in ${countdown}s`}
+                                                {canResend ? t('resetPasswordOTP.resendOTP') : t('resetPasswordOTP.resendCountdown', { countdown })}
                                             </Text>
                                         )}
                                     </TouchableOpacity>

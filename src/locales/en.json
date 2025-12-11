@@ -40,7 +40,585 @@
     "language.sa": "Sanskrit",
     "Home": "Home",
     "Steps": "Steps",
-    "Dummy2": "Dummy2",
-    "Dummy3": "Dummy3",
-    "Profile": "Profile"
+    "Weather": "Weather",
+    "LMS": "Courses",
+    "Profile": "Profile",
+    "changePassword": {
+        "header": "Change\nPassword",
+        "title": "Change Password",
+        "subtitle": "Enter your current password and choose a new secure password",
+        "currentPassword": "Current Password",
+        "currentPlaceholder": "Enter current password",
+        "newPassword": "New Password",
+        "newPlaceholder": "Enter new password",
+        "confirmPassword": "Confirm New Password",
+        "confirmPlaceholder": "Re-enter new password",
+        "hint": "Password must be at least 8 characters long, include an uppercase letter, lowercase letter, number, and special character.",
+        "button": "Change Password",
+        "error": "Error",
+        "fillAllFields": "Please fill out all the mandatory fields",
+        "passwordsDoNotMatch": "New password and confirm password do not match.",
+        "newPasswordDifferent": "New password must be different from current password.",
+        "success": "Success",
+        "passwordChanged": "Password changed successfully"
+    },
+    "common": {
+        "ok": "OK",
+        "success": "Success",
+        "error": "Error",
+        "cancel": "Cancel"
+    },
+    "courses": {
+        "myProgress": "My Progress",
+        "courseCount": "{{count}} Courses",
+        "lessonProgress": "{{completed}}/{{total}} lessons • {{percentage}}%",
+        "recentEnrolled": "Recent Enrolled Courses",
+        "performance": "Performance",
+        "categoriesTitle": "Course Categories",
+        "noCategories": "No categories available.",
+        "seeMore": "See more...",
+        "comingSoon": "Coming Soon",
+        "unknownAuthor": "Unknown Author",
+        "courses": "Courses",
+        "lessonsCount_one": "1 Lesson",
+        "lessonsCount_other": "{{count}} Lessons",
+        "enrolled": "Enrolled",
+        "notEnrolled": "Not Enrolled",
+        "free": "FREE",
+        "loadingEnrollment": "Loading enrollment status...",
+        "noCourses": "No courses available yet",
+        "noCoursesSubtext": "Check back soon for new courses!",
+        "descriptionTitle": "Course Description",
+        "whatYouLearnTitle": "What You'll Learn",
+        "instructorTitle": "Instructor",
+        "contentTitle": "Course Content",
+        "locked": "Locked",
+        "enrollFree": "Enroll Free",
+        "enrollNow": "Enroll Now",
+        "subscribe": "SUBSCRIBE",
+        "loginToEnroll": "LOGIN TO ENROLL",
+        "checkingPayment": "CHECKING PAYMENT...",
+        "checkingStatus": "CHECKING STATUS...",
+        "authRequiredTitle": "Authentication Required",
+        "authRequiredMessage": "Please login to enroll in this course",
+        "freeEnrollmentMessage": "You have been enrolled in this course!",
+        "enrollmentRequiredTitle": "Enrollment Required",
+        "enrollmentRequiredMessage": "You need to enroll in this course to access the lessons",
+        "paymentProcessingTitle": "Payment Processing",
+        "paymentProcessingMessage": "We are verifying your payment. Please check back in a few moments.",
+        "enrollError": "Failed to process enrollment",
+        "verificationPendingTitle": "Verification Pending",
+        "verificationPendingMessage": "We are processing your payment. You will be notified once enrollment is confirmed.",
+        "enrollmentSuccessfulTitle": "Enrollment Successful! 🎉",
+        "enrollmentSuccessfulMessage": "Your payment has been verified and enrollment is complete!",
+        "enrollmentSuccessMessage": "Enrollment successful!",
+        "enrolledMessage": "You are enrolled in this course",
+        "goToCourse": "Go to Course",
+        "noLessons": "No lessons available yet",
+        "myEnrollments": "My Enrollments",
+        "loginToViewEnrollments": "Please login to view your enrollments",
+        "enrollmentsLoadError": "Failed to load enrollments",
+        "noEnrollments": "No enrollments yet",
+        "startLearning": "Start learning by enrolling in courses",
+        "browseCourses": "Browse Courses",
+        "learningJourney": "Your Learning Journey",
+        "enrolledCourses_one": "1 course enrolled",
+        "enrolledCourses_other": "{{count}} courses enrolled",
+        "enrolledOn": "Enrolled",
+        "progressCompleted": "{{completed}} of {{total}} lessons completed",
+        "complete": "Complete",
+        "enrollmentStatus": {
+            "active": "ACTIVE",
+            "completed": "COMPLETED",
+            "pending": "PENDING"
+        },
+        "courseLoadError": "Failed to load course",
+        "by": "by",
+        "lessons": "Lessons",
+        "courseLessons": "Course Lessons",
+        "completedOfTotal": "{{completed}} of {{total}} completed",
+        "notStarted": "Not Started",
+        "completed": "Completed"
+    },
+    "lessonPlayer": {
+        "courseLessons": "Course Lessons",
+        "previous": "Previous",
+        "lessons": "Lessons",
+        "next": "Next",
+        "alreadyCompletedTitle": "Already Completed",
+        "alreadyCompletedMessage": "This lesson is already marked as complete",
+        "authRequiredTitle": "Authentication Required",
+        "authRequiredMessage": "Please login to mark lesson as complete",
+        "successMessage": "Lesson marked as complete!",
+        "errorMessage": "Failed to mark lesson as complete",
+        "courseProgressTitle": "Course Progress",
+        "progressText": "You've completed {{completed}} out of {{total}} lessons ({{percentage}}%)",
+        "completed": "Completed",
+        "notStarted": "Not Started",
+        "playing": "Playing",
+        "lessonNumber": "Lesson {{current}} of {{total}}",
+        "markAsComplete": "Mark as Complete",
+        "invalidVideoUrl": "Invalid video URL",
+        "url": "URL",
+        "expectedFormat": "Expected format:\nhttps://youtu.be/VIDEO_ID\nor\nhttps://www.youtube.com/watch?v=VIDEO_ID",
+        "openInYouTube": "Open in YouTube",
+        "videoPlaybackError": "Video playback error: {{error}}",
+        "videoEmbeddingRestricted": "Video embedding restricted. Using full YouTube view."
+    },
+    "about": {
+        "headerTitle": "About {{appName}}",
+        "version": "Version {{appVersion}}",
+        "ourMission": "Our Mission",
+        "missionDescription": "{{appName}} is designed to provide you with an exceptional hearing wellness experience. We're committed to delivering quality, performance, and user satisfaction in everything we do. Together, we're redefining hearing wellness.",
+        "whyChooseUs": "Why Choose Us",
+        "features": {
+            "securePrivate": {
+                "title": "Secure & Private",
+                "description": "Your data is encrypted and protected with industry-standard security measures."
+            },
+            "userFocused": {
+                "title": "User-Focused",
+                "description": "Built with you in mind, featuring intuitive design and seamless functionality."
+            },
+            "alwaysImproving": {
+                "title": "Always Improving",
+                "description": "Regular updates bring new features and improvements based on your feedback."
+            }
+        },
+        "getInTouch": "Get In Touch",
+        "contacts": {
+            "email": {
+                "title": "Email Support"
+            },
+            "website": {
+                "title": "Website"
+            }
+        },
+        "tipText": "Your voice matters! Every suggestion helps us improve the way you hear the world. Share your feedback to help us grow. 🌍",
+        "footerThankYou": "Thank you for being part of {{appName}}.",
+        "footerSubtext": "Together, we're redefining hearing wellness. 💙"
+    },
+    "feedback": {
+        "headerTitle": "We Value Your Feedback",
+        "headerSubtitle": "Help us make HearingZen even better for you.",
+        "yourName": "Your Name",
+        "namePlaceholder": "Enter your name",
+        "rateExperience": "Rate Your Experience",
+        "yourFeedback": "Your Feedback",
+        "feedbackPlaceholder": "Tell us about your experience...",
+        "submitButton": "Submit Feedback",
+        "incompleteTitle": "Incomplete",
+        "incompleteMessage": "Please fill in all fields and provide a rating before submitting.",
+        "thankYouTitle": "Thank You 💙",
+        "successMessage": "Your feedback (rating: {{rating}}/5) has been submitted successfully!",
+        "tipText": "Your voice matters! Every suggestion helps us improve the way you hear the world. 🌍",
+        "footerThankYou": "Thank you for being part of HearingZen.",
+        "footerSubtext": "Together, we're redefining hearing wellness. 💙"
+    },
+    "help": {
+        "tagline": "Your Personal Hearing Companion",
+        "badge": "Help & Support",
+        "welcomeTitle": "We're here to help! 👋",
+        "welcomeText": "Find answers to common questions, contact our support team, or explore our help resources. We're available 24/7 to assist you.",
+        "contactUs": "Contact Us",
+        "quickActions": [
+            {
+                "icon": "messageCircle",
+                "title": "Live Chat",
+                "description": "Chat with our support team",
+                "color": "#10B981",
+                "action": "Alert.alert('Live Chat', 'Live chat feature coming soon!');"
+            },
+            {
+                "icon": "mail",
+                "title": "Email Support",
+                "description": "support@hearingzen.com",
+                "color": "#3B82F6",
+                "action": "Linking.openURL('mailto:support@hearingzen.com');"
+            },
+            {
+                "icon": "phone",
+                "title": "Call Us",
+                "description": "+1 (800) 123-4567",
+                "color": "#8B5CF6",
+                "action": "Linking.openURL('tel:+18001234567');"
+            }
+        ],
+        "faqTitle": "Frequently Asked Questions",
+        "faqSubtitle": "Find quick answers to common questions",
+        "faqs": [
+            {
+                "question": "How do I start a hearing test?",
+                "answer": "Navigate to the Hearing Test tab, ensure you're in a quiet environment, put on your headphones, and tap \"Start Test\". Follow the on-screen instructions and tap when you hear a sound."
+            },
+            {
+                "question": "Why am I not getting accurate results?",
+                "answer": "Make sure you're in a quiet room, your headphones are properly connected, and the volume is set to a comfortable level. Avoid taking the test in noisy environments or while moving."
+            },
+            {
+                "question": "Can I use HearingZen without headphones?",
+                "answer": "For accurate hearing tests, headphones are required. However, you can use the Sound Amplifier feature with your device's built-in speakers or hearing aids."
+            },
+            {
+                "question": "How often should I take the hearing test?",
+                "answer": "We recommend taking the hearing test once a month to track changes in your hearing health. If you notice sudden changes, consult with a healthcare professional."
+            },
+            {
+                "question": "Is my hearing data private and secure?",
+                "answer": "Yes, all your hearing data is encrypted and stored securely on your device. We never share your personal health information with third parties without your explicit consent."
+            },
+            {
+                "question": "What do the hearing test results mean?",
+                "answer": "Your results show your hearing sensitivity across different frequencies. Lower numbers indicate better hearing. Results are color-coded: Green (Normal), Yellow (Mild loss), Orange (Moderate), Red (Significant loss)."
+            },
+            {
+                "question": "Can HearingZen replace a professional hearing test?",
+                "answer": "No. HearingZen is designed for monitoring and tracking, not medical diagnosis. Always consult with an audiologist or healthcare professional for medical advice."
+            },
+            {
+                "question": "How do I calibrate the Sound Amplifier?",
+                "answer": "Go to Settings > Sound Amplifier > Calibration. Follow the steps to adjust gain, bass, and treble to your preference. Start with low settings and gradually increase."
+            }
+        ],
+        "helpTopicsTitle": "Help Topics",
+        "helpTopics": [
+            {
+                "icon": "settings",
+                "title": "Getting Started",
+                "description": "Setup and initial configuration",
+                "color": "#F59E0B"
+            },
+            {
+                "icon": "bookOpen",
+                "title": "User Guide",
+                "description": "Complete app documentation",
+                "color": "#06B6D4"
+            },
+            {
+                "icon": "shield",
+                "title": "Privacy & Security",
+                "description": "How we protect your data",
+                "color": "#EC4899"
+            },
+            {
+                "icon": "alertCircle",
+                "title": "Troubleshooting",
+                "description": "Common issues and fixes",
+                "color": "#EF4444"
+            }
+        ],
+        "emergencyTitle": "Medical Emergency?",
+        "emergencyText": "If you're experiencing sudden hearing loss or severe symptoms, please contact a healthcare professional immediately.",
+        "footerSubtext": "Together, we're redefining hearing wellness. 💙"
+    },
+    "instructions": {
+        "tagline": "Your Personal Hearing Companion",
+        "badge": "User Guide",
+        "welcomeTitle": "Welcome! 👋",
+        "welcomeText": "This guide will help you get the most out of HearingZen. Follow these simple steps to enhance your hearing experience.",
+        "stepNumber": "Step {{number}}",
+        "sections": [
+            {
+                "icon": "🚀",
+                "title": "Getting Started",
+                "steps": [
+                    "Open the HearingZen app and grant the required microphone and Bluetooth permissions",
+                    "Ensure your hearing device or headphones are connected properly",
+                    "You'll be guided through a simple setup to personalize your hearing profile"
+                ]
+            },
+            {
+                "icon": "🎧",
+                "title": "Hearing Test",
+                "steps": [
+                    "Go to the Hearing Test section from the main menu",
+                    "Follow the on-screen audio instructions carefully in a quiet environment",
+                    "The app will measure your hearing sensitivity and provide results instantly"
+                ]
+            },
+            {
+                "icon": "🔊",
+                "title": "Sound Amplifier",
+                "steps": [
+                    "Access the Sound Amplifier to enhance ambient sounds",
+                    "Use the volume slider to adjust amplification safely",
+                    "Avoid using maximum volume for long periods to protect your ears"
+                ]
+            },
+            {
+                "icon": "📊",
+                "title": "Hearing Health Tracker",
+                "steps": [
+                    "View your hearing trends and progress in the Tracker tab",
+                    "Track improvements over time with detailed analytics",
+                    "Get daily tips and insights to maintain ear health"
+                ]
+            },
+            {
+                "icon": "💬",
+                "title": "Support",
+                "steps": [
+                    "Visit the Help & Support section for FAQs and guides",
+                    "Contact our team directly for personalized assistance",
+                    "Access video tutorials and documentation anytime"
+                ]
+            }
+        ],
+        "tipsIcon": "💡",
+        "tipsTitle": "Pro Tips",
+        "tipsList": [
+            "• Use headphones in quiet spaces for accurate test results",
+            "• Take regular breaks during extended use",
+            "• Update your hearing profile monthly for best results"
+        ],
+        "footerThankYou": "Thank you for being part of HearingZen",
+        "footerSubtext": "Together, we're redefining hearing wellness. 💙",
+        "versionText": "Version 1.0.0"
+    },
+    "privacyPolicy": {
+        "headerTitle": "Privacy Policy",
+        "headerSubtitle": "Your privacy and trust are our top priorities.",
+        "sections": {
+            "introduction": {
+                "title": "1. Introduction",
+                "description": "Welcome to HearingZen! We value your privacy and are committed to protecting your personal data. This policy explains how we collect, use, and safeguard your information when you use our app."
+            },
+            "informationCollected": {
+                "title": "2. Information We Collect",
+                "description": "We collect the following types of information to improve your hearing experience:",
+                "bullets": {
+                    "audioInput": "Audio input from your device microphone",
+                    "bluetoothData": "Bluetooth and hearing device connection data",
+                    "profileInfo": "Optional profile information you provide",
+                    "usageStats": "Basic app usage statistics (anonymous)"
+                }
+            },
+            "howWeUse": {
+                "title": "3. How We Use Your Information",
+                "description": "Your data is used solely to enhance and personalize your hearing experience. Specifically, we use your information to:",
+                "bullets": {
+                    "calibrateProfile": "Calibrate your personal hearing profile",
+                    "improveSound": "Improve sound amplification and clarity",
+                    "provideAnalytics": "Provide analytics to track your hearing health",
+                    "communicateUpdates": "Communicate updates and tips (optional)"
+                }
+            },
+            "dataSecurity": {
+                "title": "4. Data Security",
+                "description": "We implement advanced encryption and local data storage to ensure your information remains private and secure. HearingZen never sells or shares your personal data with third parties."
+            },
+            "yourControl": {
+                "title": "5. Your Control",
+                "description": "You can review, edit, or delete your data anytime through the app settings. You can also disable microphone or Bluetooth permissions without affecting your account."
+            },
+            "thirdParty": {
+                "title": "6. Third-Party Services",
+                "description": "HearingZen may integrate with secure third-party services for analytics or cloud syncing. These services comply with GDPR and privacy standards."
+            },
+            "updates": {
+                "title": "7. Updates to This Policy",
+                "description": "We may update this Privacy Policy from time to time to reflect new features or legal requirements. You'll be notified in-app whenever changes occur."
+            },
+            "contactUs": {
+                "title": "8. Contact Us",
+                "description": "If you have any questions or concerns regarding this Privacy Policy, please reach out to us at:"
+            }
+        },
+        "footer": {
+            "rightsReserved": "All rights reserved.",
+            "subtext": "Together, we're redefining hearing wellness. 💙"
+        }
+    },
+    "termsAndConditions": {
+        "headerTitle": "Terms & Conditions",
+        "lastUpdated": "Last Updated: {{lastUpdated}}",
+        "welcome": "Welcome to {{appName}}",
+        "introText": "Please read these Terms and Conditions carefully before using our application. These terms outline your rights and responsibilities when using {{appName}}.",
+        "sections": [
+            {
+                "id": 1,
+                "icon": "📋",
+                "title": "1. Introduction",
+                "content": "Welcome to HearingZen. By using our app, you agree to be bound by these Terms and Conditions."
+            },
+            {
+                "id": 2,
+                "icon": "✅",
+                "title": "2. Usage",
+                "content": "You agree to use the app only for lawful purposes and in a way that does not infringe the rights of others."
+            },
+            {
+                "id": 3,
+                "icon": "🔒",
+                "title": "3. Privacy",
+                "content": "We respect your privacy. Please read our Privacy Policy to understand how we collect and use your data."
+            },
+            {
+                "id": 4,
+                "icon": "⚠️",
+                "title": "4. Limitation of Liability",
+                "content": "We are not liable for any direct, indirect, incidental, or consequential damages arising out of your use of the app."
+            },
+            {
+                "id": 5,
+                "icon": "🔄",
+                "title": "5. Updates",
+                "content": "Terms may change from time to time. Continued use of the app means you accept those changes."
+            }
+        ],
+        "noticeIcon": "⚠️",
+        "noticeTitle": "Important Notice",
+        "noticeText": "By continuing to use {{appName}}, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.",
+        "agreementText": "These terms constitute a legally binding agreement between you and {{appName}}. If you have any questions or concerns, please contact our support team.",
+        "footerThankYou": "Thank you for being part of {{appName}}.",
+        "footerSubtext": "Together, we're redefining hearing wellness. 💙"
+    },
+    "profile": {
+        "editProfile": "Edit Profile",
+        "yourName": "Your Name",
+        "username": "username",
+        "contactDetails": "contact details",
+        "healthCard": "Health card",
+        "fullName": "Full Name",
+        "phone": "Phone",
+        "email": "Email",
+        "location": "Location",
+        "height": "Height (in cm or feet)",
+        "heightPlaceholder": "e.g., 170 or 5.7",
+        "weight": "Weight (kg)",
+        "weightPlaceholder": "e.g., 70",
+        "gender": "Gender",
+        "genderMale": "Male",
+        "genderFemale": "Female",
+        "genderOther": "Other",
+        "genderSpecify": "Please specify",
+        "genderSpecifyPlaceholder": "e.g., Non-binary",
+        "age": "Age",
+        "agePlaceholder": "e.g., 25",
+        "deafnessLevel": "Deafness Level",
+        "deafnessLevelPlaceholder": "e.g., none, mild, moderate, severe",
+        "disabilityPercentage": "Disability Percentage",
+        "disabilityPercentagePlaceholder": "e.g., 0-100",
+        "saveChanges": "Save Changes",
+        "loadErrorTitle": "Error",
+        "loadErrorMessage": "Failed to load profile data",
+        "successTitle": "✅ Success",
+        "successMessage": "Profile updated successfully!",
+        "saveError": "Failed to update profile",
+        "myProfile": "My Profile",
+        "noName": "No Name",
+        "notSet": "Not set",
+        "kg": "kg",
+        "years": "years",
+        "none": "none",
+        "loadError": "Failed to load profile",
+        "retry": "Retry",
+        "logout": "Logout",
+        "logoutTitle": "Logout",
+        "logoutMessage": "Are you sure you want to logout?",
+        "logoutSuccess": "Logged out successfully",
+        "authRequiredTitle": "Authentication Required",
+        "authRequiredMessage": "Please login to access this feature",
+        "googleAccount": "Google Account",
+        "googleAccountDescription": "Link your Google account for easier sign-in",
+        "linked": "Linked",
+        "notLinked": "Not linked",
+        "link": "Link",
+        "unlink": "Unlink",
+        "unlinkGoogleTitle": "Unlink Google",
+        "unlinkGoogleMessage": "Are you sure you want to unlink your Google account?",
+        "linkSuccess": "Google account linked",
+        "unlinkSuccess": "Google account unlinked",
+        "selectLanguage": "Select Language",
+        "version": "Version"
+    },
+    "login": {
+        "title": "Login",
+        "emailLabel": "Email",
+        "emailPlaceholder": "Enter your email",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Enter your password",
+        "forgotPassword": "Forgot Password?",
+        "loginButton": "Login",
+        "or": "Or",
+        "signUpLink": "Don't have an account? Sign up here",
+        "loginFailed": "Login Failed",
+        "googleSignInFailed": "Google Sign In Failed"
+    },
+    "forgotPassword": {
+        "headerText": "Forgot\nPassword",
+        "title": "Reset Password",
+        "subtitle": "Enter your email address and we'll send you an OTP to reset your password",
+        "emailPlaceholder": "Email",
+        "sendOTP": "Send OTP",
+        "backToLogin": "Back to Login",
+        "error": "Error",
+        "enterEmail": "Please enter your email"
+    },
+    "resetPassword": {
+        "headerText": "New\nPassword",
+        "title": "Create New Password",
+        "subtitle": "Your new password must be different from previously used passwords",
+        "newPassword": "New Password",
+        "newPasswordPlaceholder": "Enter new password",
+        "confirmPassword": "Confirm Password",
+        "confirmPasswordPlaceholder": "Re-enter new password",
+        "hint": "Password must be at least 8 characters long, include an uppercase letter, lowercase letter, number, and special character",
+        "button": "Reset Password",
+        "error": "Error",
+        "passwordsDoNotMatch": "Passwords do not match",
+        "passwordTooShort": "Password must be at least 8 characters long",
+        "success": "Success",
+        "successMessage": "Password reset successfully!"
+    },
+    "otp": {
+        "headerText": "सत्यापित करें",
+        "title": "OTP दर्ज करें",
+        "subtitle": "हमने सत्यापन कोड भेज दिया है\n",
+        "verifyEmail": "ईमेल सत्यापित करें",
+        "didntReceiveCode": "कोड प्राप्त नहीं हुआ?",
+        "resendOTP": "OTP पुनः भेजें",
+        "resendCountdown": "{{countdown}}s में पुनः भेजें",
+        "error": "त्रुटि",
+        "completeOTP": "कृपया पूर्ण OTP दर्ज करें",
+        "success": "सफलता",
+        "successMessage": "ईमेल सफलतापूर्वक सत्यापित हो गया!",
+        "verificationFailed": "सत्यापन विफल",
+        "resendSuccess": "OTP सफलतापूर्वक पुनः भेज दिया गया!"
+    },
+    "resetPasswordOTP": {
+        "headerText": "Reset\nPassword",
+        "title": "Enter OTP",
+        "subtitle": "We've sent a verification code to\n",
+        "verifyOTP": "Verify OTP",
+        "didntReceiveCode": "Didn't receive the code?",
+        "resendOTP": "Resend OTP",
+        "resendCountdown": "Resend in {{countdown}}s",
+        "error": "Error",
+        "completeOTP": "Please enter complete OTP",
+        "verificationFailed": "Verification Failed",
+        "success": "Success",
+        "resendSuccess": "OTP resent successfully!"
+    },
+    "signup": {
+        "headerText": "Sign Up",
+        "fullName": "Full Name",
+        "fullNamePlaceholder": "Full Name",
+        "email": "Email",
+        "emailPlaceholder": "Email",
+        "contact": "Contact Number",
+        "contactPlaceholder": "Contact Number",
+        "password": "Password",
+        "passwordPlaceholder": "Password",
+        "signUpButton": "Sign Up",
+        "or": "Or",
+        "loginLink": "Already Registered? Log in here",
+        "verifyEmail": "Already registered? Verify Email",
+        "verifyEmailTitle": "Verify Email",
+        "verifyEmailPlaceholder": "Enter your email",
+        "verify": "Verify",
+        "registrationFailed": "Registration Failed",
+        "enterEmail": "Please enter your email",
+        "googleSignInFailed": "Google Sign In Failed"
+    }
 }

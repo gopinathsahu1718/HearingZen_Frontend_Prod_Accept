@@ -2,8 +2,11 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Video from 'react-native-video';
+import { useTranslation } from 'react-i18next';
 
 const PrivacyPolicyPage = () => {
+    const { t } = useTranslation();
+
     return (
         <ScrollView
             contentContainerStyle={styles.container}
@@ -26,93 +29,80 @@ const PrivacyPolicyPage = () => {
                         paused={false}
                     />
                 </View>
-                <Text style={styles.headerTitle}>Privacy Policy</Text>
+                <Text style={styles.headerTitle}>{t('privacyPolicy.headerTitle')}</Text>
                 <Text style={styles.headerSubtitle}>
-                    Your privacy and trust are our top priorities.
+                    {t('privacyPolicy.headerSubtitle')}
                 </Text>
             </LinearGradient>
 
             {/* Content */}
             <View style={styles.contentCard}>
-                <Text style={styles.sectionTitle}>1. Introduction</Text>
+                <Text style={styles.sectionTitle}>{t('privacyPolicy.sections.introduction.title')}</Text>
                 <Text style={styles.paragraph}>
-                    Welcome to HearingZen! We value your privacy and are committed to
-                    protecting your personal data. This policy explains how we collect,
-                    use, and safeguard your information when you use our app.
+                    {t('privacyPolicy.sections.introduction.description')}
                 </Text>
 
-                <Text style={styles.sectionTitle}>2. Information We Collect</Text>
+                <Text style={styles.sectionTitle}>{t('privacyPolicy.sections.informationCollected.title')}</Text>
                 <Text style={styles.paragraph}>
-                    We collect the following types of information to improve your hearing
-                    experience:
+                    {t('privacyPolicy.sections.informationCollected.description')}
                 </Text>
                 <View style={styles.bulletList}>
                     <Text style={styles.bullet}>
-                        • Audio input from your device microphone
+                        • {t('privacyPolicy.sections.informationCollected.bullets.audioInput')}
                     </Text>
                     <Text style={styles.bullet}>
-                        • Bluetooth and hearing device connection data
+                        • {t('privacyPolicy.sections.informationCollected.bullets.bluetoothData')}
                     </Text>
                     <Text style={styles.bullet}>
-                        • Optional profile information you provide
+                        • {t('privacyPolicy.sections.informationCollected.bullets.profileInfo')}
                     </Text>
                     <Text style={styles.bullet}>
-                        • Basic app usage statistics (anonymous)
+                        • {t('privacyPolicy.sections.informationCollected.bullets.usageStats')}
                     </Text>
                 </View>
 
-                <Text style={styles.sectionTitle}>3. How We Use Your Information</Text>
+                <Text style={styles.sectionTitle}>{t('privacyPolicy.sections.howWeUse.title')}</Text>
                 <Text style={styles.paragraph}>
-                    Your data is used solely to enhance and personalize your hearing
-                    experience. Specifically, we use your information to:
+                    {t('privacyPolicy.sections.howWeUse.description')}
                 </Text>
                 <View style={styles.bulletList}>
                     <Text style={styles.bullet}>
-                        • Calibrate your personal hearing profile
+                        • {t('privacyPolicy.sections.howWeUse.bullets.calibrateProfile')}
                     </Text>
                     <Text style={styles.bullet}>
-                        • Improve sound amplification and clarity
+                        • {t('privacyPolicy.sections.howWeUse.bullets.improveSound')}
                     </Text>
                     <Text style={styles.bullet}>
-                        • Provide analytics to track your hearing health
+                        • {t('privacyPolicy.sections.howWeUse.bullets.provideAnalytics')}
                     </Text>
                     <Text style={styles.bullet}>
-                        • Communicate updates and tips (optional)
+                        • {t('privacyPolicy.sections.howWeUse.bullets.communicateUpdates')}
                     </Text>
                 </View>
 
-                <Text style={styles.sectionTitle}>4. Data Security</Text>
+                <Text style={styles.sectionTitle}>{t('privacyPolicy.sections.dataSecurity.title')}</Text>
                 <Text style={styles.paragraph}>
-                    We implement advanced encryption and local data storage to ensure your
-                    information remains private and secure. HearingZen never sells or
-                    shares your personal data with third parties.
+                    {t('privacyPolicy.sections.dataSecurity.description')}
                 </Text>
 
-                <Text style={styles.sectionTitle}>5. Your Control</Text>
+                <Text style={styles.sectionTitle}>{t('privacyPolicy.sections.yourControl.title')}</Text>
                 <Text style={styles.paragraph}>
-                    You can review, edit, or delete your data anytime through the app
-                    settings. You can also disable microphone or Bluetooth permissions
-                    without affecting your account.
+                    {t('privacyPolicy.sections.yourControl.description')}
                 </Text>
 
-                <Text style={styles.sectionTitle}>6. Third-Party Services</Text>
+                <Text style={styles.sectionTitle}>{t('privacyPolicy.sections.thirdParty.title')}</Text>
                 <Text style={styles.paragraph}>
-                    HearingZen may integrate with secure third-party services for
-                    analytics or cloud syncing. These services comply with GDPR and
-                    privacy standards.
+                    {t('privacyPolicy.sections.thirdParty.description')}
                 </Text>
 
-                <Text style={styles.sectionTitle}>7. Updates to This Policy</Text>
+                <Text style={styles.sectionTitle}>{t('privacyPolicy.sections.updates.title')}</Text>
                 <Text style={styles.paragraph}>
-                    We may update this Privacy Policy from time to time to reflect new
-                    features or legal requirements. You’ll be notified in-app whenever
-                    changes occur.
+                    {t('privacyPolicy.sections.updates.description')}
                 </Text>
 
-                <Text style={styles.sectionTitle}>8. Contact Us</Text>
+                <Text style={styles.sectionTitle}>{t('privacyPolicy.sections.contactUs.title')}</Text>
                 <Text style={styles.paragraph}>
-                    If you have any questions or concerns regarding this Privacy Policy,
-                    please reach out to us at:
+                    {t('privacyPolicy.sections.contactUs.description')}
                 </Text>
                 <Text style={styles.contactEmail}>support@hearingzen.com</Text>
             </View>
@@ -121,10 +111,10 @@ const PrivacyPolicyPage = () => {
             <View style={styles.footer}>
                 <View style={styles.divider} />
                 <Text style={styles.footerText}>
-                    © {new Date().getFullYear()} HearingZen. All rights reserved.
+                    © {new Date().getFullYear()} HearingZen. {t('privacyPolicy.footer.rightsReserved')}
                 </Text>
                 <Text style={styles.footerSubtext}>
-                    Together, we're redefining hearing wellness. 💙
+                    {t('privacyPolicy.footer.subtext')}
                 </Text>
             </View>
         </ScrollView>

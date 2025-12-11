@@ -1,4 +1,4 @@
-// CourseListScreen.tsx - Shows progress only for enrolled courses
+// CourseListScreen.tsx - Updated with i18n and fixed count display
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -17,6 +17,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/types';
+import { useTranslation } from 'react-i18next';
 
 type CourseListRouteProp = RouteProp<RootStackParamList, 'CourseList'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -68,6 +69,7 @@ interface EnrollmentStatus {
 const BASE_URL = 'https://api.hearingzen.in';
 
 const CourseListScreen = () => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { token, isAuthenticated } = useAuth();
   const navigation = useNavigation<NavigationProp>();
@@ -83,7 +85,7 @@ const CourseListScreen = () => {
     } else {
       setLoadingEnrollments(false);
     }
-  }, []);
+  }, [isAuthenticated, token]);
 
   const fetchEnrollmentStatus = async () => {
     const newEnrollmentMap = new Map<string, EnrollmentStatus>();
@@ -161,7 +163,7 @@ const CourseListScreen = () => {
             {item.title}
           </Text>
           <Text style={[styles.courseLabel, { color: theme.textSecondary }]}>
-            {lessonCount} Lesson{lessonCount !== 1 ? 's' : ''}
+            {t('courses.lessonsCount', { count: lessonCount })}
           </Text>
         </View>
 
@@ -185,7 +187,7 @@ const CourseListScreen = () => {
             </View>
             <View style={styles.enrolledBadgeContainer}>
               <View style={[styles.enrolledBadge, { backgroundColor: '#10B981' }]}>
-                <Text style={styles.enrolledBadgeText}>Enrolled</Text>
+                <Text style={styles.enrolledBadgeText}>{t('courses.enrolled')}</Text>
               </View>
             </View>
           </>
@@ -194,12 +196,12 @@ const CourseListScreen = () => {
             {/* Show price badge if not enrolled */}
             <View style={styles.priceCircle}>
               <Text style={[styles.priceLabel, { color: theme.textSecondary }]}>
-                {item.price === 0 ? 'FREE' : `₹${item.price}`}
+                {item.price === 0 ? t('courses.free') : `₹${item.price}`}
               </Text>
             </View>
             <View style={styles.notEnrolledContainer}>
               <Text style={[styles.notEnrolledText, { color: theme.textSecondary }]}>
-                Not Enrolled
+                {t('courses.notEnrolled')}
               </Text>
             </View>
           </>
@@ -211,10 +213,10 @@ const CourseListScreen = () => {
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-        No courses available yet
+        {t('courses.noCourses')}
       </Text>
       <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>
-        Check back soon for new courses!
+        {t('courses.noCoursesSubtext')}
       </Text>
     </View>
   );
@@ -233,7 +235,7 @@ const CourseListScreen = () => {
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {category.name} Courses
+          {category.name} {t('courses.courses')}
         </Text>
       </View>
 
@@ -243,7 +245,7 @@ const CourseListScreen = () => {
             {courses.length}
           </Text>
           <Text style={[styles.countLabel, { color: theme.primary }]}>
-            Courses
+            {t('courses.courses')}
           </Text>
         </View>
       </View>
@@ -252,7 +254,7 @@ const CourseListScreen = () => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color={theme.primary} />
           <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-            Loading enrollment status...
+            {t('courses.loadingEnrollment')}
           </Text>
         </View>
       ) : (
@@ -317,6 +319,8 @@ const styles = StyleSheet.create({
   loadingContainer: {
     padding: 20,
     alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
   },
   loadingText: {
     marginTop: 10,

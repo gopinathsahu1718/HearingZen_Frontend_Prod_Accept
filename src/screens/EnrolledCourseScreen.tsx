@@ -17,6 +17,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/types';
+import { useTranslation } from 'react-i18next';
 
 type EnrolledCourseRouteProp = RouteProp<RootStackParamList, 'EnrolledCourse'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -67,6 +68,7 @@ interface ProgressData {
 const BASE_URL = 'https://api.hearingzen.in';
 
 const EnrolledCourseScreen = () => {
+    const { t } = useTranslation();
     const { theme } = useTheme();
     const { token } = useAuth();
     const navigation = useNavigation<NavigationProp>();
@@ -116,8 +118,8 @@ const EnrolledCourseScreen = () => {
             }
         } catch (error) {
             console.error('Error fetching course data:', error);
-            Alert.alert('Error', 'Failed to load course', [
-                { text: 'OK', onPress: () => navigation.goBack() },
+            Alert.alert(t('common.error'), t('courses.courseLoadError'), [
+                { text: t('common.ok'), onPress: () => navigation.goBack() },
             ]);
         } finally {
             setLoading(false);
@@ -178,15 +180,15 @@ const EnrolledCourseScreen = () => {
                         {course.title}
                     </Text>
                     <Text style={[styles.authorName, { color: theme.textSecondary }]}>
-                        by {course.author_name}
+                        {t('courses.by')} {course.author_name}
                     </Text>
                     <View style={styles.statsContainer}>
                         <View style={styles.statItem}>
                             <Text style={[styles.statValue, { color: theme.text }]}>
-                                {course.lessons.length}
+                                {t('courses.lessonsCount', { count: course.lessons.length })}
                             </Text>
                             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                                Lessons
+                                {t('courses.lessons')}
                             </Text>
                         </View>
                         <View style={styles.statDivider} />
@@ -195,7 +197,7 @@ const EnrolledCourseScreen = () => {
                                 {Math.round(progressPercentage)}%
                             </Text>
                             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                                Complete
+                                {t('courses.complete')}
                             </Text>
                         </View>
                     </View>
@@ -212,10 +214,10 @@ const EnrolledCourseScreen = () => {
                 {/* Lessons Section */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                        Course Lessons
+                        {t('courses.courseLessons')}
                     </Text>
                     <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-                        {progressData?.completed || 0} of {course.lessons.length} completed
+                        {t('courses.completedOfTotal', { completed: progressData?.completed || 0, total: course.lessons.length })}
                     </Text>
 
                     {course.lessons.map((lesson, index) => {
@@ -247,7 +249,7 @@ const EnrolledCourseScreen = () => {
                                             { color: isCompleted ? '#10B981' : theme.textSecondary }
                                         ]}
                                     >
-                                        {isCompleted ? 'Completed' : 'Not Started'}
+                                        {isCompleted ? t('courses.completed') : t('courses.notStarted')}
                                     </Text>
                                 </View>
                                 <Text style={[styles.playIcon, { color: theme.primary }]}>▶</Text>
