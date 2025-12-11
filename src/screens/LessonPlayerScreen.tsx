@@ -1,5 +1,5 @@
-// LessonPlayerScreen.tsx - Fixed with react-native-youtube-iframe
-// First install: npm install react-native-youtube-iframe
+// LessonPlayerScreen.tsx - Fixed with react-native-youtube-iframe and WebView fallback
+// Install: npm install react-native-webview (if not already)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -13,8 +13,10 @@ import {
     Alert,
     Dimensions,
     Modal,
+    Linking,
 } from 'react-native';
 import YoutubePlayer from 'react-native-youtube-iframe';
+import { WebView } from 'react-native-webview'; // Added for fallback
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -69,14 +71,16 @@ const LessonPlayerScreen = () => {
     const [progressData, setProgressData] = useState<ProgressData | null>(null);
     const [showLessonNav, setShowLessonNav] = useState(false);
     const [loadingProgress, setLoadingProgress] = useState(true);
-    const [playing, setPlaying] = useState(false);
+    const [playing, setPlaying] = useState(true); // Auto-start
     const [currentLesson, setCurrentLesson] = useState<LessonWithProgress>(lesson);
     const [videoError, setVideoError] = useState<string | null>(null);
+    const [useWebViewFallback, setUseWebViewFallback] = useState(false); // New state for fallback
 
     useEffect(() => {
         setCurrentLesson(lesson);
         setVideoError(null);
-        setPlaying(false);
+        setUseWebViewFallback(false);
+        setPlaying(true); // Auto-play on load
         fetchLessonDetails();
         fetchProgress();
     }, [lesson._id]);
@@ -261,8 +265,19 @@ const LessonPlayerScreen = () => {
 
     const onError = useCallback((error: string) => {
         console.error('YouTube player error:', error);
-        setVideoError(`Video playback error: ${error}`);
+        if (error === 'embed_not_allowed') {
+            setVideoError('Video embedding restricted. Using full YouTube view.');
+            setUseWebViewFallback(true); // Switch to WebView fallback
+        } else {
+            setVideoError(`Video playback error: ${error}`);
+        }
     }, []);
+
+    const handleOpenInYouTube = () => {
+        Linking.openURL(currentLesson.video_url).catch((err) =>
+            console.error('Error opening URL:', err)
+        );
+    };
 
     const renderVideoPlayer = () => {
         if (!videoId) {
@@ -276,27 +291,68 @@ const LessonPlayerScreen = () => {
                         or{'\n'}
                         https://www.youtube.com/watch?v=VIDEO_ID
                     </Text>
-                </View>
-            );
-        }
-
-        if (videoError) {
-            return (
-                <View style={[styles.videoContainer, styles.errorContainer]}>
-                    <Text style={styles.errorText}>❌ {videoError}</Text>
                     <TouchableOpacity
-                        style={styles.retryButton}
-                        onPress={() => {
-                            setVideoError(null);
-                            setPlaying(true);
-                        }}
+                        style={styles.openButton}
+                        onPress={handleOpenInYouTube}
                     >
-                        <Text style={styles.retryButtonText}>Retry</Text>
+                        <Text style={styles.openButtonText}>Open in YouTube</Text>
                     </TouchableOpacity>
                 </View>
             );
         }
 
+        if (videoError && !useWebViewFallback) {
+            return (
+                <View style={[styles.videoContainer, styles.errorContainer]}>
+                    <Text style={styles.errorText}>❌ {videoError}</Text>
+                    <TouchableOpacity
+                        style={styles.openButton}
+                        onPress={handleOpenInYouTube}
+                    >
+                        <Text style={styles.openButtonText}>Open in YouTube</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
+        // Fallback to full YouTube page in WebView if embed blocked
+        if (useWebViewFallback || videoError) {
+            return (
+                <View style={styles.videoContainer}>
+                    <WebView
+                        source={{ uri: currentLesson.video_url }}
+                        style={styles.fullVideoWebView}
+                        allowsFullscreenVideo={true}
+                        javaScriptEnabled={true}
+                        domStorageEnabled={true}
+                        startInLoadingState={true}
+                        renderLoading={() => (
+                            <View style={styles.loadingOverlay}>
+                                <ActivityIndicator size="large" color={theme.primary} />
+                            </View>
+                        )}
+                        onError={(syntheticEvent) => {
+                            const { nativeEvent } = syntheticEvent;
+                            console.error('WebView error:', nativeEvent);
+                        }}
+                        // Auto-play script for WebView
+                        injectedJavaScript={`
+                            (function() {
+                                setTimeout(() => {
+                                    var video = document.querySelector('video');
+                                    if (video) {
+                                        video.play();
+                                    }
+                                }, 2000);
+                            })();
+                            true;
+                        `}
+                    />
+                </View>
+            );
+        }
+
+        // Normal YouTube Iframe
         return (
             <View style={styles.videoContainer}>
                 <YoutubePlayer
@@ -308,13 +364,9 @@ const LessonPlayerScreen = () => {
                     webViewStyle={styles.youtubeWebView}
                     webViewProps={{
                         androidLayerType: 'hardware',
-                        injectedJavaScript: `
-                            (function() {
-                                var style = document.createElement('style');
-                                style.innerHTML = '.ytp-watermark, .ytp-youtube-button, .ytp-title-link, .ytp-chrome-top, .ytp-show-cards-title { display: none !important; }';
-                                document.head.appendChild(style);
-                            })();
-                        `,
+                        javaScriptEnabled: true,
+                        domStorageEnabled: true,
+                        userAgent: 'Mozilla/5.0 (Linux; Android) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.181 Mobile Safari/537.36',
                     }}
                     initialPlayerParams={{
                         controls: true,
@@ -324,6 +376,8 @@ const LessonPlayerScreen = () => {
                         iv_load_policy: 3,
                         fs: 1,
                         disablekb: 0,
+                        origin: 'https://www.youtube.com',
+                        enablejsapi: 1,
                     }}
                 />
             </View>
@@ -429,20 +483,6 @@ const LessonPlayerScreen = () => {
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Video Player */}
                 {renderVideoPlayer()}
-
-                {/* Play/Pause Button */}
-                {videoId && !videoError && (
-                    <View style={styles.playControlContainer}>
-                        <TouchableOpacity
-                            style={[styles.playButton, { backgroundColor: theme.primary }]}
-                            onPress={() => setPlaying(!playing)}
-                        >
-                            <Text style={styles.playButtonText}>
-                                {playing ? '⏸ Pause' : '▶ Play'}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
 
                 {/* Navigation Buttons */}
                 <View style={styles.navigationContainer}>
@@ -595,6 +635,20 @@ const styles = StyleSheet.create({
     youtubeWebView: {
         backgroundColor: '#000000',
     },
+    fullVideoWebView: {
+        flex: 1,
+        backgroundColor: '#000000',
+    },
+    loadingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
     errorContainer: {
         justifyContent: 'center',
         alignItems: 'center',
@@ -618,32 +672,19 @@ const styles = StyleSheet.create({
         fontSize: 12,
         textAlign: 'center',
         lineHeight: 18,
+        marginBottom: 16,
     },
-    retryButton: {
+    openButton: {
         backgroundColor: '#3B82F6',
         paddingHorizontal: 24,
         paddingVertical: 12,
         borderRadius: 8,
-        marginTop: 16,
+        marginTop: 8,
     },
-    retryButtonText: {
+    openButtonText: {
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: 'bold',
-    },
-    playControlContainer: {
-        paddingHorizontal: 20,
-        paddingTop: 16,
-    },
-    playButton: {
-        paddingVertical: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    playButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
     },
     navigationContainer: {
         flexDirection: 'row',

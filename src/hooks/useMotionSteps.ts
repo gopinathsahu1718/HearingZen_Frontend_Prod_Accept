@@ -22,13 +22,13 @@ export default function useMotionSteps() {
   const [activeTime, setActiveTime] = useState(0);
 
   const [stepHistory, setStepHistory] = useState<StepInterval[]>([]);
-  
+
   // ⭐ ACCUMULATOR REFS - store actual values, update state every 5 sec
   const actualSteps = useRef(0);
   const actualDistance = useRef(0);
   const actualCalories = useRef(0);
   const actualActiveTime = useRef(0);
-  
+
   const intervalSteps = useRef(0);
   const lastIntervalTime = useRef(Date.now());
   const INTERVAL_DURATION = 5 * 1000; // 5 seconds for history
