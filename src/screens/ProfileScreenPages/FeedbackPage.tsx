@@ -8,18 +8,22 @@ import {
     ScrollView,
     Platform,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Video from 'react-native-video';
 import { useTranslation } from 'react-i18next';
+
+const API_BASE_URL = 'http://13.200.222.176/api';
 
 const FeedbackPage = () => {
     const { t } = useTranslation();
     const [name, setName] = useState('');
     const [rating, setRating] = useState(0);
     const [feedback, setFeedback] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!name.trim() || !feedback.trim() || rating <= 0) {
             Alert.alert(
                 t('feedback.incompleteTitle'),
@@ -28,13 +32,45 @@ const FeedbackPage = () => {
             return;
         }
 
-        Alert.alert(
-            t('feedback.thankYouTitle'),
-            t('feedback.successMessage', { rating }),
-        );
-        setName('');
-        setRating(0);
-        setFeedback('');
+        setIsSubmitting(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/feedback`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name.trim(),
+                    rating,
+                    feedback: feedback.trim(),
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                Alert.alert(
+                    t('feedback.thankYouTitle'),
+                    t('feedback.successMessage', { rating }),
+                );
+                setName('');
+                setRating(0);
+                setFeedback('');
+            } else {
+                Alert.alert(
+                    t('feedback.errorTitle'),
+                    data.message || t('feedback.errorMessage'),
+                );
+            }
+        } catch (error) {
+            console.error('Feedback submission error:', error);
+            Alert.alert(
+                t('feedback.errorTitle'),
+                t('feedback.networkError'),
+            );
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -112,12 +148,23 @@ const FeedbackPage = () => {
                 />
 
                 {/* Submit Button */}
-                <TouchableOpacity onPress={handleSubmit} activeOpacity={0.8}>
+                <TouchableOpacity
+                    onPress={handleSubmit}
+                    activeOpacity={0.8}
+                    disabled={isSubmitting}
+                >
                     <LinearGradient
                         colors={['#1874ed', '#0a4a9e']}
-                        style={styles.submitButton}
+                        style={[
+                            styles.submitButton,
+                            isSubmitting && styles.submitButtonDisabled
+                        ]}
                     >
-                        <Text style={styles.submitText}>{t('feedback.submitButton')}</Text>
+                        {isSubmitting ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                        ) : (
+                            <Text style={styles.submitText}>{t('feedback.submitButton')}</Text>
+                        )}
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
@@ -239,6 +286,9 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    submitButtonDisabled: {
+        opacity: 0.6,
     },
     submitText: {
         fontSize: 16,

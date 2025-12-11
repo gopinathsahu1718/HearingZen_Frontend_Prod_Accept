@@ -45,9 +45,58 @@ const HelpPage = () => {
 
     const faqs = t('help.faqs', { returnObjects: true });
 
-    const quickActions = t('help.quickActions', { returnObjects: true });
-
     const helpTopics = t('help.helpTopics', { returnObjects: true });
+
+    // Define quick actions with hardcoded data (no language change)
+    const phoneNumber = '+918260179217';
+    const emailAddress = 'support@hearingzen.in'; // Assuming this email; adjust as needed
+
+    const quickActions = [
+        {
+            title: 'Live Chat',
+            description: 'Message our support team',
+            icon: 'messageCircle',
+            color: '#10B981',
+            action: () => {
+                const smsUrl = Platform.OS === 'ios' ? `sms:${phoneNumber.replace(/\+/g, '')}` : `sms:${phoneNumber}`;
+                Linking.openURL(smsUrl)
+                    .catch((error) => {
+                        Alert.alert('Error', 'Unable to open messaging app. Please check if you have a default SMS app installed.');
+                        console.error('Error opening SMS:', error);
+                    });
+            },
+        },
+        {
+            title: 'Email Us',
+            description: 'Send us an email',
+            icon: 'mail',
+            color: '#F59E0B',
+            action: () => {
+                const subject = encodeURIComponent('HearingZen Support Request');
+                const body = encodeURIComponent('Hi,\n\nI need help with...');
+                const mailUrl = `mailto:${emailAddress}?subject=${subject}&body=${body}`;
+                Linking.openURL(mailUrl)
+                    .catch((error) => {
+                        Alert.alert('Error', 'Unable to open email app. Please check if you have a default email app installed.');
+                        console.error('Error opening email:', error);
+                    });
+            },
+        },
+        {
+            title: 'Call Us',
+            description: 'Speak to our experts',
+            icon: 'phone',
+            color: '#EF4444',
+            action: () => {
+                const telUrl = `tel:${phoneNumber.replace(/\+/g, '')}`;
+                Linking.openURL(telUrl)
+                    .catch((error) => {
+                        Alert.alert('Error', 'Unable to open phone app. Please check if you have a default phone app installed.');
+                        console.error('Error opening phone:', error);
+                    });
+            },
+        },
+    ];
 
     const toggleFAQ = (index: number) => {
         setExpandedFAQ(expandedFAQ === index ? null : index);
@@ -98,7 +147,7 @@ const HelpPage = () => {
 
             {/* Quick Actions */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>{t('help.contactUs')}</Text>
+                <Text style={styles.sectionTitle}>Contact Us</Text>
                 <View style={styles.quickActionsGrid}>
                     {quickActions.map((action, index) => (
                         <TouchableOpacity

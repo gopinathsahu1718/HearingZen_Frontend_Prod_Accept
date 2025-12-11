@@ -116,7 +116,7 @@ export default function AboutApp() {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.contactCard}
           onPress={() => openLink('https://www.hearingzen.com')}
           activeOpacity={0.7}
@@ -128,7 +128,7 @@ export default function AboutApp() {
             <Text style={styles.contactTitle}>{t('about.contacts.website.title')}</Text>
             <Text style={styles.contactSubtitle}>www.hearingzen.com</Text>
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {/* Tip Card */}
