@@ -17,11 +17,16 @@ import {
   Animated,
   Dimensions,
   Share,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../hooks/useThemedStyles';
-import useMotionSteps, { StepInterval } from '../hooks/useMotionSteps';
-
+import { useAuth } from '../contexts/AuthContext';
+import useMotionSteps from '../hooks/useMotionSteps';
+import moment from 'moment-timezone';
 import Svg, {
   Path,
   Defs,
@@ -42,6 +47,16 @@ const STROKE_WIDTH = SIZE * 0.06;
 const RADIUS = (SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
+const API_BASE_URL = 'http://13.200.222.176/api/steps';
+const SYNC_INTERVAL = 30000; // 30 seconds
+
+// AsyncStorage keys
+const STEPS_DATA_KEY = '@steps_data';
+const OFFLINE_QUEUE_KEY = '@steps_offline_queue';
+const LAST_SYNC_KEY = '@steps_last_sync';
+const BASELINE_KEY = '@steps_baseline'; // NEW: Store baseline separately
+const MOTION_OFFSET_KEY = '@steps_motion_offset'; // NEW: Store motion sensor offset
+
 type Period = 'Month' | 'Week' | 'Day';
 type Point = { x: number; y: number; value?: number };
 type SelectedPoint = {
@@ -52,25 +67,59 @@ type SelectedPoint = {
   value: number;
 };
 
+interface StepsData {
+  currentSteps: number;
+  currentDistance: number;
+  currentCalories: number;
+  currentActiveTime: number;
+  dailyGoal: number;
+  lastUpdated: number;
+  currentDate: string;
+}
+
+interface BaselineData {
+  steps: number;
+  distance: number;
+  calories: number;
+  activeTime: number;
+  date: string;
+}
+
+interface OfflineEntry {
+  steps: number;
+  distance: number;
+  calories: number;
+  activeTime: number;
+  timestamp: string;
+}
+
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
+// Get current IST date in YYYY-MM-DD format
+const getISTDate = () => {
+  return moment().tz('Asia/Kolkata').format('YYYY-MM-DD');
+};
+
+// Convert timestamp to IST
+const getISTTimestamp = () => {
+  return moment().tz('Asia/Kolkata').toISOString();
+};
+
 // ============ HEADER COMPONENT ============
-const Header: React.FC<{ onRefresh?: () => void }> = ({ onRefresh }) => {
+const Header: React.FC<{ onRefresh?: () => void; isRefreshing?: boolean }> = ({
+  onRefresh,
+  isRefreshing = false
+}) => {
   const { theme } = useTheme();
 
   const handleShare = async () => {
     try {
       await Share.share({
-        message: 'I walked 9,592 steps today! 💪 #StepCounter',
+        message: 'Check out my step count today! 💪 #StepCounter',
       });
     } catch (error) {
       console.error('Share Error:', error);
     }
-  };
-
-  const handleRefresh = () => {
-    if (onRefresh) return onRefresh();
-    console.log('Refresh requested from Header');
   };
 
   return (
@@ -80,12 +129,20 @@ const Header: React.FC<{ onRefresh?: () => void }> = ({ onRefresh }) => {
         { backgroundColor: theme.background, justifyContent: 'space-between' },
       ]}
     >
-      <TouchableOpacity onPress={handleRefresh} style={styles.leftButton}>
-        <Image
-          source={require('../assets/images/refresh.png')}
-          style={[styles.headerIcon, { tintColor: theme.iconTint }]}
-          resizeMode="contain"
-        />
+      <TouchableOpacity
+        onPress={onRefresh}
+        style={styles.leftButton}
+        disabled={isRefreshing}
+      >
+        {isRefreshing ? (
+          <ActivityIndicator size="small" color={theme.iconTint} />
+        ) : (
+          <Image
+            source={require('../assets/images/refresh.png')}
+            style={[styles.headerIcon, { tintColor: theme.iconTint }]}
+            resizeMode="contain"
+          />
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
@@ -101,7 +158,7 @@ const Header: React.FC<{ onRefresh?: () => void }> = ({ onRefresh }) => {
 
 // ============ STEP CIRCLE COMPONENT ============
 const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
-  steps = 7000,
+  steps = 0,
   goal = 10000,
 }) => {
   const { theme } = useTheme();
@@ -181,8 +238,8 @@ const StatsPanel: React.FC<{
   distance?: number;
   calories?: number;
   activeMins?: number;
-  steps?: number;
-}> = ({ distance = 5.2, calories = 320, activeMins = 45, steps = 50 }) => {
+  percentage?: number;
+}> = ({ distance = 0, calories = 0, activeMins = 0, percentage = 0 }) => {
   const { theme, isDarkMode } = useTheme();
   const stats = [
     {
@@ -193,7 +250,7 @@ const StatsPanel: React.FC<{
     },
     {
       label: 'Calories',
-      value: `${calories}`,
+      value: `${Math.round(calories)}`,
       icon: require('../assets/stepIcons/calories.png'),
       bg: theme.cardBackground,
     },
@@ -205,7 +262,7 @@ const StatsPanel: React.FC<{
     },
     {
       label: 'Percentage',
-      value: `${Number(steps).toFixed(2)} %`,
+      value: `${Number(percentage).toFixed(2)} %`,
       icon: require('../assets/stepIcons/footprint.png'),
       bg: theme.cardBackground,
     },
@@ -243,8 +300,10 @@ const StatsPanel: React.FC<{
 };
 
 // ============ STEPS CHART COMPONENT ============
-const StepsChart: React.FC = () => {
-  const { steps, stepHistory } = useMotionSteps();
+const StepsChart: React.FC<{
+  isAuthenticated: boolean;
+  token: string | null;
+}> = ({ isAuthenticated, token }) => {
   const { theme } = useTheme();
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('Week');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -252,14 +311,14 @@ const StepsChart: React.FC = () => {
     left: number;
     top: number;
   } | null>(null);
-  const [selectedPoint, setSelectedPoint] = useState<SelectedPoint | null>(
-    null,
-  );
-  const [screenWidth, setScreenWidth] = useState(
-    Dimensions.get('window').width,
-  );
+  const [selectedPoint, setSelectedPoint] = useState<SelectedPoint | null>(null);
+  const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
+  const [chartData, setChartData] = useState<{ points: Point[]; labels: string[] }>({
+    points: [],
+    labels: [],
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<any>(null);
-
   const animProgress = useRef(new Animated.Value(0)).current;
   const pointScale = useRef(new Animated.Value(0)).current;
 
@@ -288,17 +347,105 @@ const StepsChart: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [selectedPeriod, animProgress, pointScale]);
+  }, [selectedPeriod]);
+
+  const fetchChartData = async (period: Period) => {
+    if (!isAuthenticated || !token) return;
+
+    setIsLoading(true);
+    try {
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) {
+        Alert.alert(
+          'No Internet Connection',
+          'Please turn on your data to view the report chart.',
+          [{ text: 'OK' }]
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/history?period=${period.toLowerCase()}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch chart data');
+      }
+
+      processChartData(data.data.history || [], period);
+    } catch (error: any) {
+      console.error('Fetch chart error:', error);
+      Alert.alert('Error', error.message || 'Failed to load chart data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const processChartData = (history: any[], period: Period) => {
+    const isSmall = screenWidth < 360;
+    const isMedium = screenWidth >= 360 && screenWidth < 420;
+
+    // Reduce chart width to fit within container
+    const totalChartWidth = Math.max(screenWidth * 0.85, 400);
+    const chartHeight = isSmall ? 90 : isMedium ? 110 : 130;
+
+    let points: Point[] = [];
+    let labels: string[] = [];
+
+    if (history.length === 0) {
+      setChartData({ points: [], labels: [] });
+      return;
+    }
+
+    const maxSteps = Math.max(...history.map((h: any) => h.totalSteps || 0), 1);
+
+    history.forEach((entry: any, i: number) => {
+      if (period === 'Day') {
+        labels.push(moment(entry.date || entry.timestamp).format('h A'));
+      } else if (period === 'Week') {
+        labels.push(moment(entry.date).format('ddd'));
+      } else {
+        const start = moment(entry.weekStart).format('MMM D');
+        const end = moment(entry.weekEnd).format('MMM D');
+        labels.push(`${start}-${end}`);
+      }
+
+      points.push({
+        x: (i / Math.max(history.length - 1, 1)) * totalChartWidth,
+        y: chartHeight - ((entry.totalSteps || 0) / maxSteps) * chartHeight * 0.8,
+        value: entry.totalSteps || 0,
+      });
+    });
+
+    setChartData({ points, labels });
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchChartData(selectedPeriod);
+    }
+  }, [selectedPeriod, isAuthenticated, token]);
 
   const isSmall = screenWidth < 360;
   const isMedium = screenWidth >= 360 && screenWidth < 420;
-  // reduce chart size slightly (5px) as requested
-  const totalChartWidth = Math.max(screenWidth * 1.2, 540);
-  const visibleChartWidth = Math.max(0, Math.min(screenWidth-10, 480));
+
+  // Adjusted dimensions to fit within card
+  const Y_AXIS_WIDTH = 40; // Space for Y-axis labels
+  const totalChartWidth = Math.max(screenWidth * 0.85, 400);
+  const visibleChartWidth = screenWidth - 40; // Account for card padding
   const chartHeight = isSmall ? 90 : isMedium ? 110 : 130;
   const labelPadding = isSmall ? 14 : 20;
   const sidePadding = labelPadding;
-
   const periodOptions: Period[] = ['Month', 'Week', 'Day'];
   const periodBtnRef = useRef<any>(null);
   const DROPDOWN_WIDTH = 140;
@@ -324,159 +471,30 @@ const StepsChart: React.FC = () => {
     }
   };
 
-  const yToValue = (y: number) => {
-    const clamped = Math.max(0, Math.min(chartHeight, y));
-    const v = Math.round(((chartHeight - clamped) / chartHeight) * 100);
-    return v;
-  };
+  const dataPoints = chartData.points;
+  const labels = chartData.labels;
 
-  // ======== CORRECTED DATA AGGREGATION ========
-  const getData = useCallback(
-    (period: Period): { points: Point[]; labels: string[] } => {
-      let intervals: StepInterval[] = [];
-      let labels: string[] = [];
+  // Calculate Y-axis values
+  const maxSteps = dataPoints.length > 0
+    ? Math.max(...dataPoints.map(p => p.value || 0))
+    : 10000;
+  const yAxisValues = [
+    Math.round(maxSteps),
+    Math.round(maxSteps * 0.75),
+    Math.round(maxSteps * 0.5),
+    Math.round(maxSteps * 0.25),
+    0
+  ];
 
-      if (period === 'Day') {
-        // Day view: 2-hour buckets for the last 24 hours ending at the current system time
-        // Creates 12 buckets (oldest -> newest) so the chart ends at 'now'.
-        const twoHour = 2 * 60 * 60 * 1000;
-        const now = Date.now();
-        const windowStart = now - 12 * twoHour; // start of the 24-hour window
-
-        for (let i = 0; i < 12; i++) {
-          const chunkStart = windowStart + i * twoHour;
-          const chunkEnd = chunkStart + twoHour;
-
-          const chunkSteps = stepHistory
-            .filter(h => h.timestamp >= chunkStart && h.timestamp < chunkEnd)
-            .reduce((sum, h) => sum + h.steps, 0);
-
-          intervals.push({
-            timestamp: chunkStart,
-            steps: chunkSteps,
-            distance: 0,
-            calories: 0,
-          });
-
-          // label the end of the bucket in localized hour format (e.g., "2 AM", "4 PM")
-          const labelTime = chunkEnd; // show bucket end so the last label corresponds to "now"
-          labels.push(
-            new Date(labelTime).toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              hour12: true,
-            }),
-          );
-        }
-      } else if (period === 'Week') {
-        // Week view: last 7 days ending today (chronological oldest -> newest)
-        const refDate = new Date();
-        refDate.setHours(0, 0, 0, 0);
-
-        // compute start as 6 days before today to include 7 days total
-        const startDate = new Date(refDate);
-        startDate.setDate(refDate.getDate() - 6);
-        startDate.setHours(0, 0, 0, 0);
-
-        for (let i = 0; i < 7; i++) {
-          const dayStart = startDate.getTime() + i * 24 * 60 * 60 * 1000;
-          const dayEnd = dayStart + 24 * 60 * 60 * 1000;
-
-          const daySteps = stepHistory
-            .filter(h => h.timestamp >= dayStart && h.timestamp < dayEnd)
-            .reduce((sum, h) => sum + h.steps, 0);
-
-          intervals.push({
-            timestamp: dayStart,
-            steps: daySteps,
-            distance: 0,
-            calories: 0,
-          });
-
-          labels.push(
-            new Date(dayStart).toLocaleDateString('en-US', {
-              weekday: 'short',
-            }),
-          );
-        }
-      } else {
-        // Month view: 4 consecutive weeks from current week boundary (chronological)
-        const refDate = new Date();
-        refDate.setHours(0, 0, 0, 0);
-
-        const refWeekStart = new Date(refDate);
-        refWeekStart.setDate(refDate.getDate() - refDate.getDay());
-        refWeekStart.setHours(0, 0, 0, 0);
-
-        const firstWeekStart = new Date(refWeekStart);
-        firstWeekStart.setDate(refWeekStart.getDate() - 21);
-        firstWeekStart.setHours(0, 0, 0, 0);
-
-        for (let i = 0; i < 4; i++) {
-          const weekStart =
-            firstWeekStart.getTime() + i * 7 * 24 * 60 * 60 * 1000;
-          const weekEnd = weekStart + 7 * 24 * 60 * 60 * 1000;
-
-          const weekSteps = stepHistory
-            .filter(h => h.timestamp >= weekStart && h.timestamp < weekEnd)
-            .reduce((sum, h) => sum + h.steps, 0);
-
-          intervals.push({
-            timestamp: weekStart,
-            steps: weekSteps,
-            distance: 0,
-            calories: 0,
-          });
-
-          const start = new Date(weekStart);
-          const end = new Date(weekEnd - 1);
-          const s = start.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          });
-          const e = end.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          });
-          labels.push(`${s} - ${e}`);
-        }
-      }
-
-      const maxSteps = Math.max(...intervals.map(i => i.steps), 1);
-      const points = intervals.map((interval, i) => ({
-        x: (i / Math.max(intervals.length - 1, 1)) * totalChartWidth,
-        y: chartHeight - (interval.steps / maxSteps) * chartHeight * 0.8,
-        value: interval.steps,
-      }));
-
-      return { points, labels };
-    },
-    [stepHistory, totalChartWidth, chartHeight],
-  );
-
-  const current = useMemo(
-    () => getData(selectedPeriod),
-    [getData, selectedPeriod],
-  );
-  const dataPoints = current.points;
-  const labels = current.labels;
-
-  // Auto-scroll to show latest data (rightmost) by default
   useEffect(() => {
-    // small delay to allow layout to settle
     const timeout = setTimeout(() => {
       try {
-        const x = Math.max(0, totalChartWidth - visibleChartWidth);
-        if (
-          scrollRef?.current &&
-          typeof scrollRef.current.scrollTo === 'function'
-        ) {
-          scrollRef.current.scrollTo({ x, animated: true });
+        // No need to scroll, chart fits within view
+        if (scrollRef?.current?.scrollTo) {
+          scrollRef.current.scrollTo({ x: 0, animated: true });
         }
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) { }
     }, 100);
-
     return () => clearTimeout(timeout);
   }, [totalChartWidth, visibleChartWidth, selectedPeriod, dataPoints.length]);
 
@@ -492,21 +510,17 @@ const StepsChart: React.FC = () => {
   const generateSmoothPath = (pts: Point[]) => {
     if (!pts || pts.length === 0) return '';
     if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
-
     const tension = 0.5;
     let d = `M ${pts[0].x} ${pts[0].y}`;
-
     for (let i = 0; i < pts.length - 1; i++) {
       const p0 = pts[i - 1] || pts[i];
       const p1 = pts[i];
       const p2 = pts[i + 1];
       const p3 = pts[i + 2] || p2;
-
       const cp1x = p1.x + ((p2.x - p0.x) / 6) * tension;
       const cp1y = p1.y + ((p2.y - p0.y) / 6) * tension;
       const cp2x = p2.x - ((p3.x - p1.x) / 6) * tension;
       const cp2y = p2.y - ((p3.y - p1.y) / 6) * tension;
-
       d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
     }
     return d;
@@ -519,85 +533,69 @@ const StepsChart: React.FC = () => {
     return `${line} L ${lastX} ${chartHeight} L ${pts[0].x} ${chartHeight} Z`;
   };
 
-  const mainPath = useMemo(
-    () => generateSmoothPath(insetPoints),
-    [insetPoints],
-  );
+  const mainPath = useMemo(() => generateSmoothPath(insetPoints), [insetPoints]);
   const fillPath = useMemo(() => generateFillPath(insetPoints), [insetPoints]);
-
   const refLines = [chartHeight * 0.25, chartHeight * 0.5, chartHeight * 0.75];
 
-  const labelIndexFor = (i: number) =>
-    Math.round((i / Math.max(labels.length - 1, 1)) * (insetPoints.length - 1));
-
-  const tooltipWidth = isSmall ? 76 : 96;
-  const tooltipHeight = isSmall ? 36 : 42;
-  const tooltipPadding = 8;
-  const tooltipYOffset = 12;
-
-  const clamp = (v: number, a: number, b: number) =>
-    Math.max(a, Math.min(b, v));
-
-  const calcTooltip = (p: Point) => {
-    const minX = sidePadding + tooltipWidth / 2;
-    const maxX = totalChartWidth - sidePadding - tooltipWidth / 2;
-    const anchoredX = clamp(p.x, minX, maxX);
-    const anchoredY = p.y - tooltipYOffset;
-    const rectY = Math.max(6, anchoredY - tooltipHeight - 4);
-    const rectX = anchoredX - tooltipWidth / 2;
-    return { rectX, rectY, pointerX: anchoredX, pointerY: p.y - 4 };
-  };
+  const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
   const onPressPoint = (pt: Point, idx: number) => {
     const approxLabelIdx = Math.round(
       (idx / Math.max(insetPoints.length - 1, 1)) * (labels.length - 1),
     );
     const label = labels[clamp(approxLabelIdx, 0, labels.length - 1)] ?? '';
-    const v = typeof pt.value === 'number' ? pt.value : yToValue(pt.y);
+    const v = typeof pt.value === 'number' ? pt.value : 0;
     setSelectedPoint({ index: idx, x: pt.x, y: pt.y, label, value: v });
   };
 
   useEffect(() => setSelectedPoint(null), [selectedPeriod]);
-  useEffect(() => {
-    setSelectedPoint(null);
-  }, [steps]);
 
-  // FIXED: Simplified display date calculation (current period only)
   const getDisplayDate = (): string => {
-    const today = new Date();
-
+    const today = moment().tz('Asia/Kolkata');
     if (selectedPeriod === 'Day') {
-      return today.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'short',
-        day: 'numeric',
-      });
+      return today.format('dddd, MMM D');
     } else if (selectedPeriod === 'Week') {
-      const refDate = new Date();
-      refDate.setHours(0, 0, 0, 0);
-
-      const weekStart = new Date(refDate);
-      weekStart.setDate(refDate.getDate() - refDate.getDay());
-      weekStart.setHours(0, 0, 0, 0);
-
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-
-      return `${weekStart.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      })} - ${weekEnd.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      })}`;
+      const weekStart = today.clone().startOf('week');
+      const weekEnd = weekStart.clone().add(6, 'days');
+      return `${weekStart.format('MMM D')} - ${weekEnd.format('MMM D')}`;
     } else {
-      const monthLabel = today.toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric',
-      });
-      return monthLabel;
+      return today.format('MMMM YYYY');
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <View
+        style={[
+          styles.chartCard,
+          { padding: isSmall ? 10 : 14, backgroundColor: theme.cardBackground },
+        ]}
+      >
+        <View style={styles.chartHeaderRow}>
+          <Text
+            style={[
+              styles.chartTitle,
+              { fontSize: isSmall ? 15 : 17, color: theme.text },
+            ]}
+          >
+            Report
+          </Text>
+        </View>
+        <View style={styles.loginMessageContainer}>
+          <Image
+            source={require('../assets/stepIcons/footprint.png')}
+            style={[styles.loginMessageIcon, { tintColor: theme.textSecondary }]}
+          />
+          <Text style={[styles.loginMessageTitle, { color: theme.text }]}>
+            Please Login
+          </Text>
+          <Text style={[styles.loginMessageText, { color: theme.textSecondary }]}>
+            Login to store your step data and view detailed reports across days, weeks, and months.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -615,7 +613,6 @@ const StepsChart: React.FC = () => {
         >
           Report
         </Text>
-
         <TouchableOpacity
           ref={periodBtnRef}
           activeOpacity={0.85}
@@ -638,291 +635,269 @@ const StepsChart: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <Text
-        style={{
-          color: theme.textSecondary,
-          fontSize: 12,
-          marginBottom: 6,
-        }}
-      >
+      <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 6 }}>
         {getDisplayDate()}
       </Text>
 
-      {selectedPoint && (
-        <View style={styles.dropdownOverlay} pointerEvents="box-none">
-          <TouchableOpacity
-            style={styles.dropdownOverlayBackdrop}
-            activeOpacity={1}
-            onPress={() => setSelectedPoint(null)}
-          />
+      {isLoading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
       )}
 
-      {dropdownOpen && (
-        <Modal
-          visible
-          transparent
-          animationType="fade"
-          onRequestClose={() => setDropdownOpen(false)}
-        >
-          <View style={{ flex: 1 }}>
-            <TouchableOpacity
-              style={styles.dropdownOverlayBackdrop}
-              activeOpacity={1}
-              onPress={() => setDropdownOpen(false)}
-            />
-
-            <View
-              style={[
-                styles.dropdownCardInline,
-                {
-                  position: 'absolute',
-                  left:
-                    dropdownPos?.left ??
-                    Math.max(8, screenWidth - DROPDOWN_WIDTH - 12),
-                  top: dropdownPos?.top ?? (isSmall ? 36 : 44),
-                  width: DROPDOWN_WIDTH,
-                  backgroundColor: theme.cardBackground,
-                  borderColor: theme.border,
-                },
-              ]}
-            >
-              {periodOptions.map(item => (
-                <TouchableOpacity
-                  key={item}
-                  onPress={() => {
-                    setSelectedPeriod(item);
-                    setDropdownOpen(false);
-                  }}
-                  style={styles.dropdownItem}
-                >
-                  <Text
-                    style={[styles.dropdownItemText, { color: theme.text }]}
-                  >
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </Modal>
+      {!isLoading && insetPoints.length === 0 && (
+        <View style={styles.noDataContainer}>
+          <Text style={[styles.noDataText, { color: theme.textSecondary }]}>
+            No data available for this period
+          </Text>
+        </View>
       )}
 
-      <View style={[styles.chartWrap, { width: visibleChartWidth }]}>
-        <ScrollView
-          ref={scrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 0 }}
-        >
-          <Svg width={totalChartWidth} height={chartHeight + 34}>
-            <Defs>
-              <LinearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <Stop offset="0%" stopColor={theme.primary} stopOpacity="1" />
-                <Stop
-                  offset="100%"
-                  stopColor={theme.secondary}
-                  stopOpacity="1"
+      {!isLoading && insetPoints.length > 0 && (
+        <>
+          {dropdownOpen && (
+            <Modal
+              visible
+              transparent
+              animationType="fade"
+              onRequestClose={() => setDropdownOpen(false)}
+            >
+              <View style={{ flex: 1 }}>
+                <TouchableOpacity
+                  style={styles.dropdownOverlayBackdrop}
+                  activeOpacity={1}
+                  onPress={() => setDropdownOpen(false)}
                 />
-              </LinearGradient>
-              <LinearGradient id="fillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <Stop offset="0%" stopColor={theme.primary} stopOpacity="0.2" />
-                <Stop
-                  offset="60%"
-                  stopColor={theme.secondary}
-                  stopOpacity="0.1"
-                />
-                <Stop
-                  offset="100%"
-                  stopColor={theme.secondary}
-                  stopOpacity="0.02"
-                />
-              </LinearGradient>
-            </Defs>
-
-            {refLines.map((y, i) => (
-              <Line
-                key={i}
-                x1={0}
-                x2={totalChartWidth}
-                y1={y}
-                y2={y}
-                stroke={`${theme.text}22`}
-                strokeWidth={1}
-                strokeDasharray="4,6"
-              />
-            ))}
-
-            <G>
-              <Path d={fillPath} fill="url(#fillGrad)" />
-            </G>
-
-            <G>
-              <AnimatedPath
-                d={mainPath}
-                fill="none"
-                stroke="url(#lineGrad)"
-                strokeWidth={3}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </G>
-
-            {insetPoints.map((pt, i) => {
-              const isHighlighted = selectedPoint?.index === i;
-              const cx = pt.x;
-              const cy = pt.y;
-              const hitR = isSmall ? 14 : 18;
-
-              return (
-                <React.Fragment key={i}>
-                  <Circle
-                    cx={cx}
-                    cy={cy}
-                    r={hitR}
-                    fill="rgba(0,0,0,0.001)"
-                    onPress={() => onPressPoint(pt, i)}
-                    onPressIn={() => onPressPoint(pt, i)}
-                  />
-                  <Circle
-                    cx={cx}
-                    cy={cy}
-                    r={
-                      (isHighlighted
-                        ? isSmall
-                          ? 5.8
-                          : 7.2
-                        : isSmall
-                        ? 3.8
-                        : 5) + 2
-                    }
-                    fill="none"
-                    stroke={`${theme.text}22`}
-                    strokeWidth={1}
-                    pointerEvents="none"
-                  />
-                  <Circle
-                    cx={cx}
-                    cy={cy}
-                    r={
-                      isHighlighted ? (isSmall ? 5.8 : 7.2) : isSmall ? 3.8 : 5
-                    }
-                    fill={theme.text}
-                    stroke="url(#lineGrad)"
-                    strokeWidth={isHighlighted ? 2 : 1.6}
-                    onPress={() => onPressPoint(pt, i)}
-                    onPressIn={() => onPressPoint(pt, i)}
-                  />
-                  {isHighlighted && (
-                    <Circle
-                      cx={cx}
-                      cy={cy}
-                      r={isSmall ? 12 : 14}
-                      fill="none"
-                      stroke={theme.primary}
-                      strokeOpacity={0.22}
-                      strokeWidth={2}
-                    />
-                  )}
-                </React.Fragment>
-              );
-            })}
-
-            {labels.map((lab, idx) => {
-              let rawX: number;
-              if (selectedPeriod === 'Day') {
-                const steps = Math.max(labels.length - 1, 1);
-                const usableWidth = totalChartWidth - sidePadding * 2;
-                rawX = sidePadding + (idx / steps) * usableWidth;
-              } else {
-                const dataIdx = labelIndexFor(idx);
-                rawX = insetPoints[clamp(dataIdx, 0, insetPoints.length - 1)].x;
-              }
-              const x = clamp(rawX, sidePadding, totalChartWidth - sidePadding);
-              const labelY = chartHeight + (isSmall ? 18 : 22);
-              if (selectedPeriod === 'Day') {
-                // render day labels horizontally
-                return (
-                  <SvgText
-                    key={idx}
-                    x={x}
-                    y={labelY}
-                    fontSize={isSmall ? 9 : 10}
-                    fill={theme.textSecondary}
-                    textAnchor="middle"
-                    fontFamily="System"
-                  >
-                    {lab}
-                  </SvgText>
-                );
-              }
-
-              return (
-                <SvgText
-                  key={idx}
-                  x={x}
-                  y={labelY}
-                  fontSize={isSmall ? 10 : 12}
-                  fill={theme.textSecondary}
-                  textAnchor="middle"
-                  fontFamily="System"
+                <View
+                  style={[
+                    styles.dropdownCardInline,
+                    {
+                      position: 'absolute',
+                      left: dropdownPos?.left ?? Math.max(8, screenWidth - DROPDOWN_WIDTH - 12),
+                      top: dropdownPos?.top ?? (isSmall ? 36 : 44),
+                      width: DROPDOWN_WIDTH,
+                      backgroundColor: theme.cardBackground,
+                      borderColor: theme.border,
+                    },
+                  ]}
                 >
-                  {lab}
-                </SvgText>
-              );
-            })}
-
-            {selectedPoint &&
-              (() => {
-                const p = { x: selectedPoint.x, y: selectedPoint.y };
-                const { rectX, rectY, pointerX, pointerY } = calcTooltip(p);
-
-                return (
-                  <G key="tooltip">
-                    <Line
-                      x1={pointerX}
-                      y1={pointerY - 2}
-                      x2={pointerX}
-                      y2={rectY + tooltipHeight}
-                      stroke={theme.primary}
-                      strokeWidth={1}
-                      strokeOpacity={0.9}
-                    />
-                    <Rect
-                      x={rectX}
-                      y={rectY}
-                      rx={8}
-                      width={tooltipWidth}
-                      height={tooltipHeight}
-                      fill={theme.surface}
-                      stroke={theme.primary}
-                      strokeWidth={0.8}
-                      opacity={0.98}
-                      onPress={() => setSelectedPoint(null)}
-                    />
-                    <SvgText
-                      x={rectX + tooltipPadding}
-                      y={rectY + (isSmall ? 14 : 16)}
-                      fontSize={isSmall ? 10 : 11}
-                      fill={theme.textSecondary}
+                  {periodOptions.map(item => (
+                    <TouchableOpacity
+                      key={item}
+                      onPress={() => {
+                        setSelectedPeriod(item);
+                        setDropdownOpen(false);
+                      }}
+                      style={styles.dropdownItem}
                     >
-                      {selectedPoint.label}
-                    </SvgText>
-                    <SvgText
-                      x={rectX + tooltipPadding}
-                      y={rectY + (isSmall ? 30 : 32)}
-                      fontSize={isSmall ? 12 : 14}
-                      fill={theme.text}
-                      fontWeight="600"
-                    >
-                      {Number(selectedPoint.value).toLocaleString()} steps
-                    </SvgText>
-                  </G>
-                );
-              })()}
-          </Svg>
-        </ScrollView>
-      </View>
+                      <Text style={[styles.dropdownItemText, { color: theme.text }]}>
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </Modal>
+          )}
+
+          <View style={[styles.chartWrap, { width: visibleChartWidth }]}>
+            <View style={{ flexDirection: 'row' }}>
+              {/* Y-axis labels */}
+              <View style={[styles.yAxisContainer, { height: chartHeight + 34 }]}>
+                {yAxisValues.map((value, idx) => (
+                  <Text
+                    key={idx}
+                    style={[
+                      styles.yAxisLabel,
+                      {
+                        color: theme.textSecondary,
+                        top: (idx / (yAxisValues.length - 1)) * chartHeight - 6,
+                      },
+                    ]}
+                  >
+                    {value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}
+                  </Text>
+                ))}
+              </View>
+
+              {/* Chart */}
+              <View style={{ flex: 1 }}>
+                <ScrollView
+                  ref={scrollRef}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 0 }}
+                >
+                  <Svg width={totalChartWidth} height={chartHeight + 34}>
+                    <Defs>
+                      <LinearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <Stop offset="0%" stopColor={theme.primary} stopOpacity="1" />
+                        <Stop offset="100%" stopColor={theme.secondary} stopOpacity="1" />
+                      </LinearGradient>
+                      <LinearGradient id="fillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <Stop offset="0%" stopColor={theme.primary} stopOpacity="0.2" />
+                        <Stop offset="60%" stopColor={theme.secondary} stopOpacity="0.1" />
+                        <Stop offset="100%" stopColor={theme.secondary} stopOpacity="0.02" />
+                      </LinearGradient>
+                    </Defs>
+
+                    {refLines.map((y, i) => (
+                      <Line
+                        key={i}
+                        x1={0}
+                        x2={totalChartWidth}
+                        y1={y}
+                        y2={y}
+                        stroke={`${theme.text}22`}
+                        strokeWidth={1}
+                        strokeDasharray="4,6"
+                      />
+                    ))}
+
+                    <G>
+                      <Path d={fillPath} fill="url(#fillGrad)" />
+                    </G>
+
+                    <G>
+                      <AnimatedPath
+                        d={mainPath}
+                        fill="none"
+                        stroke="url(#lineGrad)"
+                        strokeWidth={3}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </G>
+
+                    {insetPoints.map((pt, i) => {
+                      const isHighlighted = selectedPoint?.index === i;
+                      const cx = pt.x;
+                      const cy = pt.y;
+                      const hitR = isSmall ? 14 : 18;
+
+                      return (
+                        <React.Fragment key={i}>
+                          <Circle
+                            cx={cx}
+                            cy={cy}
+                            r={hitR}
+                            fill="rgba(0,0,0,0.001)"
+                            onPress={() => onPressPoint(pt, i)}
+                          />
+                          <Circle
+                            cx={cx}
+                            cy={cy}
+                            r={(isHighlighted ? (isSmall ? 5.8 : 7.2) : (isSmall ? 3.8 : 5)) + 2}
+                            fill="none"
+                            stroke={`${theme.text}22`}
+                            strokeWidth={1}
+                            pointerEvents="none"
+                          />
+                          <Circle
+                            cx={cx}
+                            cy={cy}
+                            r={isHighlighted ? (isSmall ? 5.8 : 7.2) : (isSmall ? 3.8 : 5)}
+                            fill={theme.text}
+                            stroke="url(#lineGrad)"
+                            strokeWidth={isHighlighted ? 2 : 1.6}
+                            onPress={() => onPressPoint(pt, i)}
+                          />
+                          {isHighlighted && (
+                            <Circle
+                              cx={cx}
+                              cy={cy}
+                              r={isSmall ? 12 : 14}
+                              fill="none"
+                              stroke={theme.primary}
+                              strokeOpacity={0.22}
+                              strokeWidth={2}
+                            />
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+
+                    {labels.map((lab, idx) => {
+                      const steps = Math.max(labels.length - 1, 1);
+                      const usableWidth = totalChartWidth - sidePadding * 2;
+                      const rawX = sidePadding + (idx / steps) * usableWidth;
+                      const x = clamp(rawX, sidePadding, totalChartWidth - sidePadding);
+                      const labelY = chartHeight + (isSmall ? 18 : 22);
+
+                      return (
+                        <SvgText
+                          key={idx}
+                          x={x}
+                          y={labelY}
+                          fontSize={isSmall ? 9 : 10}
+                          fill={theme.textSecondary}
+                          textAnchor="middle"
+                          fontFamily="System"
+                        >
+                          {lab}
+                        </SvgText>
+                      );
+                    })}
+
+                    {selectedPoint && (() => {
+                      const tooltipWidth = isSmall ? 76 : 96;
+                      const tooltipHeight = isSmall ? 36 : 42;
+                      const tooltipPadding = 8;
+                      const minX = sidePadding + tooltipWidth / 2;
+                      const maxX = totalChartWidth - sidePadding - tooltipWidth / 2;
+                      const anchoredX = clamp(selectedPoint.x, minX, maxX);
+                      const rectY = Math.max(6, selectedPoint.y - tooltipHeight - 16);
+                      const rectX = anchoredX - tooltipWidth / 2;
+
+                      return (
+                        <G key="tooltip" onPress={() => setSelectedPoint(null)}>
+                          <Line
+                            x1={anchoredX}
+                            y1={selectedPoint.y - 2}
+                            x2={anchoredX}
+                            y2={rectY + tooltipHeight}
+                            stroke={theme.primary}
+                            strokeWidth={1}
+                            strokeOpacity={0.9}
+                          />
+                          <Rect
+                            x={rectX}
+                            y={rectY}
+                            rx={8}
+                            width={tooltipWidth}
+                            height={tooltipHeight}
+                            fill={theme.surface}
+                            stroke={theme.primary}
+                            strokeWidth={0.8}
+                            opacity={0.98}
+                          />
+                          <SvgText
+                            x={rectX + tooltipPadding}
+                            y={rectY + (isSmall ? 14 : 16)}
+                            fontSize={isSmall ? 10 : 11}
+                            fill={theme.textSecondary}
+                          >
+                            {selectedPoint.label}
+                          </SvgText>
+                          <SvgText
+                            x={rectX + tooltipPadding}
+                            y={rectY + (isSmall ? 30 : 32)}
+                            fontSize={isSmall ? 12 : 14}
+                            fill={theme.text}
+                            fontWeight="600"
+                          >
+                            {Number(selectedPoint.value).toLocaleString()} steps
+                          </SvgText>
+                        </G>
+                      );
+                    })()}
+                  </Svg>
+                </ScrollView>
+              </View>
+            </View>
+          </View>
+        </>
+      )}
     </View>
   );
 };
@@ -931,6 +906,40 @@ const StepsChart: React.FC = () => {
 const StepsScreen = () => {
   const { theme } = useTheme();
   const { steps, distance, calories, activeTime } = useMotionSteps();
+  const { token, isAuthenticated } = useAuth();
+
+  const [localStepsData, setLocalStepsData] = useState<StepsData>({
+    currentSteps: 0,
+    currentDistance: 0,
+    currentCalories: 0,
+    currentActiveTime: 0,
+    dailyGoal: 10000,
+    lastUpdated: Date.now(),
+    currentDate: getISTDate(),
+  });
+
+  const [baseline, setBaseline] = useState<BaselineData>({
+    steps: 0,
+    distance: 0,
+    calories: 0,
+    activeTime: 0,
+    date: getISTDate(),
+  });
+
+  const [motionOffset, setMotionOffset] = useState({
+    steps: 0,
+    distance: 0,
+    calories: 0,
+    activeTime: 0,
+  });
+
+  const [offlineQueue, setOfflineQueue] = useState<OfflineEntry[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitializedRef = useRef(false);
+  const lastSyncedStepsRef = useRef(0);
+
   const stylesTheme = useThemedStyles(theme =>
     StyleSheet.create({
       container: {
@@ -940,22 +949,480 @@ const StepsScreen = () => {
     }),
   );
 
+  // Load baseline and offset from AsyncStorage
+  const loadBaseline = async () => {
+    try {
+      const [baselineStr, offsetStr] = await Promise.all([
+        AsyncStorage.getItem(BASELINE_KEY),
+        AsyncStorage.getItem(MOTION_OFFSET_KEY),
+      ]);
+
+      const currentDate = getISTDate();
+
+      if (baselineStr) {
+        const savedBaseline: BaselineData = JSON.parse(baselineStr);
+
+        // Reset baseline if new day
+        if (savedBaseline.date !== currentDate) {
+          const resetBaseline: BaselineData = {
+            steps: 0,
+            distance: 0,
+            calories: 0,
+            activeTime: 0,
+            date: currentDate,
+          };
+          setBaseline(resetBaseline);
+          await AsyncStorage.setItem(BASELINE_KEY, JSON.stringify(resetBaseline));
+
+          // Reset motion offset for new day
+          const resetOffset = { steps: 0, distance: 0, calories: 0, activeTime: 0 };
+          setMotionOffset(resetOffset);
+          await AsyncStorage.setItem(MOTION_OFFSET_KEY, JSON.stringify(resetOffset));
+        } else {
+          setBaseline(savedBaseline);
+        }
+      }
+
+      if (offsetStr) {
+        const savedOffset = JSON.parse(offsetStr);
+        setMotionOffset(savedOffset);
+      }
+    } catch (error) {
+      console.error('Load baseline error:', error);
+    }
+  };
+
+  // Save baseline to AsyncStorage
+  const saveBaseline = async (newBaseline: BaselineData) => {
+    try {
+      await AsyncStorage.setItem(BASELINE_KEY, JSON.stringify(newBaseline));
+    } catch (error) {
+      console.error('Save baseline error:', error);
+    }
+  };
+
+  // Save motion offset to AsyncStorage
+  const saveMotionOffset = async (offset: typeof motionOffset) => {
+    try {
+      await AsyncStorage.setItem(MOTION_OFFSET_KEY, JSON.stringify(offset));
+    } catch (error) {
+      console.error('Save motion offset error:', error);
+    }
+  };
+
+  // Load data from AsyncStorage
+  const loadLocalData = async () => {
+    try {
+      const [stepsDataStr, queueStr] = await Promise.all([
+        AsyncStorage.getItem(STEPS_DATA_KEY),
+        AsyncStorage.getItem(OFFLINE_QUEUE_KEY),
+      ]);
+
+      if (stepsDataStr) {
+        const data: StepsData = JSON.parse(stepsDataStr);
+        const currentDate = getISTDate();
+
+        // Reset if new day
+        if (data.currentDate !== currentDate) {
+          const resetData: StepsData = {
+            currentSteps: 0,
+            currentDistance: 0,
+            currentCalories: 0,
+            currentActiveTime: 0,
+            dailyGoal: data.dailyGoal,
+            lastUpdated: Date.now(),
+            currentDate,
+          };
+          setLocalStepsData(resetData);
+          await AsyncStorage.setItem(STEPS_DATA_KEY, JSON.stringify(resetData));
+        } else {
+          setLocalStepsData(data);
+        }
+      }
+
+      if (queueStr) {
+        setOfflineQueue(JSON.parse(queueStr));
+      }
+    } catch (error) {
+      console.error('Load local data error:', error);
+    }
+  };
+
+  // Save data to AsyncStorage
+  const saveLocalData = async (data: StepsData) => {
+    try {
+      await AsyncStorage.setItem(STEPS_DATA_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error('Save local data error:', error);
+    }
+  };
+
+  // Fetch current data from backend and set as baseline
+  const fetchCurrentDataFromBackend = async (showLoader = false) => {
+    if (!token || !isAuthenticated) return;
+
+    if (showLoader) setIsRefreshing(true);
+
+    try {
+      // Check internet connection first
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) {
+        Alert.alert(
+          'No Internet Connection',
+          'Please turn on your data to refresh step data from the server.',
+          [{ text: 'OK' }]
+        );
+        if (showLoader) setIsRefreshing(false);
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/current`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        const backendData = result.data;
+        const currentDate = getISTDate();
+
+        // Set backend data as baseline
+        const newBaseline: BaselineData = {
+          steps: backendData.currentSteps || 0,
+          distance: backendData.currentDistance || 0,
+          calories: backendData.currentCalories || 0,
+          activeTime: backendData.currentActiveTime || 0,
+          date: currentDate,
+        };
+
+        setBaseline(newBaseline);
+        await saveBaseline(newBaseline);
+
+        // Store the motion sensor values at the time of fetching as offset
+        const newOffset = {
+          steps: steps,
+          distance: distance,
+          calories: calories,
+          activeTime: activeTime,
+        };
+        setMotionOffset(newOffset);
+        await saveMotionOffset(newOffset);
+
+        // Update local data with baseline
+        const newData: StepsData = {
+          currentSteps: newBaseline.steps,
+          currentDistance: newBaseline.distance,
+          currentCalories: newBaseline.calories,
+          currentActiveTime: newBaseline.activeTime,
+          dailyGoal: backendData.dailyGoal || 10000,
+          lastUpdated: Date.now(),
+          currentDate,
+        };
+
+        setLocalStepsData(newData);
+        await saveLocalData(newData);
+        lastSyncedStepsRef.current = newBaseline.steps;
+
+        if (showLoader) {
+          Alert.alert(
+            'Success',
+            'Step data refreshed successfully',
+            [{ text: 'OK' }]
+          );
+        }
+
+        console.log('Fetched from backend - Baseline:', newBaseline, 'Offset:', newOffset);
+      } else {
+        throw new Error(result.message || 'Failed to fetch data');
+      }
+    } catch (error: any) {
+      console.error('Fetch current data error:', error);
+      if (showLoader) {
+        Alert.alert(
+          'Error',
+          error.message || 'Failed to refresh data. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    } finally {
+      if (showLoader) setIsRefreshing(false);
+    }
+  };
+
+  // Sync data to backend
+  const syncToBackend = async () => {
+    if (!token || !isAuthenticated || isSyncing) return;
+
+    // Don't sync if steps haven't changed
+    if (localStepsData.currentSteps === lastSyncedStepsRef.current) {
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) {
+        // Add to offline queue
+        const entry: OfflineEntry = {
+          steps: localStepsData.currentSteps,
+          distance: localStepsData.currentDistance,
+          calories: localStepsData.currentCalories,
+          activeTime: localStepsData.currentActiveTime,
+          timestamp: getISTTimestamp(),
+        };
+
+        const newQueue = [...offlineQueue, entry];
+        setOfflineQueue(newQueue);
+        await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(newQueue));
+        console.log('No internet, added to offline queue');
+        return;
+      }
+
+      // Sync offline queue first if exists
+      if (offlineQueue.length > 0) {
+        await syncOfflineQueue();
+      }
+
+      // Sync current data
+      const response = await fetch(`${API_BASE_URL}/update`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          steps: localStepsData.currentSteps,
+          distance: localStepsData.currentDistance,
+          calories: localStepsData.currentCalories,
+          activeTime: localStepsData.currentActiveTime,
+          timestamp: getISTTimestamp(),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        await AsyncStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
+        lastSyncedStepsRef.current = localStepsData.currentSteps;
+        console.log('Synced to backend:', localStepsData.currentSteps, 'steps');
+      } else {
+        throw new Error(result.message || 'Sync failed');
+      }
+    } catch (error: any) {
+      console.error('Sync to backend error:', error);
+      // Add to offline queue on error
+      const entry: OfflineEntry = {
+        steps: localStepsData.currentSteps,
+        distance: localStepsData.currentDistance,
+        calories: localStepsData.currentCalories,
+        activeTime: localStepsData.currentActiveTime,
+        timestamp: getISTTimestamp(),
+      };
+      const newQueue = [...offlineQueue, entry];
+      setOfflineQueue(newQueue);
+      await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(newQueue));
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Sync offline queue
+  const syncOfflineQueue = async () => {
+    if (!token || offlineQueue.length === 0) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/sync`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          entries: offlineQueue,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setOfflineQueue([]);
+        await AsyncStorage.removeItem(OFFLINE_QUEUE_KEY);
+        console.log('Offline queue synced successfully');
+      }
+    } catch (error) {
+      console.error('Sync offline queue error:', error);
+    }
+  };
+
+  // Calculate incremental steps from motion sensor
+  useEffect(() => {
+    if (!isInitializedRef.current) return;
+
+    const currentDate = getISTDate();
+
+    // Reset if new day
+    if (baseline.date !== currentDate) {
+      const resetBaseline: BaselineData = {
+        steps: 0,
+        distance: 0,
+        calories: 0,
+        activeTime: 0,
+        date: currentDate,
+      };
+      setBaseline(resetBaseline);
+      saveBaseline(resetBaseline);
+
+      const resetOffset = {
+        steps: steps,
+        distance: distance,
+        calories: calories,
+        activeTime: activeTime,
+      };
+      setMotionOffset(resetOffset);
+      saveMotionOffset(resetOffset);
+
+      const resetData: StepsData = {
+        currentSteps: 0,
+        currentDistance: 0,
+        currentCalories: 0,
+        currentActiveTime: 0,
+        dailyGoal: localStepsData.dailyGoal,
+        lastUpdated: Date.now(),
+        currentDate,
+      };
+      setLocalStepsData(resetData);
+      saveLocalData(resetData);
+      lastSyncedStepsRef.current = 0;
+      return;
+    }
+
+    // Calculate increment from motion sensor since last offset
+    const stepIncrement = Math.max(0, steps - motionOffset.steps);
+    const distanceIncrement = Math.max(0, distance - motionOffset.distance);
+    const caloriesIncrement = Math.max(0, calories - motionOffset.calories);
+    const activeTimeIncrement = Math.max(0, activeTime - motionOffset.activeTime);
+
+    // Add increment to baseline
+    const newSteps = baseline.steps + stepIncrement;
+    const newDistance = baseline.distance + distanceIncrement;
+    const newCalories = baseline.calories + caloriesIncrement;
+    const newActiveTime = baseline.activeTime + activeTimeIncrement;
+
+    const updatedData: StepsData = {
+      currentSteps: newSteps,
+      currentDistance: newDistance,
+      currentCalories: newCalories,
+      currentActiveTime: newActiveTime,
+      dailyGoal: localStepsData.dailyGoal,
+      lastUpdated: Date.now(),
+      currentDate,
+    };
+
+    setLocalStepsData(updatedData);
+    saveLocalData(updatedData);
+
+    console.log('Motion update - Baseline:', baseline.steps, 'Increment:', stepIncrement, 'Total:', newSteps);
+  }, [steps, distance, calories, activeTime]);
+
+  // Initialize data on mount
+  useEffect(() => {
+    const initialize = async () => {
+      await Promise.all([loadLocalData(), loadBaseline()]);
+
+      if (isAuthenticated && token) {
+        // Fetch from backend and set as baseline
+        await fetchCurrentDataFromBackend(false);
+
+        // Check for offline queue to sync
+        const queueStr = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
+        if (queueStr) {
+          const queue = JSON.parse(queueStr);
+          if (queue.length > 0) {
+            await syncOfflineQueue();
+          }
+        }
+      }
+
+      isInitializedRef.current = true;
+    };
+
+    initialize();
+  }, []);
+
+  // Auto-sync when steps change (debounced)
+  useEffect(() => {
+    if (!isAuthenticated || !token || !isInitializedRef.current) return;
+
+    // Sync whenever steps change (with debounce via interval)
+    const shouldSync = localStepsData.currentSteps !== lastSyncedStepsRef.current;
+
+    if (shouldSync) {
+      console.log('Steps changed, will sync:', localStepsData.currentSteps);
+      syncToBackend();
+    }
+  }, [localStepsData.currentSteps, isAuthenticated, token]);
+
+  // Setup 30-second sync interval for authenticated users
+  useEffect(() => {
+    if (isAuthenticated && token && isInitializedRef.current) {
+      console.log('Setting up 30-second sync interval');
+
+      // Setup 30-second sync interval
+      syncIntervalRef.current = setInterval(() => {
+        console.log('30-second interval fired, syncing...');
+        syncToBackend();
+      }, SYNC_INTERVAL);
+
+      return () => {
+        if (syncIntervalRef.current) {
+          console.log('Clearing sync interval');
+          clearInterval(syncIntervalRef.current);
+        }
+      };
+    } else {
+      // Clear interval if user logs out
+      if (syncIntervalRef.current) {
+        console.log('User logged out, clearing interval');
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
+    }
+  }, [isAuthenticated, token]);
+
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    if (isAuthenticated && token) {
+      await fetchCurrentDataFromBackend(true);
+    } else {
+      setIsRefreshing(true);
+      await loadLocalData();
+      setIsRefreshing(false);
+    }
+  };
+
+  const percentage = (localStepsData.currentSteps / localStepsData.dailyGoal) * 100;
+
   return (
     <SafeAreaView style={stylesTheme.container}>
       <ScrollView>
-        <Header />
-        <StepCircle steps={steps} />
-
-        <StatsPanel
-          distance={Number(
-            typeof distance === 'string' ? parseFloat(distance) : distance,
-          )}
-          calories={calories}
-          activeMins={activeTime}
-          steps={parseFloat(Number((steps / 10000) * 100).toFixed(2))}
+        <Header onRefresh={handleRefresh} isRefreshing={isRefreshing} />
+        <StepCircle
+          steps={localStepsData.currentSteps}
+          goal={localStepsData.dailyGoal}
         />
 
-        <StepsChart />
+        <StatsPanel
+          distance={localStepsData.currentDistance}
+          calories={localStepsData.currentCalories}
+          activeMins={localStepsData.currentActiveTime}
+          percentage={percentage}
+        />
+
+        <StepsChart isAuthenticated={isAuthenticated} token={token} />
         <BMICards />
       </ScrollView>
     </SafeAreaView>
@@ -964,7 +1431,6 @@ const StepsScreen = () => {
 
 // ============ STYLES ============
 const styles = StyleSheet.create({
-  // Header Styles
   headerWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -983,8 +1449,6 @@ const styles = StyleSheet.create({
     height: 22,
     tintColor: '#fff',
   },
-
-  // Step Circle Styles
   circleContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1019,8 +1483,6 @@ const styles = StyleSheet.create({
   goal: {
     color: '#bbb',
   },
-
-  // Stats Panel Styles
   statsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1055,12 +1517,11 @@ const styles = StyleSheet.create({
     color: '#bbb',
     marginTop: 2,
   },
-
-  // Chart Styles
   chartCard: {
     backgroundColor: '#0b0f12',
     borderRadius: 14,
     marginTop: 10,
+    marginHorizontal: 16,
   },
   chartHeaderRow: {
     flexDirection: 'row',
@@ -1090,14 +1551,6 @@ const styles = StyleSheet.create({
     color: '#98cfcf',
     fontSize: 12,
     paddingRight: 8,
-  },
-  dropdownOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 999,
   },
   dropdownOverlayBackdrop: {
     position: 'absolute',
@@ -1132,6 +1585,54 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     marginTop: 6,
+  },
+  yAxisContainer: {
+    width: 40,
+    position: 'relative',
+    justifyContent: 'space-between',
+    paddingRight: 8,
+  },
+  yAxisLabel: {
+    position: 'absolute',
+    right: 8,
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  loginMessageContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  loginMessageIcon: {
+    width: 60,
+    height: 60,
+    marginBottom: 16,
+    opacity: 0.5,
+  },
+  loginMessageTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  loginMessageText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  loadingContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noDataContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noDataText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
 

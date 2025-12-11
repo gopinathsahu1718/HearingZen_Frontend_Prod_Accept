@@ -12,6 +12,7 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "^8.4.3",
+    "@react-native-community/netinfo": "^11.4.1",
     "@react-native-google-signin/google-signin": "^16.0.0",
     "@react-native/new-app-screen": "0.80.2",
     "@react-navigation/bottom-tabs": "^7.4.5",
@@ -23,6 +24,7 @@
     "i18next": "^25.3.4",
     "lucide-react": "^0.545.0",
     "lucide-react-native": "^0.545.0",
+    "moment-timezone": "^0.6.0",
     "react": "19.1.0",
     "react-i18next": "^15.6.1",
     "react-native": "0.80.2",
