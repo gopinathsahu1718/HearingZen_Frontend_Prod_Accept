@@ -19,6 +19,7 @@ import {
   Share,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
@@ -106,55 +107,50 @@ const getISTTimestamp = () => {
 };
 
 // ============ HEADER COMPONENT ============
-const Header: React.FC<{ onRefresh?: () => void; isRefreshing?: boolean }> = ({
+const Header: React.FC<{
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+  onSettings?: () => void;
+}> = ({
   onRefresh,
-  isRefreshing = false
+  isRefreshing = false,
+  onSettings
 }) => {
-  const { theme } = useTheme();
+    const { theme } = useTheme();
 
-  const handleShare = async () => {
-    try {
-      await Share.share({
-        message: 'Check out my step count today! 💪 #StepCounter',
-      });
-    } catch (error) {
-      console.error('Share Error:', error);
-    }
-  };
-
-  return (
-    <View
-      style={[
-        styles.headerWrapper,
-        { backgroundColor: theme.background, justifyContent: 'space-between' },
-      ]}
-    >
-      <TouchableOpacity
-        onPress={onRefresh}
-        style={styles.leftButton}
-        disabled={isRefreshing}
+    return (
+      <View
+        style={[
+          styles.headerWrapper,
+          { backgroundColor: theme.background, justifyContent: 'space-between' },
+        ]}
       >
-        {isRefreshing ? (
-          <ActivityIndicator size="small" color={theme.iconTint} />
-        ) : (
+        <TouchableOpacity
+          onPress={onRefresh}
+          style={styles.leftButton}
+          disabled={isRefreshing}
+        >
+          {isRefreshing ? (
+            <ActivityIndicator size="small" color={theme.iconTint} />
+          ) : (
+            <Image
+              source={require('../assets/images/refresh.png')}
+              style={[styles.headerIcon, { tintColor: theme.iconTint }]}
+              resizeMode="contain"
+            />
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onSettings} style={styles.shareButton}>
           <Image
-            source={require('../assets/images/refresh.png')}
+            source={require('../assets/images/settings.png')}
             style={[styles.headerIcon, { tintColor: theme.iconTint }]}
             resizeMode="contain"
           />
-        )}
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
-        <Image
-          source={require('../assets/stepIcons/share.png')}
-          style={[styles.headerIcon, { tintColor: theme.iconTint }]}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-    </View>
-  );
-};
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
 // ============ STEP CIRCLE COMPONENT ============
 const StepCircle: React.FC<{ steps?: number; goal?: number }> = ({
@@ -318,7 +314,6 @@ const StepsChart: React.FC<{
     labels: [],
   });
   const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<any>(null);
   const animProgress = useRef(new Animated.Value(0)).current;
   const pointScale = useRef(new Animated.Value(0)).current;
 
@@ -395,8 +390,12 @@ const StepsChart: React.FC<{
     const isSmall = screenWidth < 360;
     const isMedium = screenWidth >= 360 && screenWidth < 420;
 
-    // Reduce chart width to fit within container
-    const totalChartWidth = Math.max(screenWidth * 0.85, 400);
+    // Reduce chart width significantly to prevent overflow
+    const Y_AXIS_SPACE = 45;
+    const CARD_PADDING = 32; // 16px on each side
+    const SAFE_MARGIN = 20; // Extra margin for safety
+    const availableWidth = screenWidth - Y_AXIS_SPACE - CARD_PADDING - SAFE_MARGIN;
+    const totalChartWidth = Math.max(availableWidth * 0.95, 280);
     const chartHeight = isSmall ? 90 : isMedium ? 110 : 130;
 
     let points: Point[] = [];
@@ -422,7 +421,7 @@ const StepsChart: React.FC<{
 
       points.push({
         x: (i / Math.max(history.length - 1, 1)) * totalChartWidth,
-        y: chartHeight - ((entry.totalSteps || 0) / maxSteps) * chartHeight * 0.8,
+        y: chartHeight - ((entry.totalSteps || 0) / maxSteps) * chartHeight * 0.75,
         value: entry.totalSteps || 0,
       });
     });
@@ -439,12 +438,15 @@ const StepsChart: React.FC<{
   const isSmall = screenWidth < 360;
   const isMedium = screenWidth >= 360 && screenWidth < 420;
 
-  // Adjusted dimensions to fit within card
-  const Y_AXIS_WIDTH = 40; // Space for Y-axis labels
-  const totalChartWidth = Math.max(screenWidth * 0.85, 400);
-  const visibleChartWidth = screenWidth - 40; // Account for card padding
+  // Adjusted dimensions to fit within card without overflow
+  const Y_AXIS_WIDTH = 45;
+  const CARD_PADDING = 32;
+  const SAFE_MARGIN = 20;
+  const availableWidth = screenWidth - Y_AXIS_WIDTH - CARD_PADDING - SAFE_MARGIN;
+  const totalChartWidth = Math.max(availableWidth * 0.95, 280);
+  const visibleChartWidth = availableWidth;
   const chartHeight = isSmall ? 90 : isMedium ? 110 : 130;
-  const labelPadding = isSmall ? 14 : 20;
+  const labelPadding = isSmall ? 10 : 15;
   const sidePadding = labelPadding;
   const periodOptions: Period[] = ['Month', 'Week', 'Day'];
   const periodBtnRef = useRef<any>(null);
@@ -487,15 +489,7 @@ const StepsChart: React.FC<{
   ];
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      try {
-        // No need to scroll, chart fits within view
-        if (scrollRef?.current?.scrollTo) {
-          scrollRef.current.scrollTo({ x: 0, animated: true });
-        }
-      } catch (e) { }
-    }, 100);
-    return () => clearTimeout(timeout);
+    // Chart now fits within view, no scroll needed
   }, [totalChartWidth, visibleChartWidth, selectedPeriod, dataPoints.length]);
 
   const insetPoints = useMemo(() => {
@@ -700,10 +694,10 @@ const StepsChart: React.FC<{
             </Modal>
           )}
 
-          <View style={[styles.chartWrap, { width: visibleChartWidth }]}>
-            <View style={{ flexDirection: 'row' }}>
+          <View style={[styles.chartWrap, { width: '100%', maxWidth: visibleChartWidth + Y_AXIS_WIDTH }]}>
+            <View style={{ flexDirection: 'row', width: '100%' }}>
               {/* Y-axis labels */}
-              <View style={[styles.yAxisContainer, { height: chartHeight + 34 }]}>
+              <View style={[styles.yAxisContainer, { height: chartHeight + 34, width: Y_AXIS_WIDTH }]}>
                 {yAxisValues.map((value, idx) => (
                   <Text
                     key={idx}
@@ -720,179 +714,172 @@ const StepsChart: React.FC<{
                 ))}
               </View>
 
-              {/* Chart */}
-              <View style={{ flex: 1 }}>
-                <ScrollView
-                  ref={scrollRef}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ paddingHorizontal: 0 }}
-                >
-                  <Svg width={totalChartWidth} height={chartHeight + 34}>
-                    <Defs>
-                      <LinearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <Stop offset="0%" stopColor={theme.primary} stopOpacity="1" />
-                        <Stop offset="100%" stopColor={theme.secondary} stopOpacity="1" />
-                      </LinearGradient>
-                      <LinearGradient id="fillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <Stop offset="0%" stopColor={theme.primary} stopOpacity="0.2" />
-                        <Stop offset="60%" stopColor={theme.secondary} stopOpacity="0.1" />
-                        <Stop offset="100%" stopColor={theme.secondary} stopOpacity="0.02" />
-                      </LinearGradient>
-                    </Defs>
+              {/* Chart - No ScrollView needed, fits perfectly */}
+              <View style={{ flex: 1, overflow: 'hidden' }}>
+                <Svg width={totalChartWidth} height={chartHeight + 34}>
+                  <Defs>
+                    <LinearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <Stop offset="0%" stopColor={theme.primary} stopOpacity="1" />
+                      <Stop offset="100%" stopColor={theme.secondary} stopOpacity="1" />
+                    </LinearGradient>
+                    <LinearGradient id="fillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <Stop offset="0%" stopColor={theme.primary} stopOpacity="0.2" />
+                      <Stop offset="60%" stopColor={theme.secondary} stopOpacity="0.1" />
+                      <Stop offset="100%" stopColor={theme.secondary} stopOpacity="0.02" />
+                    </LinearGradient>
+                  </Defs>
 
-                    {refLines.map((y, i) => (
-                      <Line
-                        key={i}
-                        x1={0}
-                        x2={totalChartWidth}
-                        y1={y}
-                        y2={y}
-                        stroke={`${theme.text}22`}
-                        strokeWidth={1}
-                        strokeDasharray="4,6"
-                      />
-                    ))}
+                  {refLines.map((y, i) => (
+                    <Line
+                      key={i}
+                      x1={0}
+                      x2={totalChartWidth}
+                      y1={y}
+                      y2={y}
+                      stroke={`${theme.text}22`}
+                      strokeWidth={1}
+                      strokeDasharray="4,6"
+                    />
+                  ))}
 
-                    <G>
-                      <Path d={fillPath} fill="url(#fillGrad)" />
-                    </G>
+                  <G>
+                    <Path d={fillPath} fill="url(#fillGrad)" />
+                  </G>
 
-                    <G>
-                      <AnimatedPath
-                        d={mainPath}
-                        fill="none"
-                        stroke="url(#lineGrad)"
-                        strokeWidth={3}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </G>
+                  <G>
+                    <AnimatedPath
+                      d={mainPath}
+                      fill="none"
+                      stroke="url(#lineGrad)"
+                      strokeWidth={3}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </G>
 
-                    {insetPoints.map((pt, i) => {
-                      const isHighlighted = selectedPoint?.index === i;
-                      const cx = pt.x;
-                      const cy = pt.y;
-                      const hitR = isSmall ? 14 : 18;
+                  {insetPoints.map((pt, i) => {
+                    const isHighlighted = selectedPoint?.index === i;
+                    const cx = pt.x;
+                    const cy = pt.y;
+                    const hitR = isSmall ? 14 : 18;
 
-                      return (
-                        <React.Fragment key={i}>
+                    return (
+                      <React.Fragment key={i}>
+                        <Circle
+                          cx={cx}
+                          cy={cy}
+                          r={hitR}
+                          fill="rgba(0,0,0,0.001)"
+                          onPress={() => onPressPoint(pt, i)}
+                        />
+                        <Circle
+                          cx={cx}
+                          cy={cy}
+                          r={(isHighlighted ? (isSmall ? 5.8 : 7.2) : (isSmall ? 3.8 : 5)) + 2}
+                          fill="none"
+                          stroke={`${theme.text}22`}
+                          strokeWidth={1}
+                          pointerEvents="none"
+                        />
+                        <Circle
+                          cx={cx}
+                          cy={cy}
+                          r={isHighlighted ? (isSmall ? 5.8 : 7.2) : (isSmall ? 3.8 : 5)}
+                          fill={theme.text}
+                          stroke="url(#lineGrad)"
+                          strokeWidth={isHighlighted ? 2 : 1.6}
+                          onPress={() => onPressPoint(pt, i)}
+                        />
+                        {isHighlighted && (
                           <Circle
                             cx={cx}
                             cy={cy}
-                            r={hitR}
-                            fill="rgba(0,0,0,0.001)"
-                            onPress={() => onPressPoint(pt, i)}
-                          />
-                          <Circle
-                            cx={cx}
-                            cy={cy}
-                            r={(isHighlighted ? (isSmall ? 5.8 : 7.2) : (isSmall ? 3.8 : 5)) + 2}
+                            r={isSmall ? 12 : 14}
                             fill="none"
-                            stroke={`${theme.text}22`}
-                            strokeWidth={1}
-                            pointerEvents="none"
+                            stroke={theme.primary}
+                            strokeOpacity={0.22}
+                            strokeWidth={2}
                           />
-                          <Circle
-                            cx={cx}
-                            cy={cy}
-                            r={isHighlighted ? (isSmall ? 5.8 : 7.2) : (isSmall ? 3.8 : 5)}
-                            fill={theme.text}
-                            stroke="url(#lineGrad)"
-                            strokeWidth={isHighlighted ? 2 : 1.6}
-                            onPress={() => onPressPoint(pt, i)}
-                          />
-                          {isHighlighted && (
-                            <Circle
-                              cx={cx}
-                              cy={cy}
-                              r={isSmall ? 12 : 14}
-                              fill="none"
-                              stroke={theme.primary}
-                              strokeOpacity={0.22}
-                              strokeWidth={2}
-                            />
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
 
-                    {labels.map((lab, idx) => {
-                      const steps = Math.max(labels.length - 1, 1);
-                      const usableWidth = totalChartWidth - sidePadding * 2;
-                      const rawX = sidePadding + (idx / steps) * usableWidth;
-                      const x = clamp(rawX, sidePadding, totalChartWidth - sidePadding);
-                      const labelY = chartHeight + (isSmall ? 18 : 22);
+                  {labels.map((lab, idx) => {
+                    const steps = Math.max(labels.length - 1, 1);
+                    const usableWidth = totalChartWidth - sidePadding * 2;
+                    const rawX = sidePadding + (idx / steps) * usableWidth;
+                    const x = clamp(rawX, sidePadding, totalChartWidth - sidePadding);
+                    const labelY = chartHeight + (isSmall ? 18 : 22);
 
-                      return (
+                    return (
+                      <SvgText
+                        key={idx}
+                        x={x}
+                        y={labelY}
+                        fontSize={isSmall ? 9 : 10}
+                        fill={theme.textSecondary}
+                        textAnchor="middle"
+                        fontFamily="System"
+                      >
+                        {lab}
+                      </SvgText>
+                    );
+                  })}
+
+                  {selectedPoint && (() => {
+                    const tooltipWidth = isSmall ? 76 : 96;
+                    const tooltipHeight = isSmall ? 36 : 42;
+                    const tooltipPadding = 8;
+                    const minX = sidePadding + tooltipWidth / 2;
+                    const maxX = totalChartWidth - sidePadding - tooltipWidth / 2;
+                    const anchoredX = clamp(selectedPoint.x, minX, maxX);
+                    const rectY = Math.max(6, selectedPoint.y - tooltipHeight - 16);
+                    const rectX = anchoredX - tooltipWidth / 2;
+
+                    return (
+                      <G key="tooltip" onPress={() => setSelectedPoint(null)}>
+                        <Line
+                          x1={anchoredX}
+                          y1={selectedPoint.y - 2}
+                          x2={anchoredX}
+                          y2={rectY + tooltipHeight}
+                          stroke={theme.primary}
+                          strokeWidth={1}
+                          strokeOpacity={0.9}
+                        />
+                        <Rect
+                          x={rectX}
+                          y={rectY}
+                          rx={8}
+                          width={tooltipWidth}
+                          height={tooltipHeight}
+                          fill={theme.surface}
+                          stroke={theme.primary}
+                          strokeWidth={0.8}
+                          opacity={0.98}
+                        />
                         <SvgText
-                          key={idx}
-                          x={x}
-                          y={labelY}
-                          fontSize={isSmall ? 9 : 10}
+                          x={rectX + tooltipPadding}
+                          y={rectY + (isSmall ? 14 : 16)}
+                          fontSize={isSmall ? 10 : 11}
                           fill={theme.textSecondary}
-                          textAnchor="middle"
-                          fontFamily="System"
                         >
-                          {lab}
+                          {selectedPoint.label}
                         </SvgText>
-                      );
-                    })}
-
-                    {selectedPoint && (() => {
-                      const tooltipWidth = isSmall ? 76 : 96;
-                      const tooltipHeight = isSmall ? 36 : 42;
-                      const tooltipPadding = 8;
-                      const minX = sidePadding + tooltipWidth / 2;
-                      const maxX = totalChartWidth - sidePadding - tooltipWidth / 2;
-                      const anchoredX = clamp(selectedPoint.x, minX, maxX);
-                      const rectY = Math.max(6, selectedPoint.y - tooltipHeight - 16);
-                      const rectX = anchoredX - tooltipWidth / 2;
-
-                      return (
-                        <G key="tooltip" onPress={() => setSelectedPoint(null)}>
-                          <Line
-                            x1={anchoredX}
-                            y1={selectedPoint.y - 2}
-                            x2={anchoredX}
-                            y2={rectY + tooltipHeight}
-                            stroke={theme.primary}
-                            strokeWidth={1}
-                            strokeOpacity={0.9}
-                          />
-                          <Rect
-                            x={rectX}
-                            y={rectY}
-                            rx={8}
-                            width={tooltipWidth}
-                            height={tooltipHeight}
-                            fill={theme.surface}
-                            stroke={theme.primary}
-                            strokeWidth={0.8}
-                            opacity={0.98}
-                          />
-                          <SvgText
-                            x={rectX + tooltipPadding}
-                            y={rectY + (isSmall ? 14 : 16)}
-                            fontSize={isSmall ? 10 : 11}
-                            fill={theme.textSecondary}
-                          >
-                            {selectedPoint.label}
-                          </SvgText>
-                          <SvgText
-                            x={rectX + tooltipPadding}
-                            y={rectY + (isSmall ? 30 : 32)}
-                            fontSize={isSmall ? 12 : 14}
-                            fill={theme.text}
-                            fontWeight="600"
-                          >
-                            {Number(selectedPoint.value).toLocaleString()} steps
-                          </SvgText>
-                        </G>
-                      );
-                    })()}
-                  </Svg>
-                </ScrollView>
+                        <SvgText
+                          x={rectX + tooltipPadding}
+                          y={rectY + (isSmall ? 30 : 32)}
+                          fontSize={isSmall ? 12 : 14}
+                          fill={theme.text}
+                          fontWeight="600"
+                        >
+                          {Number(selectedPoint.value).toLocaleString()} steps
+                        </SvgText>
+                      </G>
+                    );
+                  })()}
+                </Svg>
               </View>
             </View>
           </View>
@@ -936,6 +923,9 @@ const StepsScreen = () => {
   const [offlineQueue, setOfflineQueue] = useState<OfflineEntry[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [goalInput, setGoalInput] = useState('10000');
+  const [isUpdatingGoal, setIsUpdatingGoal] = useState(false);
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializedRef = useRef(false);
   const lastSyncedStepsRef = useRef(0);
@@ -1404,12 +1394,95 @@ const StepsScreen = () => {
     }
   };
 
+  // Handle settings modal
+  const handleOpenSettings = () => {
+    setGoalInput(localStepsData.dailyGoal.toString());
+    setSettingsVisible(true);
+  };
+
+  // Update daily goal
+  const handleUpdateGoal = async () => {
+    const newGoal = parseInt(goalInput);
+
+    if (isNaN(newGoal) || newGoal < 1000 || newGoal > 100000) {
+      Alert.alert(
+        'Invalid Goal',
+        'Daily goal must be between 1,000 and 100,000 steps.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setIsUpdatingGoal(true);
+
+    try {
+      if (isAuthenticated && token) {
+        // Check internet
+        const netInfo = await NetInfo.fetch();
+        if (!netInfo.isConnected) {
+          Alert.alert(
+            'No Internet Connection',
+            'Please turn on your data to update your daily goal.',
+            [{ text: 'OK' }]
+          );
+          setIsUpdatingGoal(false);
+          return;
+        }
+
+        // Update on backend
+        const response = await fetch(`${API_BASE_URL}/goal`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ dailyGoal: newGoal }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Failed to update goal');
+        }
+
+        Alert.alert(
+          'Success',
+          `Daily goal updated to ${newGoal.toLocaleString()} steps!`,
+          [{ text: 'OK' }]
+        );
+      }
+
+      // Update locally
+      const updatedData = {
+        ...localStepsData,
+        dailyGoal: newGoal,
+      };
+      setLocalStepsData(updatedData);
+      await saveLocalData(updatedData);
+
+      setSettingsVisible(false);
+    } catch (error: any) {
+      console.error('Update goal error:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to update goal. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsUpdatingGoal(false);
+    }
+  };
+
   const percentage = (localStepsData.currentSteps / localStepsData.dailyGoal) * 100;
 
   return (
     <SafeAreaView style={stylesTheme.container}>
       <ScrollView>
-        <Header onRefresh={handleRefresh} isRefreshing={isRefreshing} />
+        <Header
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+          onSettings={handleOpenSettings}
+        />
         <StepCircle
           steps={localStepsData.currentSteps}
           goal={localStepsData.dailyGoal}
@@ -1425,6 +1498,73 @@ const StepsScreen = () => {
         <StepsChart isAuthenticated={isAuthenticated} token={token} />
         <BMICards />
       </ScrollView>
+
+      {/* Settings Modal */}
+      <Modal
+        visible={settingsVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSettingsVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBackground }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>
+                Settings
+              </Text>
+              <TouchableOpacity
+                onPress={() => setSettingsVisible(false)}
+                style={styles.closeButton}
+              >
+                <Text style={[styles.closeButtonText, { color: theme.textSecondary }]}>
+                  ✕
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>
+                Daily Step Goal
+              </Text>
+              <TextInput
+                style={[
+                  styles.goalInput,
+                  {
+                    backgroundColor: theme.surface,
+                    color: theme.text,
+                    borderColor: theme.border,
+                  }
+                ]}
+                value={goalInput}
+                onChangeText={setGoalInput}
+                keyboardType="number-pad"
+                placeholder="Enter goal (1,000 - 100,000)"
+                placeholderTextColor={theme.textSecondary}
+                maxLength={6}
+              />
+              <Text style={[styles.settingHint, { color: theme.textSecondary }]}>
+                Set a daily step goal between 1,000 and 100,000 steps
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.updateButton,
+                  { backgroundColor: theme.primary },
+                  isUpdatingGoal && { opacity: 0.6 }
+                ]}
+                onPress={handleUpdateGoal}
+                disabled={isUpdatingGoal}
+              >
+                {isUpdatingGoal ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.updateButtonText}>Update Goal</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1633,6 +1773,75 @@ const styles = StyleSheet.create({
   noDataText: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  // Missing styles for Settings Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: 0,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  closeButtonText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalBody: {
+    padding: 20,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  goalInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  settingHint: {
+    fontSize: 12,
+    marginBottom: 16,
+    lineHeight: 16,
+  },
+  updateButton: {
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  updateButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
